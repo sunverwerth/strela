@@ -1,0 +1,13 @@
+module Compare {
+    import Std.IO.*;
+
+
+    function main(args: String[]): i32 {
+        var str1 = "Hello";
+        var str2 = "Hello";
+        if (str1 == str2) {
+            println("str1 == str2");
+        }
+        return 0;
+    }
+}

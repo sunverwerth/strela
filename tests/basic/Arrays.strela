@@ -1,0 +1,34 @@
+module Arrays {
+    import Std.IO.*;
+
+    class Custom {
+        function [](a: i32, b: i32) {
+            print("Custom array subscript called: ");
+            print(a);
+            print(", ");
+            println(b);
+        }
+    }
+
+    function main(args: String[]): i32 {
+        var arr = ["First", "Second", "Third", "Fourth"];
+        print("String array length: ");
+        println(arr.length);
+        println(arr[0]);
+        println(arr[1]);
+        println(arr[2]);
+        println(arr[3]);
+
+        var arr2 = [1,2,3];
+        print("Int array length: ");
+        println(arr2.length);
+        println(arr2[0]);
+        println(arr2[1]);
+        println(arr2[2]);
+
+        var c = new Custom;
+        c[0,1];
+
+        return 0;
+    }
+}

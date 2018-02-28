@@ -1,0 +1,29 @@
+module Enum {
+    import Std.IO.*;
+
+    enum Foo {
+        A,
+        B,
+        C
+    }
+
+    function main(args: String[]): i32 {
+        var a = Foo.A;
+        var b = Foo.B;
+        var c = Foo.C;
+
+        if (a == Foo.A) println("a == Foo.A");
+        if (a != Foo.B) println("a != Foo.B");
+        if (Foo.A != Foo.B) println("Foo.A != Foo.B");
+        if (Foo.A == Foo.A) println("Foo.A == Foo.A");
+
+        a = b;
+        c = b;
+
+        if (a == Foo.B) println("a == Foo.B");
+        if (b == Foo.B) println("b == Foo.B");
+        if (c == Foo.B) println("c == Foo.B");
+
+        return 0;
+    }
+}

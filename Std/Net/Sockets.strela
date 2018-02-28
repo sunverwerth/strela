@@ -1,0 +1,4 @@
+module Std.Net.Sockets {
+    export class Socket {
+    }
+}

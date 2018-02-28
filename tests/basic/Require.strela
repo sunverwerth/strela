@@ -1,0 +1,11 @@
+module Require {
+    import Std.IO.*;
+
+    import Export;
+
+    function main(args: String[]): i32 {
+        Export.foo();
+        Export.bar();
+        return 0;
+    }
+}

@@ -1,0 +1,17 @@
+module References {
+    import Std.IO.*;
+
+    function main(args: String[]): i32 {
+        var value1 = "1337";
+        var value2 = "42";
+        var ref = value1;
+
+        println(ref);
+        ref = value2;
+        println(ref);
+        value2 = "2448";
+        println(ref);
+        
+        return 0;
+    }
+}

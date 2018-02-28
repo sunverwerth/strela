@@ -1,0 +1,17 @@
+module Fib {
+    import Std.IO.*;
+
+    function fibonacci(i: u64): u64 {
+        if (i < 2) return i;
+        return fibonacci(i-1) + fibonacci(i-2);
+    }
+
+    function main(): i32 {
+        println("Hello, world!");
+        println("Calculating fibonacci(40).");
+        println("This may take a while...");
+        print("fibonacci(40) is ");
+        println(fibonacci(40));
+        return 0;
+    }
+}

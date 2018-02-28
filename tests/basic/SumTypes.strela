@@ -1,0 +1,23 @@
+module SumTypes {
+    import Std.IO.*;
+
+    function printSum(sum: i32 | String) {
+        match(sum) {
+            case String println(sum);
+            case i32 println(sum);
+        }
+    }
+
+    function main(args: String[]): i32 {
+
+        var sum: String | i32;
+
+        sum = 1337;
+        printSum(sum);
+
+        sum = "Hello";
+        printSum(sum);
+
+        return 0;
+    }
+}

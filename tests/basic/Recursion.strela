@@ -1,0 +1,19 @@
+module Recursion {
+    import Std.IO.*;
+
+
+    function foo(depth: i32) {
+        if (depth > 10) {
+            println("Depth 10 reached. Ending recursion.");
+            return;
+        }
+        print("Depth: ");
+        println(depth);
+        foo(depth+1);
+    }
+
+    function main(args: String[]): i32 {
+        foo(0);
+        return 0;
+    }
+}

@@ -1,0 +1,7 @@
+a == Foo.A
+a != Foo.B
+Foo.A != Foo.B
+Foo.A == Foo.A
+a == Foo.B
+b == Foo.B
+c == Foo.B

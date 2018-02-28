@@ -1,0 +1,31 @@
+module Overloading {
+    import Std.IO.*;
+
+    function foo(val: u8) {
+        print("foo u8 called: ");
+        println(val);
+    }
+
+    function foo(val: u16) {
+        print("foo u16 called: ");
+        println(val);
+    }
+
+    function foo(val: i32) {
+        print("foo i32 called: ");
+        println(val);
+    }
+
+    function foo(val: String) {
+        print("foo String called: ");
+        println(val);
+    }
+
+    function main(args: String[]): i32 {
+        foo("this is a string");
+        foo(1337);
+        foo(0);
+        foo(-65536);
+        return 0;
+    }
+}

@@ -1,0 +1,6 @@
+init() called: String
+init() called: 123
+init() called: 1.50000000
+Value is: String
+Value is: 123
+Value is: 1.50000000

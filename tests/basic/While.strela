@@ -1,0 +1,12 @@
+module While {
+    import Std.IO.*;
+
+	function main(args: String[]): i32 {
+		var i = 10;
+		while(i > 0) {
+			println(i);
+			i = i - 1;
+		}
+		return 0;
+	}
+}

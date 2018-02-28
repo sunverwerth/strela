@@ -1,0 +1,16 @@
+module Allocation {
+    import Std.IO.*;
+
+    class Foo {
+        function bar() {
+            println("Foo::bar()");
+        }
+    }
+
+    function main(args: String[]): i32 {
+        // alloc string
+        var foo = new Foo;
+        foo.bar();
+        return 0;
+    }
+}

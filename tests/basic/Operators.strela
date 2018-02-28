@@ -1,0 +1,19 @@
+module Operators {
+    import Std.IO.*;
+
+    function main(args: String[]): i32 {
+        var i: i32 = 5;
+        println(i);
+        
+        i += 10; println(i);
+        i -= 5; println(i);
+        i /= 2; println(i);
+        i *= 3; println(i);
+
+        i = i + 10; println(i);
+        i = i - 5; println(i);
+        i = i / 2; println(i);
+        i = i * 3; println(i);
+        return 0;
+    }
+}

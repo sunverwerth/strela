@@ -1,0 +1,31 @@
+module Nullable {
+    import Std.IO.*;
+
+    function tryPrint(val: String?) {
+        match(val) {
+            case String {
+                print("Value is: ");
+                println(val);
+            }
+            case Null {
+                println("Is null");
+            }
+        }
+    }
+
+    function main(args: String[]): i32 {
+        var value = "Hello, world";
+        var ref: String?;
+        
+        ref = null;
+        tryPrint(ref);
+
+        ref = value;
+        tryPrint(ref);
+
+        ref = "Goodbye, world";
+        tryPrint(ref);
+
+        return 0;
+    }
+}

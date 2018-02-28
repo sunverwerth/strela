@@ -1,0 +1,12 @@
+module Import {
+    import Std.IO.*;
+
+    import Export.foo;
+    import Export.bar;
+
+    function main(args: String[]): i32 {
+        foo();
+        bar();
+        return 0;
+    }
+}

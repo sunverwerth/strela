@@ -1,0 +1,5 @@
+/release
+/debug
+/.vscode
+/.vs
+*.sbc

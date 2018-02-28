@@ -1,0 +1,27 @@
+module Export {
+    import Std.IO.*;
+
+    export class Baz {
+        function frob(a: Bumm) {
+        }
+    }
+
+    class Bumm {
+        function frob(a: Baz) {
+        }
+    }
+
+    export function foo() {
+        println("Export.foo called");
+    }
+
+    export function bar() {
+        println("Export.bar called");
+    }
+
+    function main(args: String[]): i32 {
+        foo();
+        bar();
+        return 0;
+    }
+}

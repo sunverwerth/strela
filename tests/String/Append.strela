@@ -1,0 +1,11 @@
+module Append {
+    import Std.IO.*;
+
+
+    function main(args: String[]): i32 {
+        var str = "Hello";
+        var str2 = str + ", world!";
+        println(str2);
+        return 0;
+    }
+}

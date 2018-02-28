@@ -1,0 +1,7 @@
+module Std.Net.HTTP {
+    export class Client {        
+    }
+
+    export class Server {        
+    }
+}

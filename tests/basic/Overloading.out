@@ -1,0 +1,4 @@
+foo String called: this is a string
+foo u16 called: 1337
+foo u8 called: 0
+foo i32 called: -65536

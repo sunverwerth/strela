@@ -1,0 +1,57 @@
+module Interface {
+    import Std.IO.*;
+
+    interface ForceUser {
+        function getName(): String;
+        function foo(i: i32): String;
+    }
+
+    class Vader {
+        var name: String;
+        
+        function init() {
+            this.name = "Darth Vader";
+        }
+
+        function getName(): String {
+            return this.name;
+        }
+
+        function foo(i: i32): String {
+            return "I am your father.";
+        }
+    }
+
+    class Yoda {
+        var name: String;
+
+        function init() {
+            this.name = "Master Yoda";
+        }
+
+        function getName(): String {
+            return this.name;
+        }
+
+        function foo(i: i32): String {
+            return "Do or do not. There is no try.";
+        }
+    }
+
+    function printFoo(user: ForceUser) {
+        print("My name is ");
+        print(user.getName());
+        println(".");
+        println(user.foo(1));
+    }
+
+    function main(args: String[]): i32 {
+        var vader = new Vader;
+        var yoda = new Yoda;
+
+        printFoo(vader);
+        printFoo(yoda);
+
+        return 0;
+    }
+}
