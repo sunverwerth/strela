@@ -1,0 +1,75 @@
+module Std.Collections {
+    /**
+     * Contiguous storage resizable list
+     */
+    export class List<T> {
+        var array: T[];
+        var length: u32;
+
+        function init() {
+            array = new T[](1);
+            length = 0;
+        }
+
+        function append(value: T) {
+            var newArray = new T[](array.length + 1);
+            var i:u64 = 0;
+            while(i < array.length) {
+                newArray[i] = array[i];
+                i = i + 1;
+            }
+            array = newArray;
+            array[length] = value;
+            length = length + 1;
+        }
+
+        function set(index: u64, value: T) {
+            array[index] = value;
+        }
+
+        function [](i: u64): T {
+            return array[i];
+        }
+    }
+
+    /**
+     * Key-Value storage
+     */
+    export class Map<K, V> {
+        var keys: List<K>;
+        var values: List<V>;
+
+        function init() {
+            keys = new List<K>;
+            values = new List<V>;
+        }
+
+        function has(key: K): bool {
+            return keyIndex(key) >= 0;
+        }
+
+        function keyIndex(key: K): i64 {
+            var i: u64 = 0;
+            while (i < keys.length) {
+                if (keys[i] == key) return i;
+                i += 1;
+            }
+            return -1;
+        }
+
+        function set(key: K, val: V) {
+            var idx = keyIndex(k);
+            if (idx >= 0) {
+                values[idx] = v;
+            }
+            else {
+                keys.append(k);
+                values.append(v);
+            }
+        }
+
+        function [](key: K): V {
+            return values(keyIndex(kex));
+        }
+    }
+}

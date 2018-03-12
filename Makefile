@@ -19,7 +19,7 @@ _OBJ=$(SRC:.cpp=.o)
 OBJ=$(patsubst $(SRCDIR)/%,$(OBJDIR)/%,$(_OBJ))
 DEPS = ${OBJ:.o=.d}
 
-.PHONY: clean strelac
+.PHONY: clean install
 
 strelac: $(EXECUTABLE)
 
@@ -29,6 +29,11 @@ $(EXECUTABLE): $(OBJ)
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	@[ -d $(@D) ] || mkdir -p $(@D)
 	$(CC) $< $(CXXFLAGS) -c -o $@
+
+install: strelac
+	install -D release/strelac /usr/local/bin/strelac
+	install -d /usr/local/lib/strela
+	cp -r Std /usr/local/lib/strela
 
 clean:
 	rm -rf release debug

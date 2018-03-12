@@ -11,6 +11,7 @@ namespace Strela {
     class AstFuncDecl;
     class AstClassDecl;
     class ModuleType;
+    class AstEnumDecl;
 
     class AstModDecl: public AstNode {
     public:
@@ -19,8 +20,9 @@ namespace Strela {
             const std::string& name,
             const std::vector<AstImportStmt*>& imports,
             const std::vector<AstFuncDecl*>& functions,
-            const std::vector<AstClassDecl*>& classes
-        ): AstNode(startToken), name(name), imports(imports), functions(functions), classes(classes), declType(new ModuleType(name, this)) {}
+            const std::vector<AstClassDecl*>& classes,
+            const std::vector<AstEnumDecl*>& enums
+        ): AstNode(startToken), name(name), imports(imports), functions(functions), classes(classes), enums(enums), declType(new ModuleType(name, this)) {}
 
         STRELA_GET_TYPE(Strela::AstModDecl, Strela::AstNode);
         STRELA_IMPL_VISITOR;
@@ -37,6 +39,7 @@ namespace Strela {
         std::vector<AstImportStmt*> imports;
         std::vector<AstFuncDecl*> functions;
         std::vector<AstClassDecl*> classes;
+        std::vector<AstEnumDecl*> enums;
         std::string filename;
     };
 }

@@ -28,5 +28,7 @@
 #include "AstUnaryExpr.h"
 #include "AstArrayTypeExpr.h"
 #include "AstImportStmt.h"
+#include "AstEnumDecl.h"
+#include "AstEnumElement.h"
 
 #endif

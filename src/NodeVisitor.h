@@ -27,6 +27,8 @@ namespace Strela {
     class AstArrayTypeExpr;
     class AstImportStmt;
     class AstUnaryExpr;
+    class AstEnumDecl;
+    class AstEnumElement;
 
     class NodeVisitor {
     public:
@@ -38,6 +40,8 @@ namespace Strela {
         virtual void visit(AstIdExpr&) = 0;
         virtual void visit(AstClassDecl&) = 0;
         virtual void visit(AstFieldDecl&) = 0;
+        virtual void visit(AstEnumDecl&) = 0;
+        virtual void visit(AstEnumElement&) = 0;
 
         virtual void visit(AstRetStmt&) = 0;
         virtual void visit(AstBlockStmt&) = 0;

@@ -20,6 +20,7 @@ namespace Strela {
         AstBlockStmt* parseBlockStatement();
         AstClassDecl* parseClassDecl();
         AstFieldDecl* parseFieldDecl();
+        AstEnumDecl* parseEnumDecl();
         AstImportStmt* parseImportStmt();
 
         AstStmt* parseStatement();

@@ -31,6 +31,8 @@ namespace Strela {
         void visit(AstArrayTypeExpr&) override;
         void visit(AstImportStmt&) override;
         void visit(AstUnaryExpr&) override;
+        void visit(AstEnumDecl&) override;
+        void visit(AstEnumElement&) override;
 
         void push();
         void pop();

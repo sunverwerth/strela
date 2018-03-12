@@ -1,0 +1,330 @@
+module Std.Lang.Compiler.Parser {
+    import Std.IO.File;
+    import Std.Collections.List;
+    import Lexer.Lexer;
+    import Lexer.TokenType;
+    import Lexer.Token;
+    import Ast.*;
+
+    export class Parser {
+        function init(l: Lexer) {
+            lexer = l;
+            eat();
+        }
+
+        function parseModule(): ModuleDecl {
+            var mod = new ModuleDecl();
+
+            eat(TokenType.Module);
+            mod.name = parseIdentifier();
+            eat(TokenType.CurlyOpen);
+
+            while(matches([
+                TokenType.Import,
+                TokenType.Export,
+                TokenType.Require,
+                TokenType.Entry,
+                TokenType.Class,
+                TokenType.Interface,
+                TokenType.Enum,
+                TokenType.Function
+            ])) {
+                if (matches(TokenType.Import)) {
+                    mod.imports.append(parseImport());
+                }
+                else if (matches(TokenType.Export)) {
+                    mod.exports.append(parseExport());
+                }
+                else if (matches(TokenType.Require)) {
+                    mod.requires.append(parseRequire());
+                }
+                else if (matches(TokenType.Entry)) {
+                    mod.entryd = parseEntry();
+                }
+                else if (matches(TokenType.Class)) {
+                    mod.classes.append(parseClass());
+                }
+                else if (matches(TokenType.Interface)) {
+                    mod.interfaces.append(parseInterface());
+                }
+                else if (matches(TokenType.Enum)) {
+                    mod.enums.append(parseEnum());
+                }
+                else if (matches(TokenType.Function)) {
+                    mod.functions.append(parseFunction());
+                }
+                else {
+                    println("Unexpected " + token.value);
+                    eat();
+                }
+            }
+
+            eat(TokenType.CurlyClose);
+
+            return mod;
+        }
+
+        function parseImport(): ImportDirective {
+            eat();
+            var imports = parseWildcardIdentifierList(TokenType.Comma);
+            eat();
+            return new ImportDirective(imports);
+        }
+
+        function parseWildcardIdentifier(): WildcardIdentifier {
+            return new WildcardIdentifier(parseIdentifierList(TokenType.Period));
+        }
+
+        function parseIdentifier(): Identifier {
+            return new Identifier(eat(TokenType.Identifier));
+        }
+
+        function parseIdentifierList(separator: TokenType): List<Identifier> {
+            var ids = new List<Identifier>;
+            while (matches(TokenType.Identifier)) {
+                ids.append(parseIdentifier());
+                if (matches(separator)) {
+                    eat();
+                }
+            }
+            return ids;
+        }
+
+        function parseWildcardIdentifierList(separator: TokenType): List<WildcardIdentifier> {
+            var list = new List<WildcardIdentifier>;
+            while (matches(TokenType.Identifier)) {
+                list.append(parseWildcardIdentifier());
+                if (matches(separator)) {
+                    eat();
+                }
+            }
+            return list;
+        }
+
+        function parseParameterList(separator: TokenType): List<Parameter> {
+            var params = new List<Parameter>;
+            while (matches(TokenType.Identifier)) {
+                params.append(parseParameter());
+                if (matches(separator)) {
+                    eat();
+                }
+                else {
+                    return params;
+                }
+            }
+            return params;
+        }
+
+        function parseExport(): ExportDirective {
+            eat(TokenType.Export);
+            var ids = parseIdentifierList(TokenType.Comma);
+            eat(TokenType.Semicolon);
+            return new ExportDirective(ids);
+        }
+
+        function parseRequire(): RequireDirective {
+            eat(TokenType.Require);
+            var ids = parseIdentifierList(TokenType.Comma);
+            eat(TokenType.Semicolon);
+            return new RequireDirective(ids);
+        }
+
+        function parseEntry(): EntryDirective {
+            eat(TokenType.Entry);
+            var id = parseIdentifier();
+            eat(TokenType.Semicolon);
+            return new EntryDirective(id);
+        }
+
+        function parseClass(): ClassDecl {
+            eat(TokenType.Class);
+            var name = parseIdentifier();
+            eat(TokenType.CurlyOpen);
+            var methods = new List<ClassMethodDecl>;
+            var fields = new List<ClassFieldDecl>;
+            while (lexer.hasNext() && !matches(TokenType.CurlyClose)) {
+                if (matches(TokenType.Function)) {
+                    methods.append(parseClassMethod());
+                }
+                else if (matches(TokenType.Var)) {
+                    fields.append(parseClassField());
+                }
+                else {
+                    skip();
+                }
+            }
+            eat(TokenType.CurlyClose);
+            return new ClassDecl(name, methods, fields);
+        }
+
+        function parseInterface(): InterfaceDecl {
+            eat();
+            return new InterfaceDecl();
+        }
+
+        function parseEnum(): EnumDecl {
+            eat(TokenType.Enum);
+            var name = parseIdentifier();
+            var elements = new List<EnumElement>;
+            eat(TokenType.CurlyOpen);
+            eat(TokenType.CurlyClose);
+            return new EnumDecl(name, elements);
+        }
+
+        function parseFunction(): FunctionDecl {
+            eat(TokenType.Function);
+            var name = parseIdentifier();
+            eat(TokenType.ParenOpen);
+            var params = parseParameterList(TokenType.Comma);
+            eat(TokenType.ParenClose);
+            var returnType: TypeRef? = null;
+            if (matches(TokenType.Colon)) {
+                eat();
+                returnType = parseTypeRef();
+            }
+            var block = parseBlock();
+            return new FunctionDecl(name, params, returnType, block);
+        }
+
+        function parseBlock(): Block {
+            eat(TokenType.CurlyOpen);
+            var stmts = new List<Statement>;
+            while (matchesStatement()) {
+                stmts.append(parseStatement());
+            }
+            eat(TokenType.CurlyClose);
+            return new Block(stmts);
+        }
+
+        function parseExpression(): Expression {
+            eat();
+            return new MissingExpression;
+        }
+
+        function parseStatement(): Statement {
+            if (matches(TokenType.Semicolon)) {
+                eat();
+                return new EmptyStatement;
+            }
+            else if (matches(TokenType.Return)) {
+                return parseReturnStatement();
+            }
+            else if (matches(TokenType.Var)) {
+                return parseVarDecl();
+            }
+            else {
+                return new MissingStatement;
+            }
+        }
+
+        function parseReturnStatement(): ReturnStatement {
+            eat(TokenType.Return);
+            var expr: Expression? = null;
+            if (matchesExpression()) {
+                expr = parseExpression();
+            }
+            return new ReturnStatement(expr);
+        }
+
+        function parseClassMethod(): ClassMethodDecl {
+            return new ClassMethodDecl(parseFunction());
+        }
+
+        function parseClassField(): ClassFieldDecl {
+            return new ClassFieldDecl(parseVarDecl());
+        }
+
+        function parseTypeRef(): TypeRef {
+            return new TypeRef(parseIdentifier());
+        }
+
+        function parseVarDecl(): VarDecl {
+            eat(TokenType.Var);
+            var name = parseIdentifier();
+            eat(TokenType.Colon);
+            var type = parseTypeRef();
+            eat(TokenType.Semicolon);
+            return new VarDecl(name, type);
+        }
+
+        function parseParameter(): Parameter {
+            var name = parseIdentifier();
+            eat(TokenType.Colon);
+            var type = parseTypeRef();
+            return new Parameter(name, type);
+        }
+
+        function matchesStatement(): bool {
+            return matches([
+                TokenType.Identifier,
+                TokenType.Semicolon,
+                TokenType.Return,
+                TokenType.Var
+            ]);
+        }
+
+        function matchesExpression(): bool {
+            return matches([
+                TokenType.Identifier
+            ]);
+        }
+
+        function matches(type: TokenType): bool {
+            return token.type == type;
+        }
+
+        function matches(types: TokenType[]): bool {
+            var i: i32 = 0;
+            while(i < types.length) {
+                if (matches(types[i])) {
+                    return true;
+                }
+                i = i + 1;
+            }
+            return false;
+        }
+
+        function eat(): Token {
+            token = lexer.next();
+            while (matches(TokenType.Comment) || matches(TokenType.Whitespace)) {
+                token = lexer.next();
+            }
+            return token;
+        }
+
+        function eat(type: TokenType): Token {
+            if (matches(type)) {
+                return eat();
+            }
+            else {
+                return skip();
+            }
+        }
+
+        function skip(): Token {
+            error(token.file, token.row, token.column, "Unexpected token \"" + token.value + "\"");
+            eat();
+            return new Token(lexer.file, TokenType.Missing, "");
+        }
+
+        /**
+         * Eats tokens until given type is found
+         */
+        function sync(t: TokenType) {
+            while (!matches(t) && lexer.hasNext()) {
+                token = lexer.next();
+            }
+        }
+
+        function error(file: File, row: u32, column: u32, msg: String) {
+            print(file.name + ":");
+            print(row+1);
+            print(":");
+            print(column+1);
+            println(" \e[31;mError:\e[0;m " + msg);
+        }
+
+        var lexer: Lexer;
+        var token: Token;
+    }
+}

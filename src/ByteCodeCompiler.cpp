@@ -352,6 +352,13 @@ namespace Strela {
         error(n, "Unhandled unary prefix operator '" + n.startToken.value + "'.");
     }
 
+    void ByteCodeCompiler::visit(AstEnumDecl& n) {
+        visitChildren(n.elements);
+    }
+
+    void ByteCodeCompiler::visit(AstEnumElement& n) {
+    }
+
     bool ByteCodeCompiler::tryCompileAsConst(AstExpr& n) {
         if (n.isStatic) {
             if (n.type == Types::i32) {

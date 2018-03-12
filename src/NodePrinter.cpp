@@ -7,6 +7,10 @@ namespace Strela {
     void NodePrinter::visit(AstModDecl& n) {
         std::cout << "module " << n.name << " {\n";
         push();
+        for (auto&& en: n.enums) {
+            std::cout << indent;
+            visitChild(en);
+        }
         for (auto&& cls: n.classes) {
             std::cout << indent;
             visitChild(cls);
@@ -210,6 +214,21 @@ namespace Strela {
     void NodePrinter::visit(AstUnaryExpr& n) {
         std::cout << n.startToken.value;
         visitChild(n.target);
+    }
+
+    void NodePrinter::visit(AstEnumDecl& n) {
+        std::cout << "enum {\n";
+        push();
+        for (auto&& el: n.elements) {
+            std::cout << indent;
+            visitChild(el);
+        }
+        pop();
+        std::cout << indent <<  "}\n";
+    }
+
+    void NodePrinter::visit(AstEnumElement& n) {
+        std::cout << n.name << ",\n";
     }
 
     void NodePrinter::push() {

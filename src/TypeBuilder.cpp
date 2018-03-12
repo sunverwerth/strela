@@ -146,4 +146,12 @@ namespace Strela {
     void TypeBuilder::visit(AstUnaryExpr& n) {
         visitChild(n.target);
     }
+
+    void TypeBuilder::visit(AstEnumDecl& n) {
+        visitChildren(n.elements);
+    }
+
+    void TypeBuilder::visit(AstEnumElement& n) {
+    }
+
 }

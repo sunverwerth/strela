@@ -66,6 +66,7 @@ namespace Strela {
         { "if", TokenType::If },
         { "else", TokenType::Else },
         { "while", TokenType::While },
+        { "enum", TokenType::Enum },
     };
 
     std::string unescape(const std::string& str) {
@@ -96,7 +97,7 @@ namespace Strela {
         std::string escaped;
         for (size_t i = 0; i < str.size(); ++i) {
             switch (str[i]) {
-                case '0': escaped += "\\0"; break;
+                case '\0': escaped += "\\0"; break;
                 case '\r': escaped += "\\t"; break;
                 case '\n': escaped += "\\n"; break;
                 case '\t': escaped += "\\t"; break;

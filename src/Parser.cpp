@@ -80,6 +80,8 @@ namespace Strela {
         std::vector<AstFuncDecl*> functions;
         std::vector<AstClassDecl*> classes;
         std::vector<AstImportStmt*> imports;
+        std::vector<AstEnumDecl*> enums;
+
         while (!eof() && !match(TokenType::CurlyClose)) {
             bool exportNext = match(TokenType::Export);
             if (exportNext) eat();
@@ -94,6 +96,11 @@ namespace Strela {
                 if (exportNext) cls->isExported = true;
                 classes.push_back(cls);
             }
+            else if (match(TokenType::Enum)) {
+                auto en = parseEnumDecl();
+                if (exportNext) en->isExported = true;
+                enums.push_back(en);
+            }
             else if (match(TokenType::Import)) {
                 imports.push_back(parseImportStmt());
             }
@@ -103,7 +110,7 @@ namespace Strela {
         }
         eat(TokenType::CurlyClose);
 
-        return new AstModDecl(startToken, name, imports, functions, classes);
+        return new AstModDecl(startToken, name, imports, functions, classes, enums);
     }
 
     AstImportStmt* Parser::parseImportStmt() {
@@ -423,6 +430,25 @@ namespace Strela {
         }
         eat(TokenType::CurlyClose);
         return new AstClassDecl(startToken, name, methods, fields);
+    }
+
+    AstEnumDecl* Parser::parseEnumDecl() {
+        auto startToken = eat(TokenType::Enum);
+        auto name = eat(TokenType::Identifier).value;
+        eat(TokenType::CurlyOpen);
+        std::vector<AstEnumElement*> elements;
+        while (match(TokenType::Identifier)) {
+            elements.push_back(new AstEnumElement(eat(TokenType::Identifier)));
+
+            if (match(TokenType::Comma)) {
+                eat();
+            }
+            else {
+                break;
+            }
+        }
+        eat(TokenType::CurlyClose);
+        return new AstEnumDecl(startToken, elements);
     }
 
     bool Parser::match(TokenType type) {

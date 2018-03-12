@@ -1,0 +1,35 @@
+module Std.Lang.Compiler {
+    import Std.IO.*;
+    import Compiler.Parser.*;
+    import Compiler.Lexer.*;
+    import Compiler.Ast.*;
+
+
+    function help() {
+        println("-- The strela compiler --");
+        println("Syntax: strelac infile [outfile]");
+    }
+
+    function main(args: String[]): i32 {
+        if (args.length < 3) {
+            help();
+            return 1;
+        }
+
+        var inFile = openFile(args[1], "rb");
+        match (inFile) {
+            case File {
+                var lexer = new Lexer(inFile);
+                var parser = new Parser(lexer);
+                var mod = parser.parseModule();
+            }
+            else {
+                print("Could not open file ");
+                println(args[1]);
+                return -1;
+            }
+        }
+
+        return 0;
+    }
+}

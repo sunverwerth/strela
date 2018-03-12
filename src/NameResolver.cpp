@@ -204,4 +204,12 @@ namespace Strela {
     void NameResolver::visit(AstUnaryExpr& n) {
         visitChild(n.target);
     }
+
+    void NameResolver::visit(AstEnumDecl& n) {
+        visitChildren(n.elements);
+    }
+
+    void NameResolver::visit(AstEnumElement& n) {
+    }
+
 }

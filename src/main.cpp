@@ -23,6 +23,19 @@ void error(const std::string& msg) {
     std::cerr << "\033[1;31m" << msg << "\033[0m\n";
 }
 
+void help() {
+    std::cout << "strelac - The strela compiler and VM\n";
+    std::cout << "general usage:\n";
+    std::cout << "strelac [options] input-file\n";
+    std::cout << "\n";
+    std::cout << "options are:\n";
+    std::cout << "    --dump             dumps decompiled bytecode to stdout and exits.\n";
+    std::cout << "    --pretty           pretty-prints the parsed code to stdout and exits.\n";
+    std::cout << "    --timeout <sec>    kills the running program after <sec> seconds.\n";
+    std::cout << "    --search <path>    sets additional search path <path> for imports.\n";
+    std::cout << "    --write-bytecode <file>    writes compiled bytecode to <file> and exits.\n";
+}
+
 Scope* makeGlobalScope() {
     using namespace Types;
     auto globals = new Scope(nullptr);
@@ -81,7 +94,6 @@ std::string getImportFile(const std::string& baseFilename, AstImportStmt* import
     // 5) ~/.strela/Foo/Bar.strela
     // 6) ~/.strela/Foo.strela (import member Bar)
     
-    // relative
     std::ifstream file;
 
     std::string relativeBase;
@@ -91,37 +103,21 @@ std::string getImportFile(const std::string& baseFilename, AstImportStmt* import
         relativeBase = baseFilename.substr(0, lastSlash) + "/";
     }
 
-    std::string filename;
-
-    filename = relativeBase + import->getFullName("/") + ".strela";
-    file.open(filename, std::ios::binary);
-    if (file.good()) {
-        import->importModule = !import->all;
-        return filename;
-    }
-
-    if (!import->all) {
-        filename = relativeBase + import->getBaseName("/") + ".strela";
-        file.open(filename, std::ios::binary);
-        if (file.good()) {
-            return filename;
-        }
-    }
-
+    std::vector<std::pair<std::string, bool>> tries;
+    tries.push_back({relativeBase + import->getFullName("/") + ".strela", true});
+    if (!import->all) tries.push_back({relativeBase + import->getBaseName("/") + ".strela", false});
+    tries.push_back({"/usr/local/lib/strela/" + import->getFullName("/") + ".strela", true});
+    if (!import->all) tries.push_back({"/usr/local/lib/strela/" + import->getBaseName("/") + ".strela", false});
     if (g_searchPath) {
-        filename = g_searchPath + import->getFullName("/") + ".strela";
-        file.open(filename, std::ios::binary);
-        if (file.good()) {
-            import->importModule = !import->all;
-            return filename;
-        }
+        tries.push_back({g_searchPath + import->getFullName("/") + ".strela", true});
+        if (!import->all) tries.push_back({g_searchPath + import->getBaseName("/") + ".strela", false});
+    }
 
-        if (!import->all) {
-            filename = g_searchPath + import->getBaseName("/") + ".strela";
-            file.open(filename, std::ios::binary);
-            if (file.good()) {
-                return filename;
-            }
+    for (auto&& it: tries) {
+        file.open(it.first, std::ios::binary);
+        if (file.good()) {
+            import->importModule = it.second && !import->all;
+            return it.first;
         }
     }
 
@@ -141,20 +137,25 @@ int main(int argc, char** argv) {
             break;
         }
         if (!strcmp(argv[i], "--dump")) dump = true;
-        if (!strcmp(argv[i], "--pretty")) pretty = true;
-        if (!strcmp(argv[i], "--timeout")) {
+        else if (!strcmp(argv[i], "--pretty")) pretty = true;
+        else if (!strcmp(argv[i], "--timeout")) {
             g_timeout = std::strtol(argv[++i], nullptr, 10) * 1000;
         }
-        if (!strcmp(argv[i], "--search")) {
+        else if (!strcmp(argv[i], "--search")) {
             g_searchPath = argv[++i];
         }
-        if (!strcmp(argv[i], "--write-bytecode")) {
+        else if (!strcmp(argv[i], "--write-bytecode")) {
             byteCodePath = argv[++i];
+        }
+        else {
+            help();
+            exit(1);
         }
     }
     
     if (fileName.empty()) {
         error("Expected file name as last cmd line argument.");
+        help();
         return 1;
     }
 

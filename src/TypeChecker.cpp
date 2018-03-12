@@ -560,6 +560,13 @@ namespace Strela {
         n.type = Types::invalid;
     }
 
+    void TypeChecker::visit(AstEnumDecl& n) {
+        visitChildren(n.elements);
+    }
+
+    void TypeChecker::visit(AstEnumElement& n) {
+    }
+
     void TypeChecker::error(AstNode& node, const std::string& msg) {
         //std::cerr << msg << "\n";
         throw TypeException(msg, node);

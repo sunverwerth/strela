@@ -1,0 +1,208 @@
+module Std.Lang.Compiler.Ast {
+    import Std.Collections.List;
+    import Lexer.Token;
+    
+    export interface Statement {}
+
+    export class EmptyStatement {}
+
+    export class MissingStatement {}
+
+    export interface Expression {}
+
+    export class MissingExpression {}
+
+    export class Identifier {
+        function init(t: Token) {
+            token = t;
+        }
+
+        var token: Token;
+    }
+
+
+    export class QualifiedIdentifier {
+        function init() {
+            ids = new List<Identifier>;
+        }
+
+        var ids: List<Identifier>;
+    }
+
+    export class WildcardIdentifier {
+        function init(ids: List<Identifier>) {
+            this.ids = ids;
+        }
+
+        var ids: List<Identifier>;
+    }
+
+    export class ModuleDecl {
+        function init() {
+            requires = new List<RequireDirective>;
+            imports = new List<ImportDirective>;
+            exports = new List<ExportDirective>;
+            classes = new List<ClassDecl>;
+            interfaces = new List<InterfaceDecl>;
+            enums = new List<EnumDecl>;
+            functions = new List<FunctionDecl>;
+        }
+
+        var name: Identifier;
+        var requires: List<RequireDirective>;
+        var imports: List<ImportDirective>;
+        var exports: List<ExportDirective>;
+        var entryd: EntryDirective?;
+        var classes: List<ClassDecl>;
+        var interfaces: List<InterfaceDecl>;
+        var enums: List<EnumDecl>;
+        var functions: List<FunctionDecl>;
+    }
+
+    export class ReturnStatement {
+        function init(expr: Expression?) {
+            this.expr = expr;
+        }
+
+        var expr: Expression?;
+    }
+
+    export class ImportDirective {
+        function init(imports: List<WildcardIdentifier>) {
+            this.imports = imports;
+        }
+
+        var imports: List<WildcardIdentifier>;
+    }
+
+    export class ExportDirective {
+        function init(exports: List<Identifier>) {
+            this.exports = exports;
+        }
+
+        var exports: List<Identifier>;
+    }
+
+    export class RequireDirective {
+        function init(requires: List<Identifier>) {
+            this.requires = requires;
+        }
+
+        var requires: List<Identifier>;
+    }
+
+    export class EntryDirective {
+        function init(name: Identifier) {
+            this.name = name;
+        }
+
+        var name: Identifier;
+    }
+
+    export class FunctionDecl {
+        function init(name: Identifier, params: List<Parameter>, returnType: TypeRef?, body: Block) {
+            this.name = name;
+            this.params = params;
+            this.returnType = returnType;
+            this.body = body;
+        }
+
+        var name: Identifier;
+        var returnType: TypeRef?;
+        var params: List<Parameter>;
+        var body: Block;
+    }
+
+    export class Block {
+        function init(stmts: List<Statement>) {
+            this.stmts = stmts;
+        }
+
+        var stmts: List<Statement>;
+    }
+
+    export class Parameter {
+        function init(name: Identifier, type: TypeRef) {
+            this.name = name;
+            this.type = type;
+        }
+
+        var name: Identifier;
+        var type: TypeRef;
+    }
+
+    export class ClassDecl {
+        function init(name: Identifier, methods: List<ClassMethodDecl>, fields: List<ClassFieldDecl>) {
+            this.name = name;
+            this.methods = methods;
+            this.fields = fields;
+        }
+
+        var name: Identifier;
+        var methods: List<ClassMethodDecl>;
+        var fields: List<ClassFieldDecl>;
+    }
+
+    export class ClassMethodDecl {
+        function init(fn: FunctionDecl) {
+            this.fn = fn;
+        }
+
+        var fn: FunctionDecl;
+    }
+
+    export class ClassFieldDecl {
+        function init(variable: VarDecl) {
+            this.variable = variable;
+        }
+
+        var variable: VarDecl;
+    }
+
+    export class VarDecl {
+        function init(name: Identifier, type: TypeRef) {
+            this.name = name;
+            this.type = type;
+        }
+
+        var name: Identifier;
+        var type: TypeRef;
+    }
+
+    export class TypeRef {
+        function init(name: Identifier) {
+            this.name = name;
+        }
+
+        var name: Identifier;
+    }
+
+    export class InterfaceDecl {
+        var name: Identifier;
+        var methods: List<InterfaceMember>;
+    }
+
+    export class InterfaceMember {
+        var name: Identifier;
+        var returnType: TypeRef;
+        var params: List<Parameter>;
+    }
+    
+    export class EnumDecl {
+        function init(n: Identifier, el: List<EnumElement>) {
+            name = n;
+            elements = el;
+        }
+
+        var name: Identifier;
+        var elements: List<EnumElement>;
+    }
+    
+    export class EnumElement {
+        function init(n: Identifier) {
+            name = n;
+        }
+
+        var name: Identifier;
+    }    
+}
