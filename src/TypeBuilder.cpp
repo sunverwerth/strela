@@ -34,6 +34,7 @@ namespace Strela {
     }
 
     void TypeBuilder::visit(AstVarDecl& n) {
+        n.declType = Types::invalid;
         if (n.typeExpr) {
             visitChild(n.typeExpr);
             n.declType = n.typeExpr->staticValue.type;
