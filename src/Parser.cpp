@@ -448,7 +448,7 @@ namespace Strela {
             }
         }
         eat(TokenType::CurlyClose);
-        return new AstEnumDecl(startToken, elements);
+        return new AstEnumDecl(startToken, name, elements);
     }
 
     bool Parser::match(TokenType type) {

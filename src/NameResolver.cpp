@@ -26,6 +26,11 @@ namespace Strela {
                         scope->add(cls->name, cls);
                     }
                 }
+                for (auto&& en: imp->module->enums) {
+                    if (en->isExported) {
+                        scope->add(en->name, en);
+                    }
+                }
             }
             else if (imp->importModule) {
                 scope->add(imp->parts.back(), imp->module);
@@ -58,6 +63,9 @@ namespace Strela {
         }
         for (auto&& cls: n.classes) {
             scope->add(cls->name, cls);
+        }
+        for (auto&& en: n.enums) {
+            scope->add(en->name, en);
         }
 
         visitChildren(n.functions);
