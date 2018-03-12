@@ -10,52 +10,9 @@
 #include <cstring>
 
 namespace Strela {
-    uint64_t packu8(uint8_t v) {
+    template<typename T> uint64_t pack(const T& v) {
 		uint64_t ret{ 0 };
-		memcpy(&ret, &v, 1);
-		return ret;
-    }
-
-    uint64_t packu16(uint16_t v) {
-		uint64_t ret{ 0 };
-		memcpy(&ret, &v, 2);
-		return ret;
-    }
-
-    uint64_t packu32(uint32_t v) {
-		uint64_t ret{ 0 };
-		memcpy(&ret, &v, 4);
-		return ret;
-    }
-
-
-    uint64_t packi8(int8_t v) {
-		uint64_t ret{ 0 };
-		memcpy(&ret, &v, 1);
-		return ret;
-    }
-
-    uint64_t packi16(int16_t v) {
-		uint64_t ret{ 0 };
-		memcpy(&ret, &v, 2);
-		return ret;
-    }
-
-    uint64_t packi32(int32_t v) {
-		uint64_t ret{ 0 };
-		memcpy(&ret, &v, 4);
-		return ret;
-    }
-
-    uint64_t packf32(float v) {
-		uint64_t ret{ 0 };
-		memcpy(&ret, &v, 4);
-		return ret;
-    }
-
-    uint64_t packf64(double v) {
-		uint64_t ret{ 0 };
-		memcpy(&ret, &v, 8);
+		memcpy(&ret, &v, sizeof(T));
 		return ret;
     }
 
@@ -178,33 +135,33 @@ namespace Strela {
     void ByteCodeCompiler::visit(AstLitExpr& n) {
         int index = 0;
         if (n.type == Types::u8) {
-            chunk.addOp(Opcode::U8, packu8(n.staticValue.u8));
+            chunk.addOp(Opcode::U8, pack(n.staticValue.u8));
         }
         else if (n.type == Types::u16) {
-            chunk.addOp(Opcode::U16, packu16(n.staticValue.u16));
+            chunk.addOp(Opcode::U16, pack(n.staticValue.u16));
         }
         else if (n.type == Types::u32) {
-            chunk.addOp(Opcode::U32, packu32(n.staticValue.u32));
+            chunk.addOp(Opcode::U32, pack(n.staticValue.u32));
         }
         else if (n.type == Types::u64) {
             index = chunk.addConstant(VMValue(n.staticValue.u64));
             chunk.addOp(Opcode::Const, index);
         }
         else if (n.type == Types::i8) {
-            chunk.addOp(Opcode::I8, packi8(n.staticValue.i8));
+            chunk.addOp(Opcode::I8, pack(n.staticValue.i8));
         }
         else if (n.type == Types::i16) {
-            chunk.addOp(Opcode::I16, packi16(n.staticValue.i16));
+            chunk.addOp(Opcode::I16, pack(n.staticValue.i16));
         }
         else if (n.type == Types::i32) {
-            chunk.addOp(Opcode::I32, packi32(n.staticValue.i32));
+            chunk.addOp(Opcode::I32, pack(n.staticValue.i32));
         }
         else if (n.type == Types::i64) {
             index = chunk.addConstant(VMValue(n.staticValue.i64));
             chunk.addOp(Opcode::Const, index);
         }
         else if (n.type == Types::f32) {
-            chunk.addOp(Opcode::F32, packf32(n.staticValue.f32));
+            chunk.addOp(Opcode::F32, pack(n.staticValue.f32));
         }
         else if (n.type == Types::f64) {
             index = chunk.addConstant(VMValue(n.staticValue.f64));
@@ -382,7 +339,7 @@ namespace Strela {
         visitChild(n.target);
         switch (n.startToken.type) {
             case TokenType::Minus:
-            chunk.addOp(Opcode::I32, packi32(-1));
+            chunk.addOp(Opcode::I32, pack(-1));
             chunk.addOp(Opcode::Mul);
             return;
             break;
@@ -398,7 +355,7 @@ namespace Strela {
     bool ByteCodeCompiler::tryCompileAsConst(AstExpr& n) {
         if (n.isStatic) {
             if (n.type == Types::i32) {
-                chunk.addOp(Opcode::I32, packi32(n.staticValue.i32));
+                chunk.addOp(Opcode::I32, pack(n.staticValue.i32));
             }
             else {
                 return false;
