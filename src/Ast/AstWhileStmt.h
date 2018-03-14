@@ -10,7 +10,7 @@ namespace Strela {
     public:
         AstWhileStmt(const Token& startToken, AstExpr* condition, AstStmt* body): AstStmt(startToken), condition(condition), body(body) {}
         STRELA_GET_TYPE(Strela::AstWhileStmt, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
     public:
         AstExpr* condition;

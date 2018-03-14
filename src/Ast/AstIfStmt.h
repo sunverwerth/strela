@@ -5,6 +5,7 @@
 
 namespace Strela {
     class AstExpr;
+    class IStmtVisitor;
 
     class AstIfStmt: public AstStmt {
     public:
@@ -15,7 +16,7 @@ namespace Strela {
             AstStmt* falseBranch
         ): AstStmt(startToken), condition(condition), trueBranch(trueBranch), falseBranch(falseBranch) {}
         STRELA_GET_TYPE(Strela::AstIfStmt, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
     public:
         AstExpr* condition;

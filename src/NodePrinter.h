@@ -1,12 +1,14 @@
 #ifndef Strela_NodePrinter_h
 #define Strela_NodePrinter_h
 
-#include "NodeVisitor.h"
+#include "IStmtVisitor.h"
+#include "IExprVisitor.h"
+
 
 #include <string>
 
 namespace Strela {
-    class NodePrinter: public NodeVisitor {
+    class NodePrinter: public IStmtVisitor, public IExprVisitor {
     public:
         void visit(AstModDecl&) override;
         void visit(AstFuncDecl&) override;
@@ -36,6 +38,16 @@ namespace Strela {
 
         void push();
         void pop();
+
+        template<typename T> void visitChildren(T& children) {
+            for (auto&& child: children) {
+                child->accept(*this);
+            }
+        }
+
+        template<typename T> void visitChild(T& child) {
+            child->accept(*this);
+        }
 
     private:
         int indentation = 0;

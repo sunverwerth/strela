@@ -13,7 +13,7 @@ namespace Strela {
     public:
         AstEnumDecl(const Token& startToken, const std::string& name, const std::vector<AstEnumElement*>& elements): AstStmt(startToken), name(name), elements(elements) {}
         STRELA_GET_TYPE(Strela::AstEnumDecl, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
     public:
         std::string name;

@@ -10,7 +10,7 @@ namespace Strela {
     public:
         AstBlockStmt(const Token& startToken, const std::vector<AstStmt*>& stmts): AstStmt(startToken), stmts(stmts) {}
         STRELA_GET_TYPE(Strela::AstBlockStmt, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
     public:
         std::vector<AstStmt*> stmts;

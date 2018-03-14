@@ -13,7 +13,7 @@ namespace Strela {
     public:
         AstNewExpr(const Token& startToken, AstTypeExpr* typeExpr): AstExpr(startToken), typeExpr(typeExpr) {}
         STRELA_GET_TYPE(Strela::AstNewExpr, Strela::AstExpr);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_EXPR_VISITOR;
 
     public:
         AstTypeExpr* typeExpr;

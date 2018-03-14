@@ -11,7 +11,7 @@ namespace Strela {
     public:
         AstCallExpr(const Token& startToken, AstExpr* callTarget, const std::vector<AstExpr*>& arguments): AstExpr(startToken), callTarget(callTarget), arguments(arguments) {}
         STRELA_GET_TYPE(Strela::AstCallExpr, Strela::AstExpr);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_EXPR_VISITOR;
 
     public:
         AstExpr* callTarget;

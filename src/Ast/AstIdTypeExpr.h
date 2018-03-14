@@ -12,7 +12,7 @@ namespace Strela {
     public:
         AstIdTypeExpr(const Token& startToken, const std::string& name): AstTypeExpr(startToken), name(name) {}
         STRELA_GET_TYPE(Strela::AstIdTypeExpr, Strela::AstTypeExpr);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_EXPR_VISITOR;
 
     public:
         std::string name;

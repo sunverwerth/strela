@@ -15,7 +15,7 @@ namespace Strela {
     public:
         AstVarDecl(const Token& startToken, const std::string& name, AstTypeExpr* typeExpr, AstExpr* initializer): AstStmt(startToken), name(name), typeExpr(typeExpr), initializer(initializer), declType(Types::invalid) {}
         STRELA_GET_TYPE(Strela::AstVarDecl, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
     public:
         std::string name;

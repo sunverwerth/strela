@@ -1,7 +1,7 @@
 #ifndef Strela_Ast_AstModDecl_h
 #define Strela_Ast_AstModDecl_h
 
-#include "AstNode.h"
+#include "AstStmt.h"
 #include "../Types/ModuleType.h"
 
 #include <vector>
@@ -12,8 +12,9 @@ namespace Strela {
     class AstClassDecl;
     class ModuleType;
     class AstEnumDecl;
+    class AstImportStmt;
 
-    class AstModDecl: public AstNode {
+    class AstModDecl: public AstStmt {
     public:
         AstModDecl(
             const Token& startToken,
@@ -22,10 +23,10 @@ namespace Strela {
             const std::vector<AstFuncDecl*>& functions,
             const std::vector<AstClassDecl*>& classes,
             const std::vector<AstEnumDecl*>& enums
-        ): AstNode(startToken), name(name), imports(imports), functions(functions), classes(classes), enums(enums), declType(new ModuleType(name, this)) {}
+        ): AstStmt(startToken), name(name), imports(imports), functions(functions), classes(classes), enums(enums), declType(new ModuleType(name, this)) {}
 
-        STRELA_GET_TYPE(Strela::AstModDecl, Strela::AstNode);
-        STRELA_IMPL_VISITOR;
+        STRELA_GET_TYPE(Strela::AstModDecl, Strela::AstStmt);
+        STRELA_IMPL_STMT_VISITOR;
 
         AstNode* getMember(const std::string& name);
         AstClassDecl* getClass(const std::string& name);

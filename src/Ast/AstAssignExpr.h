@@ -8,7 +8,7 @@ namespace Strela {
     public:
         AstAssignExpr(const Token& startToken, AstExpr* left, AstExpr* right): AstBinopExpr(startToken, left, right) {}
         STRELA_GET_TYPE(Strela::AstAssignExpr, Strela::AstBinopExpr);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_EXPR_VISITOR;
     };
 }
 

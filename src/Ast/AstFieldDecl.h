@@ -13,7 +13,7 @@ namespace Strela {
     public:
         AstFieldDecl(const Token& startToken, const std::string& name, AstTypeExpr* typeExpr): AstStmt(startToken), name(name), typeExpr(typeExpr) {}
         STRELA_GET_TYPE(Strela::AstFieldDecl, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
     public:
         std::string name;

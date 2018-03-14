@@ -3,6 +3,9 @@
 
 #include "AstNode.h"
 #include "../Types/types.h"
+#include "../IExprVisitor.h"
+
+#define STRELA_IMPL_EXPR_VISITOR void accept(Strela::IExprVisitor& v) override { v.visit(*this); }
 
 namespace Strela {
     class Type;
@@ -12,6 +15,7 @@ namespace Strela {
     public:
         AstExpr(const Token& startToken): AstNode(startToken), type(Types::invalid) {}
         STRELA_GET_TYPE(Strela::AstExpr, Strela::AstNode);
+        virtual void accept(IExprVisitor&) = 0;
 
     public:
         Type* type;

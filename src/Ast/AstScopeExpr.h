@@ -12,7 +12,7 @@ namespace Strela {
     public:
         AstScopeExpr(const Token& startToken, AstExpr* scopeTarget, const std::string& name): AstExpr(startToken), scopeTarget(scopeTarget), name(name) {}
         STRELA_GET_TYPE(Strela::AstScopeExpr, Strela::AstExpr);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_EXPR_VISITOR;
 
     public:
         AstExpr* scopeTarget;

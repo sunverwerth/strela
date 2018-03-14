@@ -9,7 +9,7 @@ namespace Strela {
     public:
         AstLitExpr(const Token& token): AstExpr(token), token(token) {}
         STRELA_GET_TYPE(Strela::AstLitExpr, Strela::AstExpr);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_EXPR_VISITOR;
 
     public:
         Token token;

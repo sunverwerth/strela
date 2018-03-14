@@ -16,7 +16,7 @@ namespace Strela {
     public:
         AstClassDecl(const Token& startToken, const std::string& name, const std::vector<AstFuncDecl*>& methods, const std::vector<AstFieldDecl*>& fields): AstStmt(startToken), name(name), methods(methods), fields(fields), declType(new ClassType(name, this)) {}
         STRELA_GET_TYPE(Strela::AstClassDecl, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
         AstNode* getMember(const std::string& name);
         std::vector<AstFuncDecl*> getMethods(const std::string& name);

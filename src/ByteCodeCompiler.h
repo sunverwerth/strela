@@ -1,15 +1,18 @@
 #ifndef Strela_ByteCodeCompiler_h
 #define Strela_ByteCodeCompiler_h
 
-#include "NodeVisitor.h"
+#include "IStmtVisitor.h"
+#include "IExprVisitor.h"
 
 #include <string>
 #include <map>
 
 namespace Strela {
     class ByteCodeChunk;
+    class AstExpr;
+    class AstNode;
 
-    class ByteCodeCompiler: public NodeVisitor {
+    class ByteCodeCompiler: public IStmtVisitor, public IExprVisitor {
     public:
         ByteCodeCompiler(ByteCodeChunk&);
 
@@ -38,6 +41,16 @@ namespace Strela {
         void visit(AstUnaryExpr&) override;
         void visit(AstEnumDecl&) override;
         void visit(AstEnumElement&) override;
+
+        template<typename T> void visitChildren(T& children) {
+            for (auto&& child: children) {
+                child->accept(*this);
+            }
+        }
+
+        template<typename T> void visitChild(T& child) {
+            child->accept(*this);
+        }
 
     private:
         bool tryCompileAsConst(AstExpr& n);

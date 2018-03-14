@@ -8,7 +8,7 @@ namespace Strela {
     public:
         AstPostfixExpr(const Token& startToken, AstExpr* target): AstExpr(startToken), target(target) {}
         STRELA_GET_TYPE(Strela::AstPostfixExpr, Strela::AstExpr);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_EXPR_VISITOR;
 
     public:
         AstExpr* target;

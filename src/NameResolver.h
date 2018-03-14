@@ -1,12 +1,14 @@
 #ifndef Strela_NameResolver_h
 #define Strela_NameResolver_h
 
-#include "NodeVisitor.h"
+#include "IStmtVisitor.h"
+#include "IExprVisitor.h"
+
 
 namespace Strela {
     class Scope;
 
-    class NameResolver: public NodeVisitor {
+    class NameResolver: public IStmtVisitor, public IExprVisitor {
     public:
         NameResolver(Scope* globals);
 
@@ -35,6 +37,16 @@ namespace Strela {
         void visit(AstUnaryExpr&) override;
         void visit(AstEnumDecl&) override;
         void visit(AstEnumElement&) override;
+
+        template<typename T> void visitChildren(T& children) {
+            for (auto&& child: children) {
+                child->accept(*this);
+            }
+        }
+
+        template<typename T> void visitChild(T& child) {
+            child->accept(*this);
+        }
 
     private:
         Scope* scope;

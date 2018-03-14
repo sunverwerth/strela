@@ -1,15 +1,20 @@
 #ifndef Strela_TypeChecker_h
 #define Strela_TypeChecker_h
 
-#include "NodeVisitor.h"
+#include "IStmtVisitor.h"
+#include "IExprVisitor.h"
+
 
 #include <string>
 #include <vector>
 
 namespace Strela {
     class Type;
+    class AstNode;
+    class AstStmt;
+    class AstExpr;
 
-    class TypeChecker: public NodeVisitor {
+    class TypeChecker: public IStmtVisitor, public IExprVisitor {
     public:
         TypeChecker();
 
@@ -38,6 +43,16 @@ namespace Strela {
         void visit(AstUnaryExpr&) override;
         void visit(AstEnumDecl&) override;
         void visit(AstEnumElement&) override;
+
+        template<typename T> void visitChildren(T& children) {
+            for (auto&& child: children) {
+                child->accept(*this);
+            }
+        }
+
+        template<typename T> void visitChild(T& child) {
+            child->accept(*this);
+        }
 
     private:
 		AstFuncDecl* findOverload(AstExpr* target, const std::vector<Type*>& argtypes);

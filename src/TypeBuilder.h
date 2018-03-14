@@ -1,10 +1,12 @@
 #ifndef Strela_TypeBuilder_h
 #define Strela_TypeBuilder_h
 
-#include "NodeVisitor.h"
+#include "IStmtVisitor.h"
+#include "IExprVisitor.h"
+
 
 namespace Strela {
-    class TypeBuilder: public NodeVisitor {
+    class TypeBuilder: public IStmtVisitor, public IExprVisitor {
     public:
         TypeBuilder();
 
@@ -33,6 +35,16 @@ namespace Strela {
         void visit(AstUnaryExpr&) override;
         void visit(AstEnumDecl&) override;
         void visit(AstEnumElement&) override;
+
+        template<typename T> void visitChildren(T& children) {
+            for (auto&& child: children) {
+                child->accept(*this);
+            }
+        }
+
+        template<typename T> void visitChild(T& child) {
+            child->accept(*this);
+        }
     };
 }
 #endif

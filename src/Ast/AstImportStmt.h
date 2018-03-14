@@ -11,7 +11,7 @@ namespace Strela {
     public:
         AstImportStmt(const Token& startToken, const std::vector<std::string>& parts, bool all): AstStmt(startToken), parts(parts), all(all) {}
         STRELA_GET_TYPE(Strela::AstImportStmt, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
         std::string getFullName(const char* separator = ".") {
             std::string result;

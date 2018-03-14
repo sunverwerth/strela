@@ -10,7 +10,7 @@ namespace Strela {
     public:
         AstEnumElement(const Token& startToken): AstStmt(startToken), name(startToken.value) {}
         STRELA_GET_TYPE(Strela::AstEnumElement, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
     public:
         std::string name;

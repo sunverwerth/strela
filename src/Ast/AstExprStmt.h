@@ -10,7 +10,7 @@ namespace Strela {
     public:
         AstExprStmt(const Token& startToken, AstExpr* expression): AstStmt(startToken), expression(expression) {}
         STRELA_GET_TYPE(Strela::AstExprStmt, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
     public:
         AstExpr* expression;

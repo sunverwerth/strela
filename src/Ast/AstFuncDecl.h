@@ -20,7 +20,7 @@ namespace Strela {
     public:
         AstFuncDecl(const Token& startToken, const std::string& name, const std::vector<AstParam*>& params, AstTypeExpr* returnTypeExpr, const std::vector<AstStmt*>& stmts): AstStmt(startToken), name(name), params(params), returnTypeExpr(returnTypeExpr), stmts(stmts), declType(Types::invalid), returnType(Types::invalid) {}
         STRELA_GET_TYPE(Strela::AstFuncDecl, Strela::AstStmt);
-        STRELA_IMPL_VISITOR;
+        STRELA_IMPL_STMT_VISITOR;
 
     public:
         bool isExported = false;
