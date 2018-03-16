@@ -41,6 +41,8 @@ namespace Strela {
         AstVarDecl* referencedVar = nullptr;
         AstFuncDecl* referencedFunction = nullptr;
         AstModDecl* referencedModule = nullptr;
+        AstEnumDecl* referencedEnum = nullptr;
+        AstEnumElement* referencedEnumElement = nullptr;
         AstExpr* nodeParent = nullptr;
 
         std::vector<AstFuncDecl*> candidates;

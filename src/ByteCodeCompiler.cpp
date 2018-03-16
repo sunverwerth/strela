@@ -240,6 +240,9 @@ namespace Strela {
         else if (n.referencedField) {
             chunk.addOp(Opcode::Field, n.referencedField->index);
         }
+        else if (n.referencedEnumElement) {
+            chunk.addOp(Opcode::I32, n.referencedEnumElement->index);
+        }
         else {
             error(n, "Invalid scope expr");
         }

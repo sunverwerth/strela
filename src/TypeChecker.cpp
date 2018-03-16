@@ -108,6 +108,11 @@ namespace Strela {
                 n.isStatic = true;
                 n.referencedModule = mod;
             }
+            else if (auto en = n.symbol->node->as<AstEnumDecl>()) {
+                n.type = en->declType;
+                n.isStatic = true;
+                n.referencedEnum = en;
+            }
             else {
                 error(n, "Unhandled symbol");
             }
@@ -437,32 +442,14 @@ namespace Strela {
                 error(n, "Class '" + cls->name + "' has no member named '" + n.name + "'.");
             }
         }
-        else if (auto mod = ttype->as<ModuleType>()) {
-            if (auto member = mod->module->getMember(n.name)) {
-                if (auto method = member->as<AstFuncDecl>()) {
-                    n.isStatic = true;
-                    n.nodeParent = n.scopeTarget;
-                    n.candidates = mod->module->getFunctions(n.name);
-                    if (n.candidates.size() == 1) {
-                        n.type = n.candidates[0]->declType;
-                        n.referencedFunction = n.candidates[0];
-                    }
-                    else {
-                        n.type = Types::invalid;
-                    }
-                }
-                else if (auto field = member->as<AstFieldDecl>()) {
-                    n.type = field->declType;
-                    n.isStatic = false;
-                    n.nodeParent = n.scopeTarget;
-                    n.referencedField = field;
-                }
-                else {
-                    error(n, "TODO");
-                }
+        else if (auto en = ttype->as<EnumType>()) {
+            if (auto member = en->enumDecl->getMember(n.name)) {
+                n.isStatic = true;
+                n.type = ttype;
+                n.referencedEnumElement = member;
             }
             else {
-                error(n, "Module '" + mod->name + "' has no member named '" + n.name + "'.");
+                error(n, "Enum '" + cls->name + "' has no member named '" + n.name + "'.");
             }
         }
         else {

@@ -14,6 +14,7 @@ namespace Strela {
 
     public:
         std::string name;
+        int index = 0;
     };
 }
 

@@ -438,7 +438,9 @@ namespace Strela {
         eat(TokenType::CurlyOpen);
         std::vector<AstEnumElement*> elements;
         while (match(TokenType::Identifier)) {
-            elements.push_back(new AstEnumElement(eat(TokenType::Identifier)));
+            auto el = new AstEnumElement(eat(TokenType::Identifier));
+            el->index = elements.size();
+            elements.push_back(el);
 
             if (match(TokenType::Comma)) {
                 eat();

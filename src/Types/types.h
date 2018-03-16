@@ -13,6 +13,7 @@
 #include "ModuleType.h"
 #include "InvalidType.h"
 #include "ArrayType.h"
+#include "EnumType.h"
 
 namespace Strela {
     namespace Types {
