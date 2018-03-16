@@ -254,7 +254,7 @@ namespace Strela {
     }
 
     AstTypeExpr* Parser::parseTypeExpr() {
-        AstTypeExpr* expression;
+        AstTypeExpr* expression = nullptr;
         if (match(TokenType::Identifier)) {
             auto start = eat();
             expression = new AstIdTypeExpr(start, start.value);

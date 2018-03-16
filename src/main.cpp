@@ -78,9 +78,10 @@ Scope* makeGlobalScope() {
 
 namespace Strela {
     int g_timeout = -1;
+    std::string g_homePath;
+    std::string g_searchPath;
 }
 
-const char* g_searchPath = nullptr;
 
 std::string getImportFile(const std::string& baseFilename, AstImportStmt* import) {
 
@@ -91,8 +92,12 @@ std::string getImportFile(const std::string& baseFilename, AstImportStmt* import
     // import Foo.Bar;
     // 1) ~/MyProj/Foo/Bar.strela
     // 2) ~/MyProj/Foo.strela (import member Bar)
-    // 5) ~/.strela/Foo/Bar.strela
-    // 6) ~/.strela/Foo.strela (import member Bar)
+    // 3) <homepath>/.strela/Foo/Bar.strela
+    // 4) <homepath>/.strela/Foo.strela (import member Bar)
+    // 5) /usr/local/lib/strela/Foo/Bar.strela
+    // 6) /usr/local/lib/strela/Foo.strela (import member Bar)
+    // 7) <searchpath>/Foo/Bar.strela
+    // 8) <searchpath>/Foo.strela (import member Bar)
     
     std::ifstream file;
 
@@ -103,12 +108,21 @@ std::string getImportFile(const std::string& baseFilename, AstImportStmt* import
         relativeBase = baseFilename.substr(0, lastSlash) + "/";
     }
 
+    // local
     std::vector<std::pair<std::string, bool>> tries;
     tries.push_back({relativeBase + import->getFullName("/") + ".strela", true});
     if (!import->all) tries.push_back({relativeBase + import->getBaseName("/") + ".strela", false});
+
+    // home
+    tries.push_back({Strela::g_homePath + "/.strela/" + import->getFullName("/") + ".strela", true});
+    if (!import->all) tries.push_back({ Strela::g_homePath + "/.strela/" + import->getBaseName("/") + ".strela", false});
+    
+    // global
     tries.push_back({"/usr/local/lib/strela/" + import->getFullName("/") + ".strela", true});
     if (!import->all) tries.push_back({"/usr/local/lib/strela/" + import->getBaseName("/") + ".strela", false});
-    if (g_searchPath) {
+    
+    // additional
+    if (g_searchPath.size()) {
         tries.push_back({g_searchPath + import->getFullName("/") + ".strela", true});
         if (!import->all) tries.push_back({g_searchPath + import->getBaseName("/") + ".strela", false});
     }
@@ -125,6 +139,12 @@ std::string getImportFile(const std::string& baseFilename, AstImportStmt* import
 }
 
 int main(int argc, char** argv) {
+
+    #ifdef _WIN32
+    Strela::g_homePath = std::string(getenv("HOMEDRIVE")) + getenv("HOMEPATH");
+    #else
+    Strela::g_homePath = getenv("HOME");
+    #endif
 
     std::string fileName;
     std::string byteCodePath;
