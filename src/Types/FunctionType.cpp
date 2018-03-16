@@ -24,7 +24,7 @@ namespace Strela {
         return other == this;
     }
 
-    FunctionType* FunctionType::get(AstFuncDecl* function) {
+    FunctionType* FunctionType::get(FuncDecl* function) {
         auto returnTypeExpr = function->returnTypeExpr ? function->returnTypeExpr->staticValue.type : Types::_void;
         std::vector<Type*> paramTypes;
         for (auto&& param: function->params) {

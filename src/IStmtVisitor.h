@@ -2,38 +2,38 @@
 #define Strela_IStmtVisitor_h
 
 namespace Strela {
-    class AstModDecl;
-    class AstFuncDecl;
-    class AstParam;
-    class AstVarDecl;
-    class AstRetStmt;
-    class AstBlockStmt;
-    class AstExprStmt;
-    class AstClassDecl;
-    class AstIfStmt;
-    class AstFieldDecl;
-    class AstWhileStmt;
-    class AstImportStmt;
-    class AstEnumDecl;
-    class AstEnumElement;
+    class ModDecl;
+    class FuncDecl;
+    class Param;
+    class VarDecl;
+    class RetStmt;
+    class BlockStmt;
+    class ExprStmt;
+    class ClassDecl;
+    class IfStmt;
+    class FieldDecl;
+    class WhileStmt;
+    class ImportStmt;
+    class EnumDecl;
+    class EnumElement;
 
     class IStmtVisitor {
     public:
-        virtual void visit(AstModDecl&) = 0;
-        virtual void visit(AstImportStmt&) = 0;
-        virtual void visit(AstFuncDecl&) = 0;
-        virtual void visit(AstParam&) = 0;
-        virtual void visit(AstVarDecl&) = 0;
-        virtual void visit(AstClassDecl&) = 0;
-        virtual void visit(AstFieldDecl&) = 0;
-        virtual void visit(AstEnumDecl&) = 0;
-        virtual void visit(AstEnumElement&) = 0;
+        virtual void visit(ModDecl&) = 0;
+        virtual void visit(ImportStmt&) = 0;
+        virtual void visit(FuncDecl&) = 0;
+        virtual void visit(Param&) = 0;
+        virtual void visit(VarDecl&) = 0;
+        virtual void visit(ClassDecl&) = 0;
+        virtual void visit(FieldDecl&) = 0;
+        virtual void visit(EnumDecl&) = 0;
+        virtual void visit(EnumElement&) = 0;
 
-        virtual void visit(AstRetStmt&) = 0;
-        virtual void visit(AstBlockStmt&) = 0;
-        virtual void visit(AstExprStmt&) = 0;
-        virtual void visit(AstIfStmt&) = 0;
-        virtual void visit(AstWhileStmt&) = 0;
+        virtual void visit(RetStmt&) = 0;
+        virtual void visit(BlockStmt&) = 0;
+        virtual void visit(ExprStmt&) = 0;
+        virtual void visit(IfStmt&) = 0;
+        virtual void visit(WhileStmt&) = 0;
     };
 }
 

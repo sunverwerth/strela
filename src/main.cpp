@@ -83,7 +83,7 @@ namespace Strela {
 }
 
 
-std::string getImportFile(const std::string& baseFilename, AstImportStmt* import) {
+std::string getImportFile(const std::string& baseFilename, ImportStmt* import) {
 
     // First looks up file relative to the baseFilename
     // Then looks up in user lib path
@@ -207,11 +207,11 @@ int main(int argc, char** argv) {
                 return 0;
             }
 
-            std::map<std::string, AstModDecl*> modules {
+            std::map<std::string, ModDecl*> modules {
                 { module->name, module },
             };
 
-            std::vector<AstModDecl*> processImports { module };
+            std::vector<ModDecl*> processImports { module };
             while (!processImports.empty()) {
                 auto process = processImports.back();
                 processImports.pop_back();

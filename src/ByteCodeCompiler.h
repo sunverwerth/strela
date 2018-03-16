@@ -9,38 +9,38 @@
 
 namespace Strela {
     class ByteCodeChunk;
-    class AstExpr;
-    class AstNode;
+    class Expr;
+    class Node;
 
     class ByteCodeCompiler: public IStmtVisitor, public IExprVisitor {
     public:
         ByteCodeCompiler(ByteCodeChunk&);
 
-        void visit(AstModDecl&) override;
-        void visit(AstFuncDecl&) override;
-        void visit(AstParam&) override;
-        void visit(AstVarDecl&) override;
-        void visit(AstIdExpr&) override;
-        void visit(AstRetStmt&) override;
-        void visit(AstLitExpr&) override;
-        void visit(AstBlockStmt&) override;
-        void visit(AstCallExpr&) override;
-        void visit(AstExprStmt&) override;
-        void visit(AstBinopExpr&) override;
-        void visit(AstClassDecl&) override;
-        void visit(AstScopeExpr&) override;
-        void visit(AstIfStmt&) override;
-        void visit(AstFieldDecl&) override;
-        void visit(AstNewExpr&) override;
-        void visit(AstAssignExpr&) override;
-        void visit(AstIdTypeExpr&) override;
-        void visit(AstWhileStmt&) override;
-        void visit(AstPostfixExpr&) override;
-        void visit(AstArrayTypeExpr&) override {}
-        void visit(AstImportStmt&) override {}
-        void visit(AstUnaryExpr&) override;
-        void visit(AstEnumDecl&) override;
-        void visit(AstEnumElement&) override;
+        void visit(ModDecl&) override;
+        void visit(FuncDecl&) override;
+        void visit(Param&) override;
+        void visit(VarDecl&) override;
+        void visit(IdExpr&) override;
+        void visit(RetStmt&) override;
+        void visit(LitExpr&) override;
+        void visit(BlockStmt&) override;
+        void visit(CallExpr&) override;
+        void visit(ExprStmt&) override;
+        void visit(BinopExpr&) override;
+        void visit(ClassDecl&) override;
+        void visit(ScopeExpr&) override;
+        void visit(IfStmt&) override;
+        void visit(FieldDecl&) override;
+        void visit(NewExpr&) override;
+        void visit(AssignExpr&) override;
+        void visit(IdTypeExpr&) override;
+        void visit(WhileStmt&) override;
+        void visit(PostfixExpr&) override;
+        void visit(ArrayTypeExpr&) override {}
+        void visit(ImportStmt&) override {}
+        void visit(UnaryExpr&) override;
+        void visit(EnumDecl&) override;
+        void visit(EnumElement&) override;
 
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {
@@ -53,12 +53,12 @@ namespace Strela {
         }
 
     private:
-        bool tryCompileAsConst(AstExpr& n);
-        void error(AstNode& node, const std::string& msg);
+        bool tryCompileAsConst(Expr& n);
+        void error(Node& node, const std::string& msg);
 
     private:
-        std::map<int, AstFuncDecl*> functionFixups;
-        AstFuncDecl* function = nullptr;
+        std::map<int, FuncDecl*> functionFixups;
+        FuncDecl* function = nullptr;
 
     public:
         ByteCodeChunk& chunk;

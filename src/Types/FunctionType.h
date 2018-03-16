@@ -6,7 +6,7 @@
 #include <vector>
 
 namespace Strela {
-    class AstFuncDecl;
+    class FuncDecl;
     class FunctionType: public Type {
     public:
         FunctionType(const std::vector<Type*>& paramTypes, Type* returnType);
@@ -15,7 +15,7 @@ namespace Strela {
         bool isAssignableFrom(const Type* other) const override;
         bool isCallable(const std::vector<Type*>& argTypes) const override;
 
-        static FunctionType* get(AstFuncDecl* func);
+        static FunctionType* get(FuncDecl* func);
 
     public:
         std::vector<Type*> paramTypes;

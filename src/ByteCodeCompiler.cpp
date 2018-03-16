@@ -19,7 +19,7 @@ namespace Strela {
     ByteCodeCompiler::ByteCodeCompiler(ByteCodeChunk& chunk): chunk(chunk) {
     }
 
-    void ByteCodeCompiler::visit(AstModDecl& n) {
+    void ByteCodeCompiler::visit(ModDecl& n) {
         visitChildren(n.functions);
         visitChildren(n.classes);
 
@@ -36,7 +36,7 @@ namespace Strela {
         if (!mainSymbol) {
             error(n, "No entry point");
         }
-        auto mainFunc = mainSymbol->as<AstFuncDecl>();
+        auto mainFunc = mainSymbol->as<FuncDecl>();
         if (!mainFunc) {
             error(n, "Entry point main must be a function.");
         }
@@ -44,11 +44,11 @@ namespace Strela {
         chunk.main = mainFunc->opcodeStart;
     }
 
-    void ByteCodeCompiler::visit(AstClassDecl& n) {
+    void ByteCodeCompiler::visit(ClassDecl& n) {
         visitChildren(n.methods);
     }
 
-    void ByteCodeCompiler::visit(AstFuncDecl& n) {
+    void ByteCodeCompiler::visit(FuncDecl& n) {
         auto oldfunc = function;
         function = &n;
         n.opcodeStart = chunk.opcodes.size();
@@ -75,17 +75,17 @@ namespace Strela {
         function = oldfunc;
     }
 
-    void ByteCodeCompiler::visit(AstParam&) {
+    void ByteCodeCompiler::visit(Param&) {
     }
 
-    void ByteCodeCompiler::visit(AstVarDecl& n) {
+    void ByteCodeCompiler::visit(VarDecl& n) {
         if (n.initializer) {
             n.initializer->accept(*this);
             chunk.addOp(Opcode::StoreVar, n.index);
         }
     }
 
-    void ByteCodeCompiler::visit(AstIdExpr& n) {
+    void ByteCodeCompiler::visit(IdExpr& n) {
         if (tryCompileAsConst(n)) return;
 
         if (n.referencedFunction) {
@@ -100,14 +100,14 @@ namespace Strela {
         }
     }
 
-    void ByteCodeCompiler::visit(AstExprStmt& n) {
+    void ByteCodeCompiler::visit(ExprStmt& n) {
         visitChild(n.expression);
         if (n.expression->type != Types::_void) {
             chunk.addOp(Opcode::Pop);
         }
     }
 
-    void ByteCodeCompiler::visit(AstCallExpr& n) {
+    void ByteCodeCompiler::visit(CallExpr& n) {
         for (size_t i = n.arguments.size(); i > 0; --i) {
             n.arguments[i - 1]->accept(*this);
         }
@@ -122,7 +122,7 @@ namespace Strela {
         }
     }
 
-    void ByteCodeCompiler::visit(AstRetStmt& n) {
+    void ByteCodeCompiler::visit(RetStmt& n) {
         if (n.expression) {
             visitChild(n.expression);
             chunk.addOp(Opcode::Return, function->params.size());
@@ -132,7 +132,7 @@ namespace Strela {
         }
     }
 
-    void ByteCodeCompiler::visit(AstLitExpr& n) {
+    void ByteCodeCompiler::visit(LitExpr& n) {
         int index = 0;
         if (n.type == Types::u8) {
             chunk.addOp(Opcode::U8, pack(n.staticValue.u8));
@@ -180,11 +180,11 @@ namespace Strela {
         else error(n, "Invalid literal type");
     }
 
-    void ByteCodeCompiler::visit(AstBlockStmt& n) {
+    void ByteCodeCompiler::visit(BlockStmt& n) {
         visitChildren(n.stmts);
     }
 
-    void ByteCodeCompiler::visit(AstBinopExpr& n) {
+    void ByteCodeCompiler::visit(BinopExpr& n) {
         if (tryCompileAsConst(n)) return;
 
         visitChild(n.left);
@@ -231,7 +231,7 @@ namespace Strela {
         }
     }
 
-    void ByteCodeCompiler::visit(AstScopeExpr& n) {
+    void ByteCodeCompiler::visit(ScopeExpr& n) {
         visitChild(n.scopeTarget);
         if (n.referencedFunction) {
             auto index = chunk.addOp(Opcode::Const, 255);
@@ -248,7 +248,7 @@ namespace Strela {
         }
     }
 
-    void ByteCodeCompiler::visit(AstIfStmt& n) {
+    void ByteCodeCompiler::visit(IfStmt& n) {
         visitChild(n.condition);
         auto pos = chunk.addOp(Opcode::Const, 0);
         chunk.addOp(Opcode::JmpIfNot);
@@ -260,14 +260,14 @@ namespace Strela {
         }
     }
 
-    void ByteCodeCompiler::visit(AstFieldDecl& n) {
+    void ByteCodeCompiler::visit(FieldDecl& n) {
     }
 
-    void ByteCodeCompiler::visit(AstNewExpr& n) {
+    void ByteCodeCompiler::visit(NewExpr& n) {
         chunk.addOp(Opcode::New, n.type->as<ClassType>()->_class->fields.size());
     }
 
-    void ByteCodeCompiler::visit(AstAssignExpr& n) {
+    void ByteCodeCompiler::visit(AssignExpr& n) {
         visitChild(n.right);
         chunk.addOp(Opcode::Repeat);
         if (n.left->referencedVar) {
@@ -290,10 +290,10 @@ namespace Strela {
         }
     }
 
-    void ByteCodeCompiler::visit(AstIdTypeExpr&) {
+    void ByteCodeCompiler::visit(IdTypeExpr&) {
     }
 
-    void ByteCodeCompiler::visit(AstWhileStmt& n) {
+    void ByteCodeCompiler::visit(WhileStmt& n) {
         auto startPos = chunk.opcodes.size();
         visitChild(n.condition);
         auto pos = chunk.addOp(Opcode::Const, 0);
@@ -305,7 +305,7 @@ namespace Strela {
         chunk.writeArgument(pos, index);
     }
 
-    void ByteCodeCompiler::visit(AstPostfixExpr& n) {
+    void ByteCodeCompiler::visit(PostfixExpr& n) {
         visitChild(n.target);
         chunk.addOp(Opcode::Repeat);
         chunk.addOp(Opcode::U8, 1);
@@ -336,7 +336,7 @@ namespace Strela {
         }
     }
 
-    void ByteCodeCompiler::visit(AstUnaryExpr& n) {
+    void ByteCodeCompiler::visit(UnaryExpr& n) {
         if (tryCompileAsConst(n)) return;
 
         visitChild(n.target);
@@ -355,14 +355,14 @@ namespace Strela {
         error(n, "Unhandled unary prefix operator '" + n.startToken.value + "'.");
     }
 
-    void ByteCodeCompiler::visit(AstEnumDecl& n) {
+    void ByteCodeCompiler::visit(EnumDecl& n) {
         visitChildren(n.elements);
     }
 
-    void ByteCodeCompiler::visit(AstEnumElement& n) {
+    void ByteCodeCompiler::visit(EnumElement& n) {
     }
 
-    bool ByteCodeCompiler::tryCompileAsConst(AstExpr& n) {
+    bool ByteCodeCompiler::tryCompileAsConst(Expr& n) {
         if (n.isStatic) {
             if (n.type == Types::i32) {
                 chunk.addOp(Opcode::I32, pack(n.staticValue.i32));
@@ -375,7 +375,7 @@ namespace Strela {
         return false;
     }
 
-    void ByteCodeCompiler::error(AstNode& n, const std::string& msg) {
+    void ByteCodeCompiler::error(Node& n, const std::string& msg) {
         throw Exception("ByteCodeCompiler: " + msg);
     }
 }

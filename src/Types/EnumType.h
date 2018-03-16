@@ -4,17 +4,17 @@
 #include "Type.h"
 
 namespace Strela {
-    class AstEnumDecl;
+    class EnumDecl;
 
     class EnumType: public Type {
     public:
-        EnumType(AstEnumDecl* enumDecl);
+        EnumType(EnumDecl* enumDecl);
         STRELA_GET_TYPE(Strela::EnumType, Strela::Type);
 
         bool isAssignableFrom(const Type* other) const override;
 
     public:
-        AstEnumDecl* enumDecl;
+        EnumDecl* enumDecl;
     };
 }
 #endif

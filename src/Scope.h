@@ -5,7 +5,7 @@
 
 namespace Strela {
     class Type;
-    class AstNode;
+    class Node;
 
     enum class SymbolKind {
         Type,
@@ -15,13 +15,13 @@ namespace Strela {
     class Symbol {
     public:
         Symbol(Type* type): kind(SymbolKind::Type), type(type) {}
-        Symbol(AstNode* node): kind(SymbolKind::Node), node(node) {}
+        Symbol(Node* node): kind(SymbolKind::Node), node(node) {}
         
     public:
         SymbolKind kind;
         union {
             Type* type;
-            AstNode* node;
+            Node* node;
         };
 		// for overloaded functions
 		Symbol* next = nullptr;
@@ -35,7 +35,7 @@ namespace Strela {
         Scope* getParent();
         void setParent(Scope* p);
         void add(const std::string& name, Type* type);
-        void add(const std::string& name, AstNode* node);
+        void add(const std::string& name, Node* node);
         Symbol* find(const std::string& name);
     
     private:

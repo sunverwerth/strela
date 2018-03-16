@@ -1,6 +1,6 @@
 #include "Scope.h"
 #include "exceptions.h"
-#include "Ast/AstFuncDecl.h"
+#include "Ast/FuncDecl.h"
 
 namespace Strela {
     Scope* Scope::getParent() {
@@ -17,14 +17,14 @@ namespace Strela {
         add(name, new Symbol(type));
     }
 
-    void Scope::add(const std::string& name, AstNode* node) {
+    void Scope::add(const std::string& name, Node* node) {
         add(name, new Symbol(node));
     }
 
     void Scope::add(const std::string& name, Symbol* symbol) {
         auto it = symbols.find(name);
         if (it != symbols.end()) {
-			if (symbol->kind == SymbolKind::Node && symbol->node->as<AstFuncDecl>() && it->second->kind == SymbolKind::Node && it->second->node->as<AstFuncDecl>()) {
+			if (symbol->kind == SymbolKind::Node && symbol->node->as<FuncDecl>() && it->second->kind == SymbolKind::Node && it->second->node->as<FuncDecl>()) {
 				symbol->next = it->second;
 				it->second = symbol;
 			}

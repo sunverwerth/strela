@@ -4,7 +4,7 @@
 #include <iostream>
 
 namespace Strela {
-    void NodePrinter::visit(AstModDecl& n) {
+    void NodePrinter::visit(ModDecl& n) {
         std::cout << "module " << n.name << " {\n";
         push();
         for (auto&& en: n.enums) {
@@ -23,7 +23,7 @@ namespace Strela {
         std::cout << "}\n";
     }
 
-    void NodePrinter::visit(AstClassDecl& n) {
+    void NodePrinter::visit(ClassDecl& n) {
         if (n.isExported) {
             std::cout << "export ";
         }
@@ -41,7 +41,7 @@ namespace Strela {
         std::cout << indent << "}\n";
     }
 
-    void NodePrinter::visit(AstFuncDecl& n) {
+    void NodePrinter::visit(FuncDecl& n) {
         if (n.isExported) {
             std::cout << "export ";
         }
@@ -69,7 +69,7 @@ namespace Strela {
         std::cout << indent << "}\n";
     }
 
-    void NodePrinter::visit(AstBlockStmt& n) {
+    void NodePrinter::visit(BlockStmt& n) {
         std::cout << "{\n";
         push();
         for (auto&& stmt: n.stmts) {
@@ -80,12 +80,12 @@ namespace Strela {
         std::cout << indent << "}\n";
     }
 
-    void NodePrinter::visit(AstParam& n) {
+    void NodePrinter::visit(Param& n) {
         std::cout << n.name << ": ";
         visitChild(n.typeExpr);
     }
 
-    void NodePrinter::visit(AstVarDecl& n) {
+    void NodePrinter::visit(VarDecl& n) {
         std::cout << "var " << n.name;
         if (n.typeExpr) {
             std::cout << ": ";
@@ -98,16 +98,16 @@ namespace Strela {
         std::cout << ";\n";
     }
 
-    void NodePrinter::visit(AstIdExpr& n) {
+    void NodePrinter::visit(IdExpr& n) {
         std::cout << n.name;
     }
 
-    void NodePrinter::visit(AstExprStmt& n) {
+    void NodePrinter::visit(ExprStmt& n) {
         visitChild(n.expression);
         std::cout << ";\n";
     }
 
-    void NodePrinter::visit(AstCallExpr& n) {
+    void NodePrinter::visit(CallExpr& n) {
         visitChild(n.callTarget);
         std::cout << "(";
         for (auto&& arg: n.arguments) {
@@ -119,7 +119,7 @@ namespace Strela {
         std::cout << ")";
     }
 
-    void NodePrinter::visit(AstRetStmt& n) {
+    void NodePrinter::visit(RetStmt& n) {
         std::cout << "return ";
         if (n.expression) {
             visitChild(n.expression);
@@ -130,7 +130,7 @@ namespace Strela {
 
     std::string escape(const std::string&);
 
-    void NodePrinter::visit(AstLitExpr& n) {
+    void NodePrinter::visit(LitExpr& n) {
         if (n.token.type == TokenType::String) {
             std::cout << "\"" << escape(n.token.value) << "\"";
         }
@@ -139,18 +139,18 @@ namespace Strela {
         }
     }
 
-    void NodePrinter::visit(AstBinopExpr& n) {
+    void NodePrinter::visit(BinopExpr& n) {
         visitChild(n.left);
         std::cout << " " << n.startToken.value << " ";
         visitChild(n.right);
     }
 
-    void NodePrinter::visit(AstScopeExpr& n) {
+    void NodePrinter::visit(ScopeExpr& n) {
         visitChild(n.scopeTarget);
         std::cout << "." << n.name;
     }
 
-    void NodePrinter::visit(AstIfStmt& n) {
+    void NodePrinter::visit(IfStmt& n) {
         std::cout << "if (";
         visitChild(n.condition);
         std::cout << ") ";
@@ -161,45 +161,45 @@ namespace Strela {
         }
     }
 
-    void NodePrinter::visit(AstFieldDecl& n) {
+    void NodePrinter::visit(FieldDecl& n) {
         std::cout << "var " << n.name << ": ";
         visitChild(n.typeExpr);
         std::cout << ";\n";
     }
 
-    void NodePrinter::visit(AstNewExpr& n) {
+    void NodePrinter::visit(NewExpr& n) {
         std::cout << "new ";
         visitChild(n.typeExpr);
     }
 
-    void NodePrinter::visit(AstAssignExpr& n) {
+    void NodePrinter::visit(AssignExpr& n) {
         visitChild(n.left);
         std::cout << " = ";
         visitChild(n.right);
     }
 
-    void NodePrinter::visit(AstIdTypeExpr& n) {
+    void NodePrinter::visit(IdTypeExpr& n) {
         std::cout << n.name;
     }
 
-    void NodePrinter::visit(AstWhileStmt& n) {
+    void NodePrinter::visit(WhileStmt& n) {
         std::cout << "while (";
         visitChild(n.condition);
         std::cout << ") ";
         visitChild(n.body);
     }
 
-    void NodePrinter::visit(AstPostfixExpr& n) {
+    void NodePrinter::visit(PostfixExpr& n) {
         visitChild(n.target);
         std::cout << n.startToken.value;
     }
 
-    void NodePrinter::visit(AstArrayTypeExpr& n) {
+    void NodePrinter::visit(ArrayTypeExpr& n) {
         visitChild(n.base);
         std::cout << "[]";
     }
 
-    void NodePrinter::visit(AstImportStmt& n) {
+    void NodePrinter::visit(ImportStmt& n) {
         std::cout << "import ";
         for (auto&& part: n.parts) {
             std::cout << part;
@@ -211,12 +211,12 @@ namespace Strela {
         std::cout << ";\n";
     }
 
-    void NodePrinter::visit(AstUnaryExpr& n) {
+    void NodePrinter::visit(UnaryExpr& n) {
         std::cout << n.startToken.value;
         visitChild(n.target);
     }
 
-    void NodePrinter::visit(AstEnumDecl& n) {
+    void NodePrinter::visit(EnumDecl& n) {
         std::cout << "enum {\n";
         push();
         for (auto&& el: n.elements) {
@@ -227,7 +227,7 @@ namespace Strela {
         std::cout << indent <<  "}\n";
     }
 
-    void NodePrinter::visit(AstEnumElement& n) {
+    void NodePrinter::visit(EnumElement& n) {
         std::cout << n.name << ",\n";
     }
 

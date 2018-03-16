@@ -11,12 +11,12 @@ namespace Strela {
     TypeChecker::TypeChecker() {
     }
 
-    void TypeChecker::visit(AstModDecl& n) {
+    void TypeChecker::visit(ModDecl& n) {
         visitChildren(n.functions);
         visitChildren(n.classes);
     }
 
-    void TypeChecker::visit(AstClassDecl& n) {
+    void TypeChecker::visit(ClassDecl& n) {
         auto oldclass = _class;
         _class = &n;
         
@@ -26,7 +26,7 @@ namespace Strela {
         _class = oldclass;
     }
 
-    void TypeChecker::visit(AstFuncDecl& n) {
+    void TypeChecker::visit(FuncDecl& n) {
         auto oldfunction = function;
         function = &n;
 
@@ -51,11 +51,11 @@ namespace Strela {
         function = oldfunction;
     }
 
-    void TypeChecker::visit(AstParam& n) {
+    void TypeChecker::visit(Param& n) {
         visitChild(n.typeExpr);
     }
 
-    void TypeChecker::visit(AstVarDecl& n) {
+    void TypeChecker::visit(VarDecl& n) {
         if (n.typeExpr) {
             visitChild(n.typeExpr);
         }
@@ -71,18 +71,18 @@ namespace Strela {
         }
     }
 
-    void TypeChecker::visit(AstIdExpr& n) {
+    void TypeChecker::visit(IdExpr& n) {
         if (n.symbol->kind == SymbolKind::Type) {
             n.type = Types::typetype;
             n.isStatic = true;
             n.staticValue.type = n.symbol->type;
         }
         else {
-            if (auto fun = n.symbol->node->as<AstFuncDecl>()) {
+            if (auto fun = n.symbol->node->as<FuncDecl>()) {
                 n.isStatic = true;
                 auto cur = n.symbol;
                 while (cur) {
-                    n.candidates.push_back(cur->node->as<AstFuncDecl>());
+                    n.candidates.push_back(cur->node->as<FuncDecl>());
                     cur = cur->next;
                 }
                 if (n.candidates.size() == 1) {
@@ -93,22 +93,22 @@ namespace Strela {
                     n.type = Types::invalid;
                 }
             }
-            else if (auto param = n.symbol->node->as<AstParam>()) {
+            else if (auto param = n.symbol->node->as<Param>()) {
                 n.type = param->declType;
                 n.isStatic = false;
                 n.referencedParam = param;
             }
-            else if (auto var = n.symbol->node->as<AstVarDecl>()) {
+            else if (auto var = n.symbol->node->as<VarDecl>()) {
                 n.type = var->declType;
                 n.isStatic = false;
                 n.referencedVar = var;
             }
-            else if (auto mod = n.symbol->node->as<AstModDecl>()) {
+            else if (auto mod = n.symbol->node->as<ModDecl>()) {
                 n.type = mod->declType;
                 n.isStatic = true;
                 n.referencedModule = mod;
             }
-            else if (auto en = n.symbol->node->as<AstEnumDecl>()) {
+            else if (auto en = n.symbol->node->as<EnumDecl>()) {
                 n.type = en->declType;
                 n.isStatic = true;
                 n.referencedEnum = en;
@@ -119,8 +119,8 @@ namespace Strela {
         }
     }
 
-    AstFuncDecl* TypeChecker::findOverload(AstExpr* target, const std::vector<Type*>& argTypes) {
-        std::vector<AstFuncDecl*> candidates;
+    FuncDecl* TypeChecker::findOverload(Expr* target, const std::vector<Type*>& argTypes) {
+        std::vector<FuncDecl*> candidates;
         int numFound = 0;
         for (auto&& candidate: target->candidates) {
             if (candidate->params.size() != argTypes.size()) {
@@ -191,7 +191,7 @@ namespace Strela {
         return candidates.front();
     }
 
-    void TypeChecker::visit(AstCallExpr& n) {
+    void TypeChecker::visit(CallExpr& n) {
         visitChildren(n.arguments);
         visitChild(n.callTarget);
 
@@ -215,7 +215,7 @@ namespace Strela {
         }
     }
 
-    void TypeChecker::visit(AstRetStmt& n) {
+    void TypeChecker::visit(RetStmt& n) {
         n.returns = true;
 
         if (n.expression) {
@@ -229,11 +229,11 @@ namespace Strela {
         }
     }
 
-    void TypeChecker::visit(AstExprStmt& n) {
+    void TypeChecker::visit(ExprStmt& n) {
         visitChild(n.expression);
     }
 
-    void TypeChecker::visit(AstLitExpr& n) {
+    void TypeChecker::visit(LitExpr& n) {
         switch (n.token.type) {
             case TokenType::Integer: {
                 uint64_t num = std::strtoull(n.token.value.c_str(), nullptr, 10);
@@ -290,7 +290,7 @@ namespace Strela {
         }
     }
 
-    void TypeChecker::visit(AstBlockStmt& n) {
+    void TypeChecker::visit(BlockStmt& n) {
         auto oldblock = block;
         block = &n;
         bool unreachableWarning = false;
@@ -305,7 +305,7 @@ namespace Strela {
         block = oldblock;
     }
 
-    void TypeChecker::visit(AstBinopExpr& n) {
+    void TypeChecker::visit(BinopExpr& n) {
         visitChild(n.left);
         visitChild(n.right);
 
@@ -385,17 +385,17 @@ namespace Strela {
         }
     }
 
-    void TypeChecker::visit(AstAssignExpr& n) {
+    void TypeChecker::visit(AssignExpr& n) {
         visitChild(n.left);
         visitChild(n.right);
     }
 
-    void TypeChecker::visit(AstScopeExpr& n) {
+    void TypeChecker::visit(ScopeExpr& n) {
         visitChild(n.scopeTarget);
         auto ttype = n.scopeTarget->type;
         if (auto mod = ttype->as<ModuleType>()) {
             if (auto member = mod->module->getMember(n.name)) {
-                if (auto function = member->as<AstFuncDecl>()) {
+                if (auto function = member->as<FuncDecl>()) {
                     n.isStatic = true;
                     n.candidates = mod->module->getFunctions(n.name);
                     if (n.candidates.size() == 1) {
@@ -416,7 +416,7 @@ namespace Strela {
         }
         else if (auto cls = ttype->as<ClassType>()) {
             if (auto member = cls->_class->getMember(n.name)) {
-                if (auto method = member->as<AstFuncDecl>()) {
+                if (auto method = member->as<FuncDecl>()) {
                     n.isStatic = true;
                     n.nodeParent = n.scopeTarget;
                     n.candidates = cls->_class->getMethods(n.name);
@@ -428,7 +428,7 @@ namespace Strela {
                         n.type = Types::invalid;
                     }
                 }
-                else if (auto field = member->as<AstFieldDecl>()) {
+                else if (auto field = member->as<FieldDecl>()) {
                     n.type = field->declType;
                     n.isStatic = false;
                     n.nodeParent = n.scopeTarget;
@@ -457,7 +457,7 @@ namespace Strela {
         }
     }
 
-    void TypeChecker::visit(AstIfStmt& n) {
+    void TypeChecker::visit(IfStmt& n) {
         visitChild(n.condition);
         if (n.condition->type != Types::boolean) {
             error(*n.condition, "Condition must yield boolean value.");
@@ -470,11 +470,11 @@ namespace Strela {
         }
     }
 
-    void TypeChecker::visit(AstFieldDecl& n) {
+    void TypeChecker::visit(FieldDecl& n) {
         visitChild(n.typeExpr);
     }
 
-    void TypeChecker::visit(AstNewExpr& n) {
+    void TypeChecker::visit(NewExpr& n) {
         visitChild(n.typeExpr);
         n.type = n.typeExpr->staticValue.type;
 
@@ -483,15 +483,15 @@ namespace Strela {
         }
     }
 
-    void TypeChecker::visit(AstIdTypeExpr& n) {
+    void TypeChecker::visit(IdTypeExpr& n) {
     }
 
-    void TypeChecker::visit(AstWhileStmt& n) {
+    void TypeChecker::visit(WhileStmt& n) {
         visitChild(n.condition);
         visitChild(n.body);
     }
 
-    void TypeChecker::visit(AstPostfixExpr& n) {
+    void TypeChecker::visit(PostfixExpr& n) {
         visitChild(n.target);
         if (!n.target->type->isScalar()) {
             error(n, "Operator '" + n.startToken.value + "' is only applicable to scalar values. Target type is '" + n.target->type->name + "'.");
@@ -507,14 +507,14 @@ namespace Strela {
         n.referencedParam = n.target->referencedParam;
     }
 
-    void TypeChecker::visit(AstArrayTypeExpr& n) {
+    void TypeChecker::visit(ArrayTypeExpr& n) {
         visitChild(n.base);
     }
 
-    void TypeChecker::visit(AstImportStmt& n) {
+    void TypeChecker::visit(ImportStmt& n) {
     }
 
-    void TypeChecker::visit(AstUnaryExpr& n) {
+    void TypeChecker::visit(UnaryExpr& n) {
         visitChild(n.target);
         switch (n.startToken.type) {
             case TokenType::Minus:
@@ -547,19 +547,19 @@ namespace Strela {
         n.type = Types::invalid;
     }
 
-    void TypeChecker::visit(AstEnumDecl& n) {
+    void TypeChecker::visit(EnumDecl& n) {
         visitChildren(n.elements);
     }
 
-    void TypeChecker::visit(AstEnumElement& n) {
+    void TypeChecker::visit(EnumElement& n) {
     }
 
-    void TypeChecker::error(AstNode& node, const std::string& msg) {
+    void TypeChecker::error(Node& node, const std::string& msg) {
         //std::cerr << msg << "\n";
         throw TypeException(msg, node);
     }
 
-    void TypeChecker::warning(AstNode& node, const std::string& msg) {
+    void TypeChecker::warning(Node& node, const std::string& msg) {
         std::cerr << node.startToken.line << ":" << node.startToken.column << " " << msg << "\n";
     }
 }

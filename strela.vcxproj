@@ -117,35 +117,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Ast\AstArrayTypeExpr.h" />
-    <ClInclude Include="src\Ast\AstAssignExpr.h" />
-    <ClInclude Include="src\Ast\AstBinopExpr.h" />
-    <ClInclude Include="src\Ast\AstBlockStmt.h" />
-    <ClInclude Include="src\Ast\AstCallExpr.h" />
-    <ClInclude Include="src\Ast\AstClassDecl.h" />
-    <ClInclude Include="src\Ast\AstEnumDecl.h" />
-    <ClInclude Include="src\Ast\AstEnumElement.h" />
-    <ClInclude Include="src\Ast\AstExpr.h" />
-    <ClInclude Include="src\Ast\AstExprStmt.h" />
-    <ClInclude Include="src\Ast\AstFieldDecl.h" />
-    <ClInclude Include="src\Ast\AstFuncDecl.h" />
-    <ClInclude Include="src\Ast\AstIdExpr.h" />
-    <ClInclude Include="src\Ast\AstIdTypeExpr.h" />
-    <ClInclude Include="src\Ast\AstIfStmt.h" />
-    <ClInclude Include="src\Ast\AstImportStmt.h" />
-    <ClInclude Include="src\Ast\AstLitExpr.h" />
-    <ClInclude Include="src\Ast\AstModDecl.h" />
-    <ClInclude Include="src\Ast\AstNewExpr.h" />
-    <ClInclude Include="src\Ast\AstNode.h" />
-    <ClInclude Include="src\Ast\AstParam.h" />
-    <ClInclude Include="src\Ast\AstPostfixExpr.h" />
-    <ClInclude Include="src\Ast\AstRetStmt.h" />
-    <ClInclude Include="src\Ast\AstScopeExpr.h" />
-    <ClInclude Include="src\Ast\AstStmt.h" />
-    <ClInclude Include="src\Ast\AstTypeExpr.h" />
-    <ClInclude Include="src\Ast\AstUnaryExpr.h" />
-    <ClInclude Include="src\Ast\AstVarDecl.h" />
-    <ClInclude Include="src\Ast\AstWhileStmt.h" />
+    <ClInclude Include="src\Ast\ArrayTypeExpr.h" />
+    <ClInclude Include="src\Ast\AssignExpr.h" />
+    <ClInclude Include="src\Ast\BinopExpr.h" />
+    <ClInclude Include="src\Ast\BlockStmt.h" />
+    <ClInclude Include="src\Ast\CallExpr.h" />
+    <ClInclude Include="src\Ast\ClassDecl.h" />
+    <ClInclude Include="src\Ast\EnumDecl.h" />
+    <ClInclude Include="src\Ast\EnumElement.h" />
+    <ClInclude Include="src\Ast\Expr.h" />
+    <ClInclude Include="src\Ast\ExprStmt.h" />
+    <ClInclude Include="src\Ast\FieldDecl.h" />
+    <ClInclude Include="src\Ast\FuncDecl.h" />
+    <ClInclude Include="src\Ast\IdExpr.h" />
+    <ClInclude Include="src\Ast\IdTypeExpr.h" />
+    <ClInclude Include="src\Ast\IfStmt.h" />
+    <ClInclude Include="src\Ast\ImportStmt.h" />
+    <ClInclude Include="src\Ast\LitExpr.h" />
+    <ClInclude Include="src\Ast\ModDecl.h" />
+    <ClInclude Include="src\Ast\NewExpr.h" />
+    <ClInclude Include="src\Ast\Node.h" />
+    <ClInclude Include="src\Ast\Param.h" />
+    <ClInclude Include="src\Ast\PostfixExpr.h" />
+    <ClInclude Include="src\Ast\RetStmt.h" />
+    <ClInclude Include="src\Ast\ScopeExpr.h" />
+    <ClInclude Include="src\Ast\Stmt.h" />
+    <ClInclude Include="src\Ast\TypeExpr.h" />
+    <ClInclude Include="src\Ast\UnaryExpr.h" />
+    <ClInclude Include="src\Ast\VarDecl.h" />
+    <ClInclude Include="src\Ast\WhileStmt.h" />
     <ClInclude Include="src\Ast\nodes.h" />
     <ClInclude Include="src\Ast\Token.h" />
     <ClInclude Include="src\ByteCodeChunk.h" />
@@ -186,9 +186,9 @@
     <ClInclude Include="src\VMValue.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Ast\AstClassDecl.cpp" />
-    <ClCompile Include="src\Ast\AstEnumDecl.cpp" />
-    <ClCompile Include="src\Ast\AstModDecl.cpp" />
+    <ClCompile Include="src\Ast\ClassDecl.cpp" />
+    <ClCompile Include="src\Ast\EnumDecl.cpp" />
+    <ClCompile Include="src\Ast\ModDecl.cpp" />
     <ClCompile Include="src\Ast\Token.cpp" />
     <ClCompile Include="src\ByteCodeChunk.cpp" />
     <ClCompile Include="src\ByteCodeCompiler.cpp" />

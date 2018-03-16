@@ -2,32 +2,32 @@
 #define Strela_IExprVisitor_h
 
 namespace Strela {
-    class AstIdExpr;
-    class AstLitExpr;
-    class AstCallExpr;
-    class AstBinopExpr;
-    class AstScopeExpr;
-    class AstNewExpr;
-    class AstAssignExpr;
-    class AstIdTypeExpr;
-    class AstPostfixExpr;
-    class AstArrayTypeExpr;
-    class AstUnaryExpr;
+    class IdExpr;
+    class LitExpr;
+    class CallExpr;
+    class BinopExpr;
+    class ScopeExpr;
+    class NewExpr;
+    class AssignExpr;
+    class IdTypeExpr;
+    class PostfixExpr;
+    class ArrayTypeExpr;
+    class UnaryExpr;
 
     class IExprVisitor {
     public:
-        virtual void visit(AstIdExpr&) = 0;
-        virtual void visit(AstLitExpr&) = 0;
-        virtual void visit(AstCallExpr&) = 0;
-        virtual void visit(AstBinopExpr&) = 0;
-        virtual void visit(AstScopeExpr&) = 0;
-        virtual void visit(AstNewExpr&) = 0;
-        virtual void visit(AstAssignExpr&) = 0;
-        virtual void visit(AstPostfixExpr&) = 0;
-        virtual void visit(AstUnaryExpr&) = 0;
+        virtual void visit(IdExpr&) = 0;
+        virtual void visit(LitExpr&) = 0;
+        virtual void visit(CallExpr&) = 0;
+        virtual void visit(BinopExpr&) = 0;
+        virtual void visit(ScopeExpr&) = 0;
+        virtual void visit(NewExpr&) = 0;
+        virtual void visit(AssignExpr&) = 0;
+        virtual void visit(PostfixExpr&) = 0;
+        virtual void visit(UnaryExpr&) = 0;
 
-        virtual void visit(AstIdTypeExpr&) = 0;
-        virtual void visit(AstArrayTypeExpr&) = 0;
+        virtual void visit(IdTypeExpr&) = 0;
+        virtual void visit(ArrayTypeExpr&) = 0;
     };
 }
 

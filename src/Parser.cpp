@@ -67,7 +67,7 @@ namespace Strela {
         {TokenType::MinusMinus, 13},
     };
 
-    AstModDecl* Parser::parseModule() {
+    ModDecl* Parser::parseModule() {
         auto startToken = eat(TokenType::Module);
         auto name = eat(TokenType::Identifier).value;
         while (match(TokenType::Period)) {
@@ -77,10 +77,10 @@ namespace Strela {
 
         eat(TokenType::CurlyOpen);
 
-        std::vector<AstFuncDecl*> functions;
-        std::vector<AstClassDecl*> classes;
-        std::vector<AstImportStmt*> imports;
-        std::vector<AstEnumDecl*> enums;
+        std::vector<FuncDecl*> functions;
+        std::vector<ClassDecl*> classes;
+        std::vector<ImportStmt*> imports;
+        std::vector<EnumDecl*> enums;
 
         while (!eof() && !match(TokenType::CurlyClose)) {
             bool exportNext = match(TokenType::Export);
@@ -110,10 +110,10 @@ namespace Strela {
         }
         eat(TokenType::CurlyClose);
 
-        return new AstModDecl(startToken, name, imports, functions, classes, enums);
+        return new ModDecl(startToken, name, imports, functions, classes, enums);
     }
 
-    AstImportStmt* Parser::parseImportStmt() {
+    ImportStmt* Parser::parseImportStmt() {
         auto st = eat(TokenType::Import);
         std::vector<std::string> parts;
         bool all = false;
@@ -130,15 +130,15 @@ namespace Strela {
             }
         }
         eat(TokenType::Semicolon);
-        return new AstImportStmt(st, parts, all);
+        return new ImportStmt(st, parts, all);
     }
 
-    AstFuncDecl* Parser::parseFunction() {
+    FuncDecl* Parser::parseFunction() {
         numVariables = 0;
         auto startToken = eat(TokenType::Function);
         auto name = eat(TokenType::Identifier);
         eat(TokenType::ParenOpen);
-        std::vector<AstParam*> parameters;
+        std::vector<Param*> parameters;
         while (!eof() && !match(TokenType::ParenClose)) {
             auto param = parseParameter();
             param->index = parameters.size();
@@ -151,14 +151,14 @@ namespace Strela {
             }
         }
         eat(TokenType::ParenClose);
-        AstTypeExpr* returnTypeExpr = nullptr;
+        TypeExpr* returnTypeExpr = nullptr;
         if (match(TokenType::Colon)) {
             eat();
             returnTypeExpr = parseTypeExpr();
         }
         
         eat(TokenType::CurlyOpen);
-        std::vector<AstStmt*> stmts;
+        std::vector<Stmt*> stmts;
         while (!eof() && !match(TokenType::CurlyClose)) {
             if (match(TokenType::Semicolon)) {
                 eat();
@@ -168,14 +168,14 @@ namespace Strela {
             }
         }
         eat(TokenType::CurlyClose);
-        auto fun = new AstFuncDecl(startToken, name.value, parameters, returnTypeExpr, stmts);
+        auto fun = new FuncDecl(startToken, name.value, parameters, returnTypeExpr, stmts);
         fun->numVariables = numVariables;
         return fun;
     }
 
-    AstBlockStmt* Parser::parseBlockStatement() {
+    BlockStmt* Parser::parseBlockStatement() {
         auto startToken = eat(TokenType::CurlyOpen);
-        std::vector<AstStmt*> stmts;
+        std::vector<Stmt*> stmts;
         while (!eof() && !match(TokenType::CurlyClose)) {
             if (match(TokenType::Semicolon)) {
                 eat();
@@ -185,10 +185,10 @@ namespace Strela {
             }
         }
         eat(TokenType::CurlyClose);
-        return new AstBlockStmt(startToken, stmts);
+        return new BlockStmt(startToken, stmts);
     }
 
-    AstStmt* Parser::parseStatement() {
+    Stmt* Parser::parseStatement() {
         if (match(TokenType::Return)) {
             return parseReturnStatement();
         }
@@ -212,52 +212,52 @@ namespace Strela {
         }
     }
 
-    AstExprStmt* Parser::parseExprStmt() {
+    ExprStmt* Parser::parseExprStmt() {
         auto startToken = *token;
-        auto expr = new AstExprStmt(startToken, parseExpression());
+        auto expr = new ExprStmt(startToken, parseExpression());
         eat(TokenType::Semicolon);
         return expr;
     }
 
-    AstRetStmt* Parser::parseReturnStatement() {
+    RetStmt* Parser::parseReturnStatement() {
         auto startToken = eat(TokenType::Return);
-        AstExpr* expr = nullptr;
+        Expr* expr = nullptr;
         if (matchExpr()) {
             expr = parseExpression();
         }
-        auto ret = new AstRetStmt(startToken, expr);
+        auto ret = new RetStmt(startToken, expr);
         eat(TokenType::Semicolon);
         return ret;
     }
 
-    AstIfStmt* Parser::parseIfStmt() {
+    IfStmt* Parser::parseIfStmt() {
         auto startToken = eat(TokenType::If);
         eat(TokenType::ParenOpen);
         auto condition = parseExpression();
         eat(TokenType::ParenClose);
         auto trueBranch = parseStatement();
-        AstStmt* falseBranch = nullptr;
+        Stmt* falseBranch = nullptr;
         if (match(TokenType::Else)) {
             eat();
             falseBranch = parseStatement();
         }
-        return new AstIfStmt(startToken, condition, trueBranch, falseBranch);
+        return new IfStmt(startToken, condition, trueBranch, falseBranch);
     }
 
-    AstWhileStmt* Parser::parseWhileStmt() {
+    WhileStmt* Parser::parseWhileStmt() {
         auto startToken = eat(TokenType::While);
         eat(TokenType::ParenOpen);
         auto condition = parseExpression();
         eat(TokenType::ParenClose);
         auto body = parseStatement();
-        return new AstWhileStmt(startToken, condition, body);
+        return new WhileStmt(startToken, condition, body);
     }
 
-    AstTypeExpr* Parser::parseTypeExpr() {
-        AstTypeExpr* expression = nullptr;
+    TypeExpr* Parser::parseTypeExpr() {
+        TypeExpr* expression = nullptr;
         if (match(TokenType::Identifier)) {
             auto start = eat();
-            expression = new AstIdTypeExpr(start, start.value);
+            expression = new IdTypeExpr(start, start.value);
         }
         else {
             expected(TokenType::Identifier);
@@ -267,7 +267,7 @@ namespace Strela {
             if (match(TokenType::BracketOpen)) {
                 auto st = eat();
                 eat(TokenType::BracketClose);
-                expression = new AstArrayTypeExpr(st, expression);
+                expression = new ArrayTypeExpr(st, expression);
             }
             else {
                 expected("secondary type expression.");
@@ -277,8 +277,8 @@ namespace Strela {
         return expression;
     }
     
-    AstExpr* Parser::parseExpression(int precedence) {
-        AstExpr* expression = nullptr;
+    Expr* Parser::parseExpression(int precedence) {
+        Expr* expression = nullptr;
         if (match(TokenType::Integer) || match(TokenType::Float) || match(TokenType::String) || match(TokenType::Boolean) || match(TokenType::Null)) {
             expression = parseLiteralExpression();
         }
@@ -287,7 +287,7 @@ namespace Strela {
         }
         else if (matchUnary()) {
             auto st = eat();
-            expression = new AstUnaryExpr(st, parseExpression(unaryPrecedenceMap[st.type]));
+            expression = new UnaryExpr(st, parseExpression(unaryPrecedenceMap[st.type]));
         }
         else if (match(TokenType::ParenOpen)) {
             eat();
@@ -317,19 +317,19 @@ namespace Strela {
             else if (match(TokenType::Period)) {
                 auto st = eat();
                 auto name = eat(TokenType::Identifier).value;
-                expression = new AstScopeExpr(st, expression, name);
+                expression = new ScopeExpr(st, expression, name);
             }
             else if (match(TokenType::MinusMinus) || match(TokenType::PlusPlus)) {
                 auto st = eat();
-                expression = new AstPostfixExpr(st, expression);
+                expression = new PostfixExpr(st, expression);
             }
             else if (matchBinary()) {
 				auto op = eat();
                 if (op.type == TokenType::Equals) {
-                    expression = new AstAssignExpr(op, expression, parseExpression(myprec));
+                    expression = new AssignExpr(op, expression, parseExpression(myprec));
                 }
                 else {
-                    expression = new AstBinopExpr(op, expression, parseExpression(myprec));
+                    expression = new BinopExpr(op, expression, parseExpression(myprec));
                 }
             }
             else {
@@ -340,15 +340,15 @@ namespace Strela {
         return expression;
     }
 
-    AstNewExpr* Parser::parseNewExpr() {
+    NewExpr* Parser::parseNewExpr() {
         auto startToken = eat(TokenType::New);
         auto typeExpr = parseTypeExpr();
-        return new AstNewExpr(startToken, typeExpr);
+        return new NewExpr(startToken, typeExpr);
     }
 
-    AstCallExpr* Parser::parseCallExpr(AstExpr* callTarget) {
+    CallExpr* Parser::parseCallExpr(Expr* callTarget) {
         auto startToken = eat(TokenType::ParenOpen);
-        std::vector<AstExpr*> arguments;
+        std::vector<Expr*> arguments;
         while (!eof() && !match(TokenType::ParenClose)) {
             arguments.push_back(parseExpression());
             if (match(TokenType::Comma)) {
@@ -356,37 +356,37 @@ namespace Strela {
             }
         }
         eat(TokenType::ParenClose);
-        return new AstCallExpr(startToken, callTarget, arguments);
+        return new CallExpr(startToken, callTarget, arguments);
     }
 
-    AstLitExpr* Parser::parseLiteralExpression() {
+    LitExpr* Parser::parseLiteralExpression() {
         if (!(match(TokenType::Integer) || match(TokenType::Float) || match(TokenType::String) || match(TokenType::Boolean) || match(TokenType::Null))) {
             expected("literal");
         }
-        return new AstLitExpr(eat());
+        return new LitExpr(eat());
     }
 
-    AstIdExpr* Parser::parseIdentifierExpression() {
+    IdExpr* Parser::parseIdentifierExpression() {
         auto startToken = eat(TokenType::Identifier);
-        return new AstIdExpr(startToken, startToken.value);
+        return new IdExpr(startToken, startToken.value);
     }
 
-    AstParam* Parser::parseParameter() {
+    Param* Parser::parseParameter() {
         auto startToken = eat(TokenType::Identifier);
         eat(TokenType::Colon);
         auto type = parseTypeExpr();
-        return new AstParam(startToken, startToken.value, type);
+        return new Param(startToken, startToken.value, type);
     }
 
-    AstVarDecl* Parser::parseVarDecl() {
+    VarDecl* Parser::parseVarDecl() {
         auto startToken = eat(TokenType::Var);
         auto name = eat(TokenType::Identifier).value;
-        AstTypeExpr* type = nullptr;
+        TypeExpr* type = nullptr;
         if (match(TokenType::Colon)) {
             eat();
             type = parseTypeExpr();
         }
-        AstExpr* initializer = nullptr;
+        Expr* initializer = nullptr;
         if (match(TokenType::Equals)) {
             eat();
             initializer = parseExpression();
@@ -395,26 +395,26 @@ namespace Strela {
             expected("variable initializer.");
         }
         eat(TokenType::Semicolon);
-        auto vardecl = new AstVarDecl(startToken, name, type, initializer);
+        auto vardecl = new VarDecl(startToken, name, type, initializer);
         vardecl->index = numVariables++;
         return vardecl;
     }
 
-    AstFieldDecl* Parser::parseFieldDecl() {
+    FieldDecl* Parser::parseFieldDecl() {
         auto startToken = eat(TokenType::Var);
         auto name = eat(TokenType::Identifier).value;
         eat(TokenType::Colon);
         auto type = parseTypeExpr();
         eat(TokenType::Semicolon);
-        return new AstFieldDecl(startToken, name, type);
+        return new FieldDecl(startToken, name, type);
     }
 
-    AstClassDecl* Parser::parseClassDecl() {
+    ClassDecl* Parser::parseClassDecl() {
         auto startToken = eat(TokenType::Class);
         auto name = eat(TokenType::Identifier).value;
         eat(TokenType::CurlyOpen);
-        std::vector<AstFuncDecl*> methods;
-        std::vector<AstFieldDecl*> fields;
+        std::vector<FuncDecl*> methods;
+        std::vector<FieldDecl*> fields;
         while (!eof() && !match(TokenType::CurlyClose)) {
             if (match(TokenType::Function)) {
                 methods.push_back(parseFunction());
@@ -429,16 +429,16 @@ namespace Strela {
             }
         }
         eat(TokenType::CurlyClose);
-        return new AstClassDecl(startToken, name, methods, fields);
+        return new ClassDecl(startToken, name, methods, fields);
     }
 
-    AstEnumDecl* Parser::parseEnumDecl() {
+    EnumDecl* Parser::parseEnumDecl() {
         auto startToken = eat(TokenType::Enum);
         auto name = eat(TokenType::Identifier).value;
         eat(TokenType::CurlyOpen);
-        std::vector<AstEnumElement*> elements;
+        std::vector<EnumElement*> elements;
         while (match(TokenType::Identifier)) {
-            auto el = new AstEnumElement(eat(TokenType::Identifier));
+            auto el = new EnumElement(eat(TokenType::Identifier));
             el->index = elements.size();
             elements.push_back(el);
 
@@ -450,7 +450,7 @@ namespace Strela {
             }
         }
         eat(TokenType::CurlyClose);
-        return new AstEnumDecl(startToken, name, elements);
+        return new EnumDecl(startToken, name, elements);
     }
 
     bool Parser::match(TokenType type) {

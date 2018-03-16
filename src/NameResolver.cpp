@@ -8,7 +8,7 @@ namespace Strela {
     NameResolver::NameResolver(Scope* globals): scope(globals) {
     }
 
-    void NameResolver::visit(AstModDecl& n) {
+    void NameResolver::visit(ModDecl& n) {
         auto oldscope = scope;
         scope = new Scope(scope);
 
@@ -75,7 +75,7 @@ namespace Strela {
         scope = oldscope;
     }
 
-    void NameResolver::visit(AstClassDecl& n) {
+    void NameResolver::visit(ClassDecl& n) {
         auto oldscope = scope;
         scope = new Scope(scope);
 
@@ -83,7 +83,7 @@ namespace Strela {
             scope->add(field->name, field);
         }
         for (auto&& method: n.methods) {
-            method->params.insert(method->params.begin(), new AstParam(method->startToken, "this", new AstIdTypeExpr(method->startToken, n.name)));
+            method->params.insert(method->params.begin(), new Param(method->startToken, "this", new IdTypeExpr(method->startToken, n.name)));
             scope->add(method->name, method);
         }
 
@@ -94,7 +94,7 @@ namespace Strela {
         scope = oldscope;
     }
 
-    void NameResolver::visit(AstFuncDecl& n) {
+    void NameResolver::visit(FuncDecl& n) {
         auto oldscope = scope;
         scope = new Scope(scope);
 
@@ -106,12 +106,12 @@ namespace Strela {
         scope = oldscope;
     }
 
-    void NameResolver::visit(AstParam& n) {
+    void NameResolver::visit(Param& n) {
         visitChild(n.typeExpr);
         scope->add(n.name, &n);
     }
 
-    void NameResolver::visit(AstVarDecl& n) {
+    void NameResolver::visit(VarDecl& n) {
         if (n.typeExpr) {
             visitChild(n.typeExpr);
         }
@@ -121,32 +121,32 @@ namespace Strela {
         scope->add(n.name, &n);
     }
 
-    void NameResolver::visit(AstIdExpr& n) {
+    void NameResolver::visit(IdExpr& n) {
         n.symbol = scope->find(n.name);
         if (!n.symbol) {
             throw UnresolvedSymbolException(n.name, n);
         }
     }
 
-    void NameResolver::visit(AstRetStmt& n) {
+    void NameResolver::visit(RetStmt& n) {
         if (n.expression) {
             visitChild(n.expression);
         }
     }
 
-    void NameResolver::visit(AstExprStmt& n) {
+    void NameResolver::visit(ExprStmt& n) {
         visitChild(n.expression);
     }
 
-    void NameResolver::visit(AstLitExpr&) {
+    void NameResolver::visit(LitExpr&) {
     }
 
-    void NameResolver::visit(AstCallExpr& n) {
+    void NameResolver::visit(CallExpr& n) {
         visitChild(n.callTarget);
         visitChildren(n.arguments);
     }
 
-    void NameResolver::visit(AstBlockStmt& n) {
+    void NameResolver::visit(BlockStmt& n) {
         auto oldscope = scope;
         scope = new Scope(scope);
 
@@ -156,16 +156,16 @@ namespace Strela {
         scope = oldscope;
     }
 
-    void NameResolver::visit(AstBinopExpr& n) {
+    void NameResolver::visit(BinopExpr& n) {
         visitChild(n.left);
         visitChild(n.right);
     }
 
-    void NameResolver::visit(AstScopeExpr& n) {
+    void NameResolver::visit(ScopeExpr& n) {
         visitChild(n.scopeTarget);
     }
 
-    void NameResolver::visit(AstIfStmt& n) {
+    void NameResolver::visit(IfStmt& n) {
         visitChild(n.condition);
         visitChild(n.trueBranch);
         if (n.falseBranch) {
@@ -173,51 +173,51 @@ namespace Strela {
         }
     }
 
-    void NameResolver::visit(AstFieldDecl& n) {
+    void NameResolver::visit(FieldDecl& n) {
         visitChild(n.typeExpr);
     }
 
-    void NameResolver::visit(AstNewExpr& n) {
+    void NameResolver::visit(NewExpr& n) {
         visitChild(n.typeExpr);
     }
 
-    void NameResolver::visit(AstAssignExpr& n) {
+    void NameResolver::visit(AssignExpr& n) {
         visitChild(n.left);
         visitChild(n.right);
     }
 
-    void NameResolver::visit(AstIdTypeExpr& n) {
+    void NameResolver::visit(IdTypeExpr& n) {
         n.symbol = scope->find(n.name);
         if (!n.symbol) {
             throw UnresolvedSymbolException(n.name, n);
         }
     }
 
-    void NameResolver::visit(AstWhileStmt& n) {
+    void NameResolver::visit(WhileStmt& n) {
         visitChild(n.condition);
         visitChild(n.body);
     }
 
-    void NameResolver::visit(AstPostfixExpr& n) {
+    void NameResolver::visit(PostfixExpr& n) {
         visitChild(n.target);
     }
 
-    void NameResolver::visit(AstArrayTypeExpr& n) {
+    void NameResolver::visit(ArrayTypeExpr& n) {
         visitChild(n.base);
     }
 
-    void NameResolver::visit(AstImportStmt& n) {
+    void NameResolver::visit(ImportStmt& n) {
     }
 
-    void NameResolver::visit(AstUnaryExpr& n) {
+    void NameResolver::visit(UnaryExpr& n) {
         visitChild(n.target);
     }
 
-    void NameResolver::visit(AstEnumDecl& n) {
+    void NameResolver::visit(EnumDecl& n) {
         visitChildren(n.elements);
     }
 
-    void NameResolver::visit(AstEnumElement& n) {
+    void NameResolver::visit(EnumElement& n) {
     }
 
 }

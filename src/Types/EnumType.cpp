@@ -1,8 +1,8 @@
 #include "EnumType.h"
-#include "../Ast/AstEnumDecl.h"
+#include "../Ast/EnumDecl.h"
 
 namespace Strela {
-    EnumType::EnumType(AstEnumDecl* enumDecl): Type(enumDecl->name), enumDecl(enumDecl) {}
+    EnumType::EnumType(EnumDecl* enumDecl): Type(enumDecl->name), enumDecl(enumDecl) {}
 
     bool EnumType::isAssignableFrom(const Type* other) const {
         return other == this;

@@ -12,28 +12,28 @@ namespace Strela {
     public:
         Parser(const std::vector<Token>& tokens): tokens(tokens), token(tokens.begin()) {}
 
-        AstModDecl* parseModule();
-        AstIdExpr* parseIdentifierExpression();
-        AstFuncDecl* parseFunction();
-        AstParam* parseParameter();
-        AstVarDecl* parseVarDecl();
-        AstBlockStmt* parseBlockStatement();
-        AstClassDecl* parseClassDecl();
-        AstFieldDecl* parseFieldDecl();
-        AstEnumDecl* parseEnumDecl();
-        AstImportStmt* parseImportStmt();
+        ModDecl* parseModule();
+        IdExpr* parseIdentifierExpression();
+        FuncDecl* parseFunction();
+        Param* parseParameter();
+        VarDecl* parseVarDecl();
+        BlockStmt* parseBlockStatement();
+        ClassDecl* parseClassDecl();
+        FieldDecl* parseFieldDecl();
+        EnumDecl* parseEnumDecl();
+        ImportStmt* parseImportStmt();
 
-        AstStmt* parseStatement();
-        AstRetStmt* parseReturnStatement();
-        AstExprStmt* parseExprStmt();
-        AstIfStmt* parseIfStmt();
-        AstWhileStmt* parseWhileStmt();
+        Stmt* parseStatement();
+        RetStmt* parseReturnStatement();
+        ExprStmt* parseExprStmt();
+        IfStmt* parseIfStmt();
+        WhileStmt* parseWhileStmt();
 
-        AstExpr* parseExpression(int precedence = 0);
-        AstTypeExpr* parseTypeExpr();
-        AstNewExpr* parseNewExpr();
-        AstLitExpr* parseLiteralExpression();
-        AstCallExpr* parseCallExpr(AstExpr* callTarget);
+        Expr* parseExpression(int precedence = 0);
+        TypeExpr* parseTypeExpr();
+        NewExpr* parseNewExpr();
+        LitExpr* parseLiteralExpression();
+        CallExpr* parseCallExpr(Expr* callTarget);
 
         bool match(TokenType type);
         bool matchExpr();
