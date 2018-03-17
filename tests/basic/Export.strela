@@ -19,7 +19,7 @@ module Export {
         println("Export.bar called");
     }
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         foo();
         bar();
         return 0;

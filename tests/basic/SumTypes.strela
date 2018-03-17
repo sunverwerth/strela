@@ -1,16 +1,16 @@
 module SumTypes {
     import Std.IO.*;
 
-    function printSum(sum: i32 | String) {
+    function printSum(sum: int | String) {
         match(sum) {
             case String println(sum);
-            case i32 println(sum);
+            case int println(sum);
         }
     }
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
 
-        var sum: String | i32;
+        var sum: String | int;
 
         sum = 1337;
         printSum(sum);

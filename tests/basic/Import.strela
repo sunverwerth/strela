@@ -4,7 +4,7 @@ module Import {
     import Export.foo;
     import Export.bar;
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         foo();
         bar();
         return 0;

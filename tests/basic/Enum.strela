@@ -7,7 +7,7 @@ module Enum {
         C
     }
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         var a = Foo.A;
         var b = Foo.B;
         var c = Foo.C;

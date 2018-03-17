@@ -36,11 +36,7 @@ namespace Strela {
 
     TypeDecl* getSignedType(TypeDecl* t) {
         if (auto intt = t->as<IntType>()) {
-            if (intt->isSigned) return intt;
-            else if (intt->bytes == 1) return &IntType::i8;
-            else if (intt->bytes == 2) return &IntType::i16;
-            else if (intt->bytes == 4) return &IntType::i32;
-            else if (intt->bytes == 8) return &IntType::i64;
+            return intt;
         }
         else if (auto floatt = t->as<FloatType>()) {
             return floatt;
@@ -244,25 +240,12 @@ namespace Strela {
     void TypeChecker::visit(LitExpr& n) {
         switch (n.token.type) {
             case TokenType::Integer: {
-                uint64_t num = std::strtoull(n.token.value.c_str(), nullptr, 10);
-                if (num > 0xffffffff) {
-                    n.type = &IntType::u64;
-                }
-                else if (num > 0xffff) {
-                    n.type = &IntType::u32;
-                }
-                else if (num > 0xff) {
-                    n.type = &IntType::u16;
-                }
-                else {
-                    n.type = &IntType::u8;
-                }
+                n.type = &IntType::instance;
                 break;
             }
 
             case TokenType::Float: {
-                double num = std::strtod(n.token.value.c_str(), nullptr);
-                n.type = &FloatType::f64;
+                n.type = &FloatType::instance;
                 break;
             }
 
@@ -335,23 +318,10 @@ namespace Strela {
             }
             else {
                 if (lint && rint) {
-                    int bytes = lint->bytes > rint->bytes ? lint->bytes : rint->bytes;
-                    bool isSigned = lint->isSigned || rint->isSigned;
-                    if (isSigned) {
-                        if (bytes == 1) n.type = &IntType::i8;
-                        else if (bytes == 2) n.type = &IntType::i16;
-                        else if (bytes == 4) n.type = &IntType::i32;
-                        else if (bytes == 8) n.type = &IntType::i64;
-                    }
-                    else {
-                        if (bytes == 1) n.type = &IntType::u8;
-                        else if (bytes == 2) n.type = &IntType::u16;
-                        else if (bytes == 4) n.type = &IntType::u32;
-                        else if (bytes == 8) n.type = &IntType::u64;
-                    }
+                    n.type = &IntType::instance;
                 }
                 else if (lfloat && rfloat) {
-                    n.type = lfloat->bytes > rfloat->bytes ? lfloat : rfloat;
+                    n.type = lfloat;
                 }
                 else if (lfloat) {
                     n.type = lfloat;

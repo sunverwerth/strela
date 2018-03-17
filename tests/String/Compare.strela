@@ -2,7 +2,7 @@ module Compare {
     import Std.IO.*;
 
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         var str1 = "Hello";
         var str2 = "Hello";
         if (str1 == str2) {

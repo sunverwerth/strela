@@ -3,7 +3,7 @@ module Interface {
 
     interface ForceUser {
         function getName(): String;
-        function foo(i: i32): String;
+        function foo(i: int): String;
     }
 
     class Vader {
@@ -17,7 +17,7 @@ module Interface {
             return this.name;
         }
 
-        function foo(i: i32): String {
+        function foo(i: int): String {
             return "I am your father.";
         }
     }
@@ -33,7 +33,7 @@ module Interface {
             return this.name;
         }
 
-        function foo(i: i32): String {
+        function foo(i: int): String {
             return "Do or do not. There is no try.";
         }
     }
@@ -45,7 +45,7 @@ module Interface {
         println(user.foo(1));
     }
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         var vader = new Vader;
         var yoda = new Yoda;
 

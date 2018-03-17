@@ -7,7 +7,7 @@ module Allocation {
         }
     }
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         // alloc string
         var foo = new Foo;
         foo.bar();

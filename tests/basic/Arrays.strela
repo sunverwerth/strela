@@ -2,7 +2,7 @@ module Arrays {
     import Std.IO.*;
 
     class Custom {
-        function [](a: i32, b: i32) {
+        function [](a: int, b: int) {
             print("Custom array subscript called: ");
             print(a);
             print(", ");
@@ -10,7 +10,7 @@ module Arrays {
         }
     }
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         var arr = ["First", "Second", "Third", "Fourth"];
         print("String array length: ");
         println(arr.length);

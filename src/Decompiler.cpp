@@ -10,16 +10,8 @@ namespace Strela {
     
     void Decompiler::printValue(const VMValue& c) const {
         std::cout << std::dec;
-        if (c.type == VMValue::Type::u8) std::cout << "u8(" << c.value.u8 << ")";
-        else if (c.type == VMValue::Type::u16) std::cout << "u16(" << c.value.u16 << ")";
-        else if (c.type == VMValue::Type::u32) std::cout << "u32(" << c.value.u32 << ")";
-        else if (c.type == VMValue::Type::u64) std::cout << "u64(" << c.value.u64 << ")";
-        else if (c.type == VMValue::Type::i8) std::cout << "i8(" << c.value.i8 << ")";
-        else if (c.type == VMValue::Type::i16) std::cout << "i16(" << c.value.i16 << ")";
-        else if (c.type == VMValue::Type::i32) std::cout << "i32(" << c.value.i32 << ")";
-        else if (c.type == VMValue::Type::i64) std::cout << "i64(" << c.value.i64 << ")";
-        else if (c.type == VMValue::Type::f32) std::cout << "f32(" << c.value.f32 << ")";
-        else if (c.type == VMValue::Type::f64) std::cout << "f64(" << c.value.f64 << ")";
+        if (c.type == VMValue::Type::integer) std::cout << "int(" << c.value.integer << ")";
+        else if (c.type == VMValue::Type::floating) std::cout << "float(" << c.value.floating << ")";
         else if (c.type == VMValue::Type::boolean) std::cout << (c.value.boolean ? "true" : "false");
         else if (c.type == VMValue::Type::string) std::cout << "\"" << escape(c.value.string) << "\"";
         else if (c.type == VMValue::Type::null) std::cout << "null";
@@ -77,7 +69,7 @@ namespace Strela {
                 auto cpos = i - width - opcodeInfo[(int)Opcode::Const].argWidth;
                 if (cpos >= 0 && (Opcode)chunk.opcodes[cpos] == Opcode::Const) {
                     auto constIndex = getArg(cpos);
-                    auto address = chunk.constants[constIndex].value.u64;
+                    auto address = chunk.constants[constIndex].value.integer;
                     auto it = chunk.functions.find(address);
                     if (it != chunk.functions.end()) {
                         std::cout << it->second;

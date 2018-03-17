@@ -13,8 +13,7 @@ namespace Strela {
     public:
         int bytes;
         
-        static FloatType f32;
-        static FloatType f64;
+        static FloatType instance;
     };
 }
 

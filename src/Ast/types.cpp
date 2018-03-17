@@ -19,17 +19,9 @@ namespace Strela {
     TypeType TypeType::instance(Token(TokenType::Identifier, "", 0, 0));
     OverloadedFuncType OverloadedFuncType::instance(Token(TokenType::Identifier, "", 0, 0));
 
-    IntType IntType::u8(Token(TokenType::Identifier, "", 0, 0), "u8", false, 1);
-    IntType IntType::u16(Token(TokenType::Identifier, "", 0, 0), "u16", false, 2);
-    IntType IntType::u32(Token(TokenType::Identifier, "", 0, 0), "u32", false, 4);
-    IntType IntType::u64(Token(TokenType::Identifier, "", 0, 0), "u64", false, 8);
-    IntType IntType::i8(Token(TokenType::Identifier, "", 0, 0), "i8", true, 1);
-    IntType IntType::i16(Token(TokenType::Identifier, "", 0, 0), "i16", true, 2);
-    IntType IntType::i32(Token(TokenType::Identifier, "", 0, 0), "i32", true, 4);
-    IntType IntType::i64(Token(TokenType::Identifier, "", 0, 0), "i64", true, 8);
+    IntType IntType::instance(Token(TokenType::Identifier, "", 0, 0), "int", false, 8);
 
-    FloatType FloatType::f32(Token(TokenType::Identifier, "", 0, 0), "f32", 4);
-    FloatType FloatType::f64(Token(TokenType::Identifier, "", 0, 0), "f64", 8);
+    FloatType FloatType::instance(Token(TokenType::Identifier, "", 0, 0), "float", 8);
 
     InvalidType InvalidType::instance(Token(TokenType::Identifier, "", 0, 0));
 

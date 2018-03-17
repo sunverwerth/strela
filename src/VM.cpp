@@ -47,16 +47,8 @@ namespace Strela {
             }
 
             switch ((Opcode)op) {
-            case Opcode::U8:
-            case Opcode::U16:
-            case Opcode::U32:
-            case Opcode::U64:
-            case Opcode::I8:
-            case Opcode::I16:
-            case Opcode::I32:
-            case Opcode::I64:
-            case Opcode::F32:
-            case Opcode::F64:
+            case Opcode::INT:
+            case Opcode::FLOAT:
                 push(arg);
                 break;
 
@@ -65,33 +57,33 @@ namespace Strela {
                 break;
 
 			case Opcode::Const: {
-				push(chunk.constants[arg.value.u8]);
+				push(chunk.constants[arg.value.integer]);
 				break;
 			}
 			case Opcode::Param: {
-				push(stack[sp - arg.value.u8 - 2]);
+				push(stack[sp - arg.value.integer - 2]);
 				break;
 			}
 			case Opcode::StoreParam: {
-				stack[sp - arg.value.u8 - 2] = pop();
+				stack[sp - arg.value.integer - 2] = pop();
 				break;
 			}
 			case Opcode::Var: {
-				push(stack[sp + arg.value.u8]);
+				push(stack[sp + arg.value.integer]);
 				break;
 			}
 			case Opcode::StoreVar: {
-				stack[sp + arg.value.u8] = pop();
+				stack[sp + arg.value.integer] = pop();
 				break;
 			}
 			case Opcode::GrowStack: {
-				stack.resize(stack.size() + arg.value.u8);
+				stack.resize(stack.size() + arg.value.integer);
 				break;
 			}
 			case Opcode::Call: {
-				auto newip = pop().value.u64;
-				push(VMValue(uint64_t(ip)));
-				sp = push(VMValue(uint64_t(sp)));
+				auto newip = pop().value.integer;
+				push(VMValue(ip));
+				sp = push(VMValue(sp));
 				ip = newip;
 				break;
 			}
@@ -103,9 +95,9 @@ namespace Strela {
                     auto val = pop();
 
                     stack.resize(sp + 1);
-                    sp = pop().value.u64;
-                    ip = pop().value.u64;
-                    pop(arg.value.u8);
+                    sp = pop().value.integer;
+                    ip = pop().value.integer;
+                    pop(arg.value.integer);
                     push(val);
                 }
 				break;
@@ -116,9 +108,9 @@ namespace Strela {
                 }
                 else {
                     stack.resize(sp + 1);
-                    sp = pop().value.u64;
-                    ip = pop().value.u64;
-                    pop(arg.value.u8);
+                    sp = pop().value.integer;
+                    ip = pop().value.integer;
+                    pop(arg.value.integer);
                 }
 				break;
 			}
@@ -201,16 +193,8 @@ namespace Strela {
 			}
             case Opcode::Print: {
                 auto val = pop();
-                if (val.type == VMValue::Type::u8) std::cout << (int)val.value.u8;
-                else if (val.type == VMValue::Type::u16) std::cout << val.value.u16;
-                else if (val.type == VMValue::Type::u32) std::cout << val.value.u32;
-                else if (val.type == VMValue::Type::u64) std::cout << val.value.u64;
-                else if (val.type == VMValue::Type::i8) std::cout << (int)val.value.i8;
-                else if (val.type == VMValue::Type::i16) std::cout << val.value.i16;
-                else if (val.type == VMValue::Type::i32) std::cout << val.value.i32;
-                else if (val.type == VMValue::Type::i64) std::cout << val.value.i64;
-                else if (val.type == VMValue::Type::f32) std::cout << val.value.f32;
-                else if (val.type == VMValue::Type::f64) std::cout << val.value.f64;
+                if (val.type == VMValue::Type::integer) std::cout << val.value.integer;
+                else if (val.type == VMValue::Type::floating) std::cout << val.value.floating;
                 else if (val.type == VMValue::Type::boolean) std::cout << (val.value.boolean ? "true" : "false");
                 else if (val.type == VMValue::Type::null) std::cout << "null";
                 else if (val.type == VMValue::Type::string) std::cout << val.value.string;
@@ -218,14 +202,14 @@ namespace Strela {
                 break;
             }
 			case Opcode::Jmp: {
-    			ip = pop().value.u64;
+    			ip = pop().value.integer;
 				break;
 			}
 			case Opcode::JmpIf: {
 				auto newip = pop();
 				auto cond = pop();
 				if (cond) {
-					ip = newip.value.u64;
+					ip = newip.value.integer;
 				}
 				break;
 			}
@@ -233,7 +217,7 @@ namespace Strela {
 				auto newip = pop();
 				auto cond = pop();
 				if (!cond) {
-					ip = newip.value.u64;
+					ip = newip.value.integer;
 				}
 				break;
 			}
@@ -242,18 +226,18 @@ namespace Strela {
                 if ((numallocs % 100) == 0) {
                     gc.collect(stack);
                 }
-                auto obj = gc.allocObject(arg.value.u8);
+                auto obj = gc.allocObject(arg.value.integer);
                 push(VMValue(obj));
                 break;
             }
             case Opcode::Field: {
                 auto obj = pop();
-                push(obj.value.object->getField(arg.value.u8));
+                push(obj.value.object->getField(arg.value.integer));
                 break;
             }
             case Opcode::StoreField: {
                 auto obj = pop();
-                obj.value.object->setField(arg.value.u8, pop());
+                obj.value.object->setField(arg.value.integer, pop());
                 break;
             }
             case Opcode::Repeat: {
@@ -307,8 +291,8 @@ namespace Strela {
 
             std::cout << name << "\n";
 
-            cur = stack[cur].value.u64;
-            fun = stack[cur - 1].value.u64;
+            cur = stack[cur].value.integer;
+            fun = stack[cur - 1].value.integer;
         }
     }
 }

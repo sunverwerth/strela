@@ -1,7 +1,7 @@
 module External {
     import Std.IO.*;
     
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         println(sqrt(1024));
         println(sqrt(256));
         println(sqrt(64));

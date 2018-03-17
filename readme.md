@@ -26,7 +26,7 @@ where `input-file` is either a .strela module or a module compiled to strela byt
     module Hello {
         import Std.IO.println;
 
-        function main(): u8 {
+        function main(): int {
             println("Hello, world!");
             return 0;
         }
@@ -36,7 +36,7 @@ where `input-file` is either a .strela module or a module compiled to strela byt
     module Fib {
         import Std.IO.println;
 
-        function fib(n: u32): u32 {
+        function fib(n: int): int {
             if (n < 2) {
                 return n;
             }
@@ -45,7 +45,7 @@ where `input-file` is either a .strela module or a module compiled to strela byt
             }
         }
 
-        function main(): u8 {
+        function main(): int {
             println(fib(40));
             return 0;
         }

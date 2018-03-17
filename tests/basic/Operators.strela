@@ -1,8 +1,8 @@
 module Operators {
     import Std.IO.*;
 
-    function main(args: String[]): i32 {
-        var i: i32 = 5;
+    function main(args: String[]): int {
+        var i: int = 5;
         println(i);
         
         i += 10; println(i);

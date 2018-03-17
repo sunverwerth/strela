@@ -28,8 +28,8 @@ namespace Strela {
         const ByteCodeChunk& chunk;
         char op;
         VMValue arg;
-        size_t ip;
-		size_t sp;
+        int64_t ip;
+		int64_t sp;
         std::vector<VMValue> stack;
         GC gc;
     };

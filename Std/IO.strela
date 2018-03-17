@@ -1,27 +1,11 @@
 module Std.IO {
-    export function print(v: u8): void {}
-    export function print(v: u16): void {}
-    export function print(v: u32): void {}
-    export function print(v: u64): void {}
-    export function print(v: i8): void {}
-    export function print(v: i16): void {}
-    export function print(v: i32): void {}
-    export function print(v: i64): void {}
-    export function print(v: f32): void {}
-    export function print(v: f64): void {}
+    export function print(v: int): void {}
+    export function print(v: float): void {}
     export function print(v: String): void {}
     export function print(v: bool): void {}
 
-    export function println(v: u8): void { print(v); print("\n"); }
-    export function println(v: u16): void { print(v); print("\n"); }
-    export function println(v: u32): void { print(v); print("\n"); }
-    export function println(v: u64): void { print(v); print("\n"); }
-    export function println(v: i8): void { print(v); print("\n"); }
-    export function println(v: i16): void { print(v); print("\n"); }
-    export function println(v: i32): void { print(v); print("\n"); }
-    export function println(v: i64): void { print(v); print("\n"); }
-    export function println(v: f32): void { print(v); print("\n"); }
-    export function println(v: f64): void { print(v); print("\n"); }
+    export function println(v: int): void { print(v); print("\n"); }
+    export function println(v: float): void { print(v); print("\n"); }
     export function println(v: String): void { print(v); print("\n"); }
     export function println(v: bool): void { print(v); print("\n"); }
 }

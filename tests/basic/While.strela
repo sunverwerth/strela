@@ -1,7 +1,7 @@
 module While {
     import Std.IO.*;
 
-	function main(args: String[]): i32 {
+	function main(args: String[]): int {
 		var i = 10;
 		while(i > 0) {
 			println(i);

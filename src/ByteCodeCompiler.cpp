@@ -27,7 +27,7 @@ namespace Strela {
             if (fixup.second->opcodeStart == 0xdeadbeef) {
                 fixup.second->accept(*this);
             }
-            auto index = chunk.addConstant(VMValue((uint64_t)fixup.second->opcodeStart));
+            auto index = chunk.addConstant(VMValue(int64_t(fixup.second->opcodeStart)));
             chunk.writeArgument(fixup.first, index);
         }
 
@@ -124,41 +124,14 @@ namespace Strela {
 
     void ByteCodeCompiler::visit(LitExpr& n) {
         int index = 0;
-        if (n.type == &IntType::u8) {
-            chunk.addOp(Opcode::U8, pack(n.token.intVal()));
+        if (n.type == &IntType::instance) {
+            chunk.addOp(Opcode::INT, pack(n.token.intVal()));
         }
-        else if (n.type == &IntType::u16) {
-            chunk.addOp(Opcode::U16, pack(n.token.intVal()));
-        }
-        else if (n.type == &IntType::u32) {
-            chunk.addOp(Opcode::U32, pack(n.token.intVal()));
-        }
-        else if (n.type == &IntType::u64) {
-            index = chunk.addConstant(VMValue(n.token.intVal()));
-            chunk.addOp(Opcode::Const, index);
-        }
-        else if (n.type == &IntType::i8) {
-            chunk.addOp(Opcode::I8, pack(n.token.intVal()));
-        }
-        else if (n.type == &IntType::i16) {
-            chunk.addOp(Opcode::I16, pack(n.token.intVal()));
-        }
-        else if (n.type == &IntType::i32) {
-            chunk.addOp(Opcode::I32, pack(n.token.intVal()));
-        }
-        else if (n.type == &IntType::i64) {
-            index = chunk.addConstant(VMValue(n.token.intVal()));
-            chunk.addOp(Opcode::Const, index);
-        }
-        else if (n.type == &FloatType::f32) {
-            chunk.addOp(Opcode::F32, pack(n.token.floatVal()));
-        }
-        else if (n.type == &FloatType::f64) {
-            index = chunk.addConstant(VMValue(n.token.floatVal()));
-            chunk.addOp(Opcode::Const, index);
+        else if (n.type == &FloatType::instance) {
+            chunk.addOp(Opcode::FLOAT, pack(n.token.floatVal()));
         }
         else if (n.type == &BoolType::instance) {
-            chunk.addOp(Opcode::U8, n.token.boolVal() ? 1 : 0);
+            chunk.addOp(Opcode::INT, n.token.boolVal() ? 1 : 0);
         }
         else if (n.type == &ClassDecl::String) {
             index = chunk.addConstant(VMValue(n.token.value.c_str()));
@@ -229,7 +202,7 @@ namespace Strela {
             chunk.addOp(Opcode::Field, field->index);
         }
         else if (auto en = n.node->as<EnumElement>()) {
-            chunk.addOp(Opcode::I32, en->index);
+            chunk.addOp(Opcode::INT, en->index);
         }
         else {
             error(n, "Invalid scope expr");
@@ -241,7 +214,7 @@ namespace Strela {
         auto pos = chunk.addOp(Opcode::Const, 0);
         chunk.addOp(Opcode::JmpIfNot);
         visitChild(n.trueBranch);
-        auto index = chunk.addConstant(VMValue((uint64_t)chunk.opcodes.size()));
+        auto index = chunk.addConstant(VMValue(int64_t(chunk.opcodes.size())));
         chunk.writeArgument(pos, index);
         if (n.falseBranch) {
             visitChild(n.falseBranch);
@@ -269,9 +242,9 @@ namespace Strela {
         auto pos = chunk.addOp(Opcode::Const, 0);
         chunk.addOp(Opcode::JmpIfNot);
         visitChild(n.body);
-        chunk.addOp(Opcode::Const, chunk.addConstant(VMValue((uint64_t)startPos)));
+        chunk.addOp(Opcode::Const, chunk.addConstant(VMValue(int64_t(startPos))));
         chunk.addOp(Opcode::Jmp);
-        auto index = chunk.addConstant(VMValue((uint64_t)chunk.opcodes.size()));
+        auto index = chunk.addConstant(VMValue(int64_t(chunk.opcodes.size())));
         chunk.writeArgument(pos, index);
     }
 
@@ -283,7 +256,7 @@ namespace Strela {
         visitChild(n.target);
         switch (n.startToken.type) {
             case TokenType::Minus:
-            chunk.addOp(Opcode::I32, pack(-1));
+            chunk.addOp(Opcode::INT, pack(-1));
             chunk.addOp(Opcode::Mul);
             return;
             break;

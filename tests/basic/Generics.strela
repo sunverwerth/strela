@@ -15,10 +15,10 @@ module Generics {
         }
     }
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         var s = new Foo<String>("String");
-        var i = new Foo<i32>(123);
-        var f = new Foo<f32>(1.5);
+        var i = new Foo<int>(123);
+        var f = new Foo<float>(1.5);
 
         s.display();
         i.display();

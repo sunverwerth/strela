@@ -3,7 +3,7 @@ module Require {
 
     import Export;
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         Export.foo();
         Export.bar();
         return 0;

@@ -13,7 +13,7 @@ module Nullable {
         }
     }
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         var value = "Hello, world";
         var ref: String?;
         

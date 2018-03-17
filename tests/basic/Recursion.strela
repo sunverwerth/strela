@@ -2,7 +2,7 @@ module Recursion {
     import Std.IO.*;
 
 
-    function foo(depth: i32) {
+    function foo(depth: int) {
         if (depth > 10) {
             println("Depth 10 reached. Ending recursion.");
             return;
@@ -12,7 +12,7 @@ module Recursion {
         foo(depth+1);
     }
 
-    function main(args: String[]): i32 {
+    function main(args: String[]): int {
         foo(0);
         return 0;
     }
