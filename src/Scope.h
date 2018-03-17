@@ -4,25 +4,14 @@
 #include <map>
 
 namespace Strela {
-    class Type;
     class Node;
-
-    enum class SymbolKind {
-        Type,
-        Node,
-    };
 
     class Symbol {
     public:
-        Symbol(Type* type): kind(SymbolKind::Type), type(type) {}
-        Symbol(Node* node): kind(SymbolKind::Node), node(node) {}
+        Symbol(Node* node): node(node) {}
         
     public:
-        SymbolKind kind;
-        union {
-            Type* type;
-            Node* node;
-        };
+        Node* node;
 		// for overloaded functions
 		Symbol* next = nullptr;
     };
@@ -34,7 +23,6 @@ namespace Strela {
         
         Scope* getParent();
         void setParent(Scope* p);
-        void add(const std::string& name, Type* type);
         void add(const std::string& name, Node* node);
         Symbol* find(const std::string& name);
     

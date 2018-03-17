@@ -53,12 +53,7 @@ namespace Strela {
             }
         }
         std::cout << "): ";
-        if (n.returnTypeExpr) {
-            visitChild(n.returnTypeExpr);
-        }
-        else {
-            std::cout << "void";
-        }
+        visitChild(n.returnTypeExpr);
         std::cout << " {\n";
         push();
         for (auto&& stmt: n.stmts) {

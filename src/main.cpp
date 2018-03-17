@@ -1,11 +1,9 @@
 #include "Lexer.h"
 #include "Parser.h"
 #include "Ast/nodes.h"
-#include "Types/types.h"
 #include "exceptions.h"
 #include "NodePrinter.h"
 #include "NameResolver.h"
-#include "TypeBuilder.h"
 #include "TypeChecker.h"
 #include "ByteCodeCompiler.h"
 #include "Scope.h"
@@ -37,39 +35,22 @@ void help() {
 }
 
 Scope* makeGlobalScope() {
-    using namespace Types;
     auto globals = new Scope(nullptr);
-    i8 = new IntType(true, 1);
-    i16 = new IntType(true, 2);
-    i32 = new IntType(true, 4);
-    i64 = new IntType(true, 8);
-    u8 = new IntType(false, 1);
-    u16 = new IntType(false, 2);
-    u32 = new IntType(false, 4);
-    u64 = new IntType(false, 8);
-    boolean = new BoolType();
-    _void = new VoidType();
-    f32 = new FloatType(4);
-    f64 = new FloatType(8);
-    null = new NullType();
-    typetype = new TypeType();
-    string = new ClassType("String", nullptr);
-    invalid = new InvalidType();
 
-    globals->add("i8", i8);
-    globals->add("i16", i16);
-    globals->add("i32", i32);
-    globals->add("i64", i64);
-    globals->add("u8", u8);
-    globals->add("u16", u16);
-    globals->add("u32", u32);
-    globals->add("u64", u64);
-    globals->add("bool", boolean);
-    globals->add("void", _void);
-    globals->add("f32", f32);
-    globals->add("f64", f64);
-    globals->add("null", null);
-    globals->add("String", string);
+    globals->add("i8", &IntType::i8);
+    globals->add("i16", &IntType::i16);
+    globals->add("i32", &IntType::i32);
+    globals->add("i64", &IntType::i64);
+    globals->add("u8", &IntType::u8);
+    globals->add("u16", &IntType::u16);
+    globals->add("u32", &IntType::u32);
+    globals->add("u64", &IntType::u64);
+    globals->add("bool", &BoolType::instance);
+    globals->add("void", &VoidType::instance);
+    globals->add("f32", &FloatType::f32);
+    globals->add("f64", &FloatType::f64);
+    globals->add("null", &NullType::instance);
+    globals->add("String", &ClassDecl::String);
 
     return globals;
 }
@@ -257,12 +238,6 @@ int main(int argc, char** argv) {
             for (auto&& it: modules) {
                 NameResolver resolver(globals);
                 it.second->accept(resolver);
-            }
-
-            // building types
-            for (auto&& it: modules) {
-                TypeBuilder builder;
-                it.second->accept(builder);
             }
 
             //std::cout << "Running type checker...\n";

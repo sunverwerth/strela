@@ -1,12 +1,54 @@
 #include "TypeChecker.h"
 #include "Ast/nodes.h"
 #include "exceptions.h"
-#include "Types/types.h"
 #include "Scope.h"
 
 #include <sstream>
 
 namespace Strela {
+
+    bool isAssignableFrom(const TypeDecl* to, const TypeDecl* from) {
+        if (to->as<ClassDecl>() && to == from) return true;
+        if (to->as<IntType>() && from->as<IntType>()) return true;
+        if (to->as<FloatType>() && from->as<FloatType>()) return true;
+        if (to->as<BoolType>() && from->as<BoolType>()) return true;
+        return false;
+    }
+
+    bool isCallable(const TypeDecl* ftype, const std::vector<TypeDecl*>& argTypes) {
+        auto signature = ftype->as<FuncType>();
+        if (!signature) return false;
+
+        if (signature->paramTypes.size() != argTypes.size()) return false;
+
+        for (size_t i = 0; i < argTypes.size(); ++i) {
+            if (!isAssignableFrom(signature->paramTypes[i], argTypes[i])) return false;
+        }
+        return true;
+    }
+
+    bool isScalar(const TypeDecl* type) {
+        return
+            type->as<FloatType>() ||
+            type->as<IntType>()
+            ;
+    }
+
+    TypeDecl* getSignedType(TypeDecl* t) {
+        if (auto intt = t->as<IntType>()) {
+            if (intt->isSigned) return intt;
+            else if (intt->bytes == 1) return &IntType::i8;
+            else if (intt->bytes == 2) return &IntType::i16;
+            else if (intt->bytes == 4) return &IntType::i32;
+            else if (intt->bytes == 8) return &IntType::i64;
+        }
+        else if (auto floatt = t->as<FloatType>()) {
+            return floatt;
+        }
+        else {
+            return &InvalidType::instance;
+        }
+    }
 
     TypeChecker::TypeChecker() {
     }
@@ -30,9 +72,9 @@ namespace Strela {
         auto oldfunction = function;
         function = &n;
 
-        if (n.returnTypeExpr) visitChild(n.returnTypeExpr);
+        visitChild(n.returnTypeExpr);
         visitChildren(n.params);
-        Type* returnTypeExpr = n.returnTypeExpr ? n.returnTypeExpr->staticValue.type : Types::_void;
+        TypeDecl* returnType = n.returnTypeExpr->type;
 
         bool unreachableWarning = false;
         for (auto&& stmt: n.stmts) {
@@ -44,7 +86,7 @@ namespace Strela {
             if (stmt->returns) n.returns = true;
         }
 
-        if (!n.returns && returnTypeExpr != Types::_void) {
+        if (!n.returns && returnType != &VoidType::instance) {
             error(n, n.name + ": Not all paths return a value.");
         }
 
@@ -62,64 +104,48 @@ namespace Strela {
 
         if (n.initializer) {
             visitChild(n.initializer);
-            if (n.declType == Types::invalid) {
-                n.declType = n.initializer->type;
+            if (n.typeExpr == nullptr) {
+                n.type = n.initializer->type;
             }
-            if (!n.declType->isAssignableFrom(n.initializer->type)) {
-                error(n, n.name + ": Can not assign '" + n.initializer->type->name + "' to '" + n.declType->name + "'.");
+            if (!isAssignableFrom(n.type, n.initializer->type)) {
+                error(n, n.name + ": Can not assign '" + n.initializer->type->name + "' to '" + n.type->name + "'.");
             }
         }
     }
 
     void TypeChecker::visit(IdExpr& n) {
-        if (n.symbol->kind == SymbolKind::Type) {
-            n.type = Types::typetype;
-            n.isStatic = true;
-            n.staticValue.type = n.symbol->type;
-        }
-        else {
-            if (auto fun = n.symbol->node->as<FuncDecl>()) {
-                n.isStatic = true;
+        if (auto fun = n.symbol->node->as<FuncDecl>()) {
+            if (n.symbol->next) {
                 auto cur = n.symbol;
                 while (cur) {
                     n.candidates.push_back(cur->node->as<FuncDecl>());
                     cur = cur->next;
                 }
-                if (n.candidates.size() == 1) {
-                    n.type = n.candidates[0]->declType;
-                    n.referencedFunction = n.candidates[0];
-                }
-                else {
-                    n.type = Types::invalid;
-                }
-            }
-            else if (auto param = n.symbol->node->as<Param>()) {
-                n.type = param->declType;
-                n.isStatic = false;
-                n.referencedParam = param;
-            }
-            else if (auto var = n.symbol->node->as<VarDecl>()) {
-                n.type = var->declType;
-                n.isStatic = false;
-                n.referencedVar = var;
-            }
-            else if (auto mod = n.symbol->node->as<ModDecl>()) {
-                n.type = mod->declType;
-                n.isStatic = true;
-                n.referencedModule = mod;
-            }
-            else if (auto en = n.symbol->node->as<EnumDecl>()) {
-                n.type = en->declType;
-                n.isStatic = true;
-                n.referencedEnum = en;
+                n.type = &OverloadedFuncType::instance;
             }
             else {
-                error(n, "Unhandled symbol");
+                n.type = fun->type;
+                n.node = fun;
             }
+        }
+        else if (auto param = n.symbol->node->as<Param>()) {
+            n.type = param->typeExpr->type;
+            n.node = param;
+        }
+        else if (auto var = n.symbol->node->as<VarDecl>()) {
+            n.type = var->type;
+            n.node = var;
+        }
+        else if (auto td = n.symbol->node->as<TypeDecl>()) {
+            n.type = &TypeType::instance;
+            n.node = td;
+        }
+        else {
+            error(n, "Unhandled symbol");
         }
     }
 
-    FuncDecl* TypeChecker::findOverload(Expr* target, const std::vector<Type*>& argTypes) {
+    FuncDecl* TypeChecker::findOverload(Expr* target, const std::vector<TypeDecl*>& argTypes) {
         std::vector<FuncDecl*> candidates;
         int numFound = 0;
         for (auto&& candidate: target->candidates) {
@@ -128,12 +154,12 @@ namespace Strela {
                 continue;
             }
 
-            if (candidate->declType->as<FunctionType>()->paramTypes == argTypes) {
+            if (candidate->type->as<FuncType>()->paramTypes == argTypes) {
                 // exact match
                 return candidate;
             }
 
-            if (candidate->declType->isCallable(argTypes)) {
+            if (isCallable(candidate->type, argTypes)) {
                 // match with conversion
                 candidates.push_back(candidate);
             }
@@ -157,36 +183,9 @@ namespace Strela {
             int i = 0;
             for (auto&& candidate: candidates) {
                 ++i;
-                error(*candidate, "Candidate " + std::to_string(i) + " is " + candidate->declType->name);
+                error(*candidate, "Candidate " + std::to_string(i) + " is " + candidate->type->name);
             }
         }
-
-        target->referencedFunction = candidates.front();
-        target->type = target->referencedFunction->returnType;
-        target->isStatic = true;
-
-        /*if (ft->isCallable(argTypes)) {
-            n.type = ft->returnTypeExpr;
-        }
-        else {
-            std::stringstream sstr;
-            sstr << "Arguments mismatch. Expected (";
-            for (auto&& p: ft->paramTypes) {
-                sstr << p->name;
-                if (&p != &ft->paramTypes.back()) {
-                    sstr << ", ";
-                }
-            }
-            sstr << ") but was called with (";
-            for (auto&& a: argTypes) {
-                sstr << a->name;
-                if (&a != &argTypes.back()) {
-                    sstr << ", ";
-                }
-            }
-            sstr << ").";
-            error(n, sstr.str());
-        }*/
 
         return candidates.front();
     }
@@ -195,20 +194,29 @@ namespace Strela {
         visitChildren(n.arguments);
         visitChild(n.callTarget);
 
-        if (n.callTarget->candidates.size() > 0) {
-            std::vector<Type*> argTypes;
-            if (n.callTarget->nodeParent) {
-                argTypes.push_back(n.callTarget->nodeParent->type);
-            }
-            for (auto&& argument: n.arguments) {
-                argTypes.push_back(argument->type);
-            }
+        std::vector<TypeDecl*> argTypes;
+        if (auto scope = n.callTarget->as<ScopeExpr>()) {
+            argTypes.push_back(scope->scopeTarget->type);
+        }
+        for (auto&& argument: n.arguments) {
+            argTypes.push_back(argument->type);
+        }
 
+        if (n.callTarget->node) {
+            if (isCallable(n.callTarget->node->as<FuncDecl>()->type, argTypes)) {
+                n.type = n.callTarget->type->as<FuncType>()->returnType;
+            }
+            else {
+                error(*n.callTarget, "Is not callable");
+            }
+        }
+        else if (n.callTarget->candidates.size() > 0) {
             // find suitable overload
             auto fun = findOverload(n.callTarget, argTypes);
-            n.type = fun->returnType;
-            n.isStatic = false;
-            n.callTarget->referencedFunction = fun;
+            n.callTarget->type = fun->type;
+            n.callTarget->node = fun;
+
+            n.type = fun->type->returnType;
         }
         else {
             error(n, "Can not call value of type '" + n.callTarget->type->name + "'");
@@ -220,11 +228,11 @@ namespace Strela {
 
         if (n.expression) {
             visitChild(n.expression);
-            if (!function->returnTypeExpr->staticValue.type->isAssignableFrom(n.expression->type)) {
-                error(n, function->name + ": Incompatible return type. Returning '" + n.expression->type->name + "' from '" + function->returnTypeExpr->staticValue.type->name + "' function.");
+            if (!isAssignableFrom(function->type->returnType, n.expression->type)) {
+                error(n, function->name + ": Incompatible return type. Returning '" + n.expression->type->name + "' from '" + function->returnTypeExpr->type->name + "' function.");
             }
         }
-        else if (function->returnType != Types::_void) {
+        else if (function->type->returnType != &VoidType::instance) {
             error(n, "non-void function must return a value.");
         }
     }
@@ -238,51 +246,36 @@ namespace Strela {
             case TokenType::Integer: {
                 uint64_t num = std::strtoull(n.token.value.c_str(), nullptr, 10);
                 if (num > 0xffffffff) {
-                    n.type = Types::u64;
-                    n.isStatic = true;
-                    n.staticValue.u64 = num;
+                    n.type = &IntType::u64;
                 }
                 else if (num > 0xffff) {
-                    n.type = Types::u32;
-                    n.isStatic = true;
-                    n.staticValue.u32 = num;
+                    n.type = &IntType::u32;
                 }
                 else if (num > 0xff) {
-                    n.type = Types::u16;
-                    n.isStatic = true;
-                    n.staticValue.u16 = num;
+                    n.type = &IntType::u16;
                 }
                 else {
-                    n.type = Types::u8;
-                    n.isStatic = true;
-                    n.staticValue.u8 = num;
+                    n.type = &IntType::u8;
                 }
                 break;
             }
 
             case TokenType::Float: {
                 double num = std::strtod(n.token.value.c_str(), nullptr);
-                n.type = Types::f64;
-                n.isStatic = true;
-                n.staticValue.f64 = num;
+                n.type = &FloatType::f64;
                 break;
             }
 
             case TokenType::Boolean:
-                n.type = Types::boolean;
-                n.isStatic = true;
-                n.staticValue.boolean = (n.token.value == "true");
+                n.type = &BoolType::instance;
                 break;
 
             case TokenType::String:
-                n.type = Types::string;
-                n.isStatic = true;
-                n.staticValue.string = n.token.value.c_str();
+                n.type = &ClassDecl::String;
                 break;
 
             case TokenType::Null:
-                n.type = Types::null;
-                n.isStatic = true;
+                n.type = &NullType::instance;
                 break;
 
             default:
@@ -338,23 +331,23 @@ namespace Strela {
             }
 
             if (op == TokenType::LessThan || op == TokenType::GreaterThan || op == TokenType::LessThanEquals || op == TokenType::GreaterThanEquals) {
-                n.type = Types::boolean;
+                n.type = &BoolType::instance;
             }
             else {
                 if (lint && rint) {
                     int bytes = lint->bytes > rint->bytes ? lint->bytes : rint->bytes;
                     bool isSigned = lint->isSigned || rint->isSigned;
                     if (isSigned) {
-                        if (bytes == 1) n.type = Types::i8;
-                        else if (bytes == 2) n.type = Types::i16;
-                        else if (bytes == 4) n.type = Types::i32;
-                        else if (bytes == 8) n.type = Types::i64;
+                        if (bytes == 1) n.type = &IntType::i8;
+                        else if (bytes == 2) n.type = &IntType::i16;
+                        else if (bytes == 4) n.type = &IntType::i32;
+                        else if (bytes == 8) n.type = &IntType::i64;
                     }
                     else {
-                        if (bytes == 1) n.type = Types::u8;
-                        else if (bytes == 2) n.type = Types::u16;
-                        else if (bytes == 4) n.type = Types::u32;
-                        else if (bytes == 8) n.type = Types::u64;
+                        if (bytes == 1) n.type = &IntType::u8;
+                        else if (bytes == 2) n.type = &IntType::u16;
+                        else if (bytes == 4) n.type = &IntType::u32;
+                        else if (bytes == 8) n.type = &IntType::u64;
                     }
                 }
                 else if (lfloat && rfloat) {
@@ -372,13 +365,13 @@ namespace Strela {
             if (!((leftScalar && rightScalar) || (ltype == rtype))) {
                 error(n, "Binary operator '" + n.startToken.value + "' is not applicable to types '" + ltype->name + "' and '" + rtype->name + "'.");
             }
-            n.type = Types::boolean;
+            n.type = &BoolType::instance;
         }
         else if (op == TokenType::PipePipe || op == TokenType::AmpAmp) {
-            if (!(ltype == Types::boolean && rtype == Types::boolean)) {
+            if (!(ltype == &BoolType::instance && rtype == &BoolType::instance)) {
                 error(n, "Binary operator '" + n.startToken.value + "': Both operands must have boolean type. Actual types are '" + ltype->name + "' and '" + rtype->name + "'.");
             }
-            n.type = Types::boolean;
+            n.type = &BoolType::instance;
         }
         else {
             error(n, "Invalid binary operator '" + n.startToken.value + "'");
@@ -391,75 +384,12 @@ namespace Strela {
     }
 
     void TypeChecker::visit(ScopeExpr& n) {
-        visitChild(n.scopeTarget);
-        auto ttype = n.scopeTarget->type;
-        if (auto mod = ttype->as<ModuleType>()) {
-            if (auto member = mod->module->getMember(n.name)) {
-                if (auto function = member->as<FuncDecl>()) {
-                    n.isStatic = true;
-                    n.candidates = mod->module->getFunctions(n.name);
-                    if (n.candidates.size() == 1) {
-                        n.type = n.candidates[0]->declType;
-                        n.referencedFunction = n.candidates[0];
-                    }
-                    else {
-                        n.type = Types::invalid;
-                    }
-                }
-                else {
-                    error(n, "TODO");
-                }
-            }
-            else {
-                error(n, "Module '" + mod->name + "' has no member named '" + n.name + "'.");
-            }
-        }
-        else if (auto cls = ttype->as<ClassType>()) {
-            if (auto member = cls->_class->getMember(n.name)) {
-                if (auto method = member->as<FuncDecl>()) {
-                    n.isStatic = true;
-                    n.nodeParent = n.scopeTarget;
-                    n.candidates = cls->_class->getMethods(n.name);
-                    if (n.candidates.size() == 1) {
-                        n.type = n.candidates[0]->declType;
-                        n.referencedFunction = n.candidates[0];
-                    }
-                    else {
-                        n.type = Types::invalid;
-                    }
-                }
-                else if (auto field = member->as<FieldDecl>()) {
-                    n.type = field->declType;
-                    n.isStatic = false;
-                    n.nodeParent = n.scopeTarget;
-                    n.referencedField = field;
-                }
-                else {
-                    error(n, "TODO");
-                }
-            }
-            else {
-                error(n, "Class '" + cls->name + "' has no member named '" + n.name + "'.");
-            }
-        }
-        else if (auto en = ttype->as<EnumType>()) {
-            if (auto member = en->enumDecl->getMember(n.name)) {
-                n.isStatic = true;
-                n.type = ttype;
-                n.referencedEnumElement = member;
-            }
-            else {
-                error(n, "Enum '" + cls->name + "' has no member named '" + n.name + "'.");
-            }
-        }
-        else {
-            error(n, "Scope operator is inapplicable to type '" + ttype->name + "'.");
-        }
+        visitChild(n.scopeTarget);        
     }
 
     void TypeChecker::visit(IfStmt& n) {
         visitChild(n.condition);
-        if (n.condition->type != Types::boolean) {
+        if (n.condition->type != &BoolType::instance) {
             error(*n.condition, "Condition must yield boolean value.");
         }
         visitChild(n.trueBranch);
@@ -476,9 +406,9 @@ namespace Strela {
 
     void TypeChecker::visit(NewExpr& n) {
         visitChild(n.typeExpr);
-        n.type = n.typeExpr->staticValue.type;
+        n.type = n.typeExpr->type;
 
-        if (!n.type->as<ClassType>()) {
+        if (!n.type->as<ClassDecl>()) {
             error(n, "Only class types are instantiable.");
         }
     }
@@ -493,18 +423,16 @@ namespace Strela {
 
     void TypeChecker::visit(PostfixExpr& n) {
         visitChild(n.target);
-        if (!n.target->type->isScalar()) {
-            error(n, "Operator '" + n.startToken.value + "' is only applicable to scalar values. Target type is '" + n.target->type->name + "'.");
-        }
-        if (!(n.target->referencedField || n.target->referencedParam || n.target->referencedVar)) {
+        if (!n.target->node || !(n.target->node->as<FieldDecl>() || n.target->node->as<Param>() || n.target->node->as<VarDecl>())) {
             error(n, "Target for operator '" + n.startToken.value + "' must be a reference to a mutable value.");
+            return;
+        }
+        if (!isScalar(n.target->type)) {
+            error(n, "Operator '" + n.startToken.value + "' is only applicable to scalar values. Target type is '" + n.target->type->name + "'.");
+            return;
         }
         n.type = n.target->type;
-        n.isStatic = false;
-        n.nodeParent = n.target->nodeParent;
-        n.referencedField = n.target->referencedField;
-        n.referencedVar = n.target->referencedVar;
-        n.referencedParam = n.target->referencedParam;
+        n.node = n.target->node;
     }
 
     void TypeChecker::visit(ArrayTypeExpr& n) {
@@ -519,13 +447,7 @@ namespace Strela {
         switch (n.startToken.type) {
             case TokenType::Minus:
             if (auto intt = n.target->type->as<IntType>()) {
-                n.type = intt->getSignedType();
-                if (n.target->isStatic) {
-                    if (n.target->type == Types::u32) {
-                        n.isStatic = true;
-                        n.staticValue.i32 = -1 * n.target->staticValue.u32;
-                    }
-                }
+                n.type = getSignedType(intt);
                 return;
             }
             if (auto flt = n.target->type->as<FloatType>()) {
@@ -536,15 +458,15 @@ namespace Strela {
             break;
 
             case TokenType::ExclamationMark:
-            if (n.target->type == Types::boolean) {
-                n.type = Types::boolean;
+            if (n.target->type == &BoolType::instance) {
+                n.type = &BoolType::instance;
                 return;
             }
             error(n, "Unary operator '!' is only applicable to boolean values.");
             break;
         }
         error(n, "Unhandled unary prefix operator '" + n.startToken.value + "'.");
-        n.type = Types::invalid;
+        n.type = &InvalidType::instance;
     }
 
     void TypeChecker::visit(EnumDecl& n) {

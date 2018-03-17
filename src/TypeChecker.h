@@ -9,7 +9,7 @@
 #include <vector>
 
 namespace Strela {
-    class Type;
+    class TypeDecl;
     class Node;
     class Stmt;
     class Expr;
@@ -55,7 +55,7 @@ namespace Strela {
         }
 
     private:
-		FuncDecl* findOverload(Expr* target, const std::vector<Type*>& argtypes);
+		FuncDecl* findOverload(Expr* target, const std::vector<TypeDecl*>& argtypes);
         void error(Node& node, const std::string& msg);
         void warning(Node& node, const std::string& msg);
 

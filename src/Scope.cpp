@@ -13,10 +13,6 @@ namespace Strela {
         }
     }
 
-    void Scope::add(const std::string& name, Type* type) {
-        add(name, new Symbol(type));
-    }
-
     void Scope::add(const std::string& name, Node* node) {
         add(name, new Symbol(node));
     }
@@ -24,7 +20,7 @@ namespace Strela {
     void Scope::add(const std::string& name, Symbol* symbol) {
         auto it = symbols.find(name);
         if (it != symbols.end()) {
-			if (symbol->kind == SymbolKind::Node && symbol->node->as<FuncDecl>() && it->second->kind == SymbolKind::Node && it->second->node->as<FuncDecl>()) {
+			if (symbol->node->as<FuncDecl>() && it->second->node->as<FuncDecl>()) {
 				symbol->next = it->second;
 				it->second = symbol;
 			}

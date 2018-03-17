@@ -156,6 +156,9 @@ namespace Strela {
             eat();
             returnTypeExpr = parseTypeExpr();
         }
+        else {
+            returnTypeExpr = new IdTypeExpr(*token, "void");
+        }
         
         eat(TokenType::CurlyOpen);
         std::vector<Stmt*> stmts;

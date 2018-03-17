@@ -16,6 +16,19 @@ namespace Strela {
     class ImportStmt;
     class EnumDecl;
     class EnumElement;
+    class ArrayType;
+    class ClassDecl;
+    class EnumDecl;
+    class FloatType;
+    class FuncType;
+    class IntType;
+    class ModDecl;
+    class NullType;
+    class VoidType;
+    class BoolType;
+    class OverloadedFuncType;
+    class TypeType;
+    class InvalidType;
 
     class IStmtVisitor {
     public:
@@ -34,6 +47,18 @@ namespace Strela {
         virtual void visit(ExprStmt&) = 0;
         virtual void visit(IfStmt&) = 0;
         virtual void visit(WhileStmt&) = 0;
+
+        // builtin types
+        virtual void visit(ArrayType&) {}
+        virtual void visit(FloatType&) {}
+        virtual void visit(FuncType&) {}
+        virtual void visit(IntType&) {}
+        virtual void visit(NullType&) {}
+        virtual void visit(VoidType&) {}
+        virtual void visit(BoolType&) {}
+        virtual void visit(TypeType&) {}
+        virtual void visit(InvalidType&) {}
+        virtual void visit(OverloadedFuncType&) {}
     };
 }
 

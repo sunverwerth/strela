@@ -1,6 +1,5 @@
 #include "NameResolver.h"
 #include "Ast/nodes.h"
-#include "Types/types.h"
 #include "exceptions.h"
 #include "Scope.h"
 
@@ -98,9 +97,15 @@ namespace Strela {
         auto oldscope = scope;
         scope = new Scope(scope);
 
-        if (n.returnTypeExpr) visitChild(n.returnTypeExpr);
+        visitChild(n.returnTypeExpr);
         visitChildren(n.params);
         visitChildren(n.stmts);
+
+        std::vector<TypeDecl*> paramTypes;
+        for (auto&& param: n.params) {
+            paramTypes.push_back(param->typeExpr->type);
+        }
+        n.type = FuncType::get(n.returnTypeExpr->type, paramTypes);
 
         delete scope;
         scope = oldscope;
@@ -114,6 +119,7 @@ namespace Strela {
     void NameResolver::visit(VarDecl& n) {
         if (n.typeExpr) {
             visitChild(n.typeExpr);
+            n.type = n.typeExpr->type;
         }
         if (n.initializer) {
             visitChild(n.initializer);
@@ -191,6 +197,14 @@ namespace Strela {
         if (!n.symbol) {
             throw UnresolvedSymbolException(n.name, n);
         }
+        
+        if (auto t = n.symbol->node->as<TypeDecl>()) {
+            n.type = t;
+        }
+        else {
+            n.type = &InvalidType::instance;
+            throw Exception("'" + n.name + "' does not name a type.");
+        }
     }
 
     void NameResolver::visit(WhileStmt& n) {
@@ -204,6 +218,7 @@ namespace Strela {
 
     void NameResolver::visit(ArrayTypeExpr& n) {
         visitChild(n.base);
+        n.type = ArrayType::get(n.base->type);
     }
 
     void NameResolver::visit(ImportStmt& n) {

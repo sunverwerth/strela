@@ -165,9 +165,6 @@
     <ClInclude Include="src\VMObject.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\TypeBuilder.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="src\Types\ArrayType.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -306,9 +303,6 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="src\VMObject.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TypeBuilder.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="src\Types\ArrayType.cpp">

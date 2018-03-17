@@ -5,7 +5,6 @@
 #include <iostream>
 
 namespace Strela {
-    class Type;
     class VMObject;
     
     struct VMValue {

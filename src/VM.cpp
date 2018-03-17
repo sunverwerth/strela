@@ -2,7 +2,6 @@
 #include "ByteCodeChunk.h"
 #include "Opcode.h"
 #include "exceptions.h"
-#include "Types/types.h"
 #include "VMObject.h"
 
 #include <cstring>

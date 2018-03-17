@@ -1,6 +1,5 @@
 #include "Decompiler.h"
 #include "ByteCodeChunk.h"
-#include "Types/types.h"
 
 #include <iostream>
 #include <iomanip>

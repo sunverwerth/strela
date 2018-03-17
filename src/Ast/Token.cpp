@@ -17,4 +17,16 @@ namespace Strela {
     std::string getTokenName(TokenType type) {
         return tokenNames[type];
     }
+
+    double Token::floatVal() {
+        return std::stod(value);
+    }
+
+    int64_t Token::intVal() {
+        return std::stoll(value);
+    }
+
+    bool Token::boolVal() {
+        return value == "true";
+    }
 }

@@ -84,6 +84,10 @@ namespace Strela {
         std::string value;
         int line;
         int column;
+
+        double floatVal();
+        int64_t intVal();
+        bool boolVal();
     };
 
     std::ostream& operator<<(std::ostream& stream, const Token& t);

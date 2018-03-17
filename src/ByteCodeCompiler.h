@@ -53,7 +53,6 @@ namespace Strela {
         }
 
     private:
-        bool tryCompileAsConst(Expr& n);
         void error(Node& node, const std::string& msg);
 
     private:

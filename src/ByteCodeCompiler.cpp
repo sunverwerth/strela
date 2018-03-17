@@ -4,7 +4,6 @@
 #include "ByteCodeChunk.h"
 #include "Opcode.h"
 #include "Scope.h"
-#include "Types/types.h"
 
 #include <sstream>
 #include <cstring>
@@ -53,14 +52,7 @@ namespace Strela {
         function = &n;
         n.opcodeStart = chunk.opcodes.size();
         std::stringstream sstr;
-        sstr << n.name << "(";
-        for (auto&& param: n.params) {
-            sstr << param->declType->name;
-            if (&param != &n.params.back()) {
-                sstr << ", ";
-            }
-        }
-        sstr << "): " << n.returnType->name;
+        sstr << n.name << n.type->name;
         chunk.addFunction(n.opcodeStart, sstr.str());
         visitChildren(n.params);
         if (n.numVariables > 0) {
@@ -86,23 +78,21 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(IdExpr& n) {
-        if (tryCompileAsConst(n)) return;
-
-        if (n.referencedFunction) {
+        if (auto fun = n.node->as<FuncDecl>()) {
             auto index = chunk.addOp(Opcode::Const, 255);
-            functionFixups[index] = n.referencedFunction;
+            functionFixups[index] = fun;
         }
-        else if (n.referencedParam) {
-            chunk.addOp(Opcode::Param, n.referencedParam->index);
+        else if (auto par = n.node->as<Param>()) {
+            chunk.addOp(Opcode::Param, par->index);
         }
-        else if (n.referencedVar) {
-            chunk.addOp(Opcode::Var, n.referencedVar->index);
+        else if (auto var = n.node->as<VarDecl>()) {
+            chunk.addOp(Opcode::Var, var->index);
         }
     }
 
     void ByteCodeCompiler::visit(ExprStmt& n) {
         visitChild(n.expression);
-        if (n.expression->type != Types::_void) {
+        if (n.expression->type != &VoidType::instance) {
             chunk.addOp(Opcode::Pop);
         }
     }
@@ -112,7 +102,7 @@ namespace Strela {
             n.arguments[i - 1]->accept(*this);
         }
 
-        auto fun = n.callTarget->referencedFunction;
+        auto fun = n.callTarget->node->as<FuncDecl>();
         if (fun->name == "print") {
             chunk.addOp(Opcode::Print);
         }
@@ -134,47 +124,47 @@ namespace Strela {
 
     void ByteCodeCompiler::visit(LitExpr& n) {
         int index = 0;
-        if (n.type == Types::u8) {
-            chunk.addOp(Opcode::U8, pack(n.staticValue.u8));
+        if (n.type == &IntType::u8) {
+            chunk.addOp(Opcode::U8, pack(n.token.intVal()));
         }
-        else if (n.type == Types::u16) {
-            chunk.addOp(Opcode::U16, pack(n.staticValue.u16));
+        else if (n.type == &IntType::u16) {
+            chunk.addOp(Opcode::U16, pack(n.token.intVal()));
         }
-        else if (n.type == Types::u32) {
-            chunk.addOp(Opcode::U32, pack(n.staticValue.u32));
+        else if (n.type == &IntType::u32) {
+            chunk.addOp(Opcode::U32, pack(n.token.intVal()));
         }
-        else if (n.type == Types::u64) {
-            index = chunk.addConstant(VMValue(n.staticValue.u64));
+        else if (n.type == &IntType::u64) {
+            index = chunk.addConstant(VMValue(n.token.intVal()));
             chunk.addOp(Opcode::Const, index);
         }
-        else if (n.type == Types::i8) {
-            chunk.addOp(Opcode::I8, pack(n.staticValue.i8));
+        else if (n.type == &IntType::i8) {
+            chunk.addOp(Opcode::I8, pack(n.token.intVal()));
         }
-        else if (n.type == Types::i16) {
-            chunk.addOp(Opcode::I16, pack(n.staticValue.i16));
+        else if (n.type == &IntType::i16) {
+            chunk.addOp(Opcode::I16, pack(n.token.intVal()));
         }
-        else if (n.type == Types::i32) {
-            chunk.addOp(Opcode::I32, pack(n.staticValue.i32));
+        else if (n.type == &IntType::i32) {
+            chunk.addOp(Opcode::I32, pack(n.token.intVal()));
         }
-        else if (n.type == Types::i64) {
-            index = chunk.addConstant(VMValue(n.staticValue.i64));
+        else if (n.type == &IntType::i64) {
+            index = chunk.addConstant(VMValue(n.token.intVal()));
             chunk.addOp(Opcode::Const, index);
         }
-        else if (n.type == Types::f32) {
-            chunk.addOp(Opcode::F32, pack(n.staticValue.f32));
+        else if (n.type == &FloatType::f32) {
+            chunk.addOp(Opcode::F32, pack(n.token.floatVal()));
         }
-        else if (n.type == Types::f64) {
-            index = chunk.addConstant(VMValue(n.staticValue.f64));
+        else if (n.type == &FloatType::f64) {
+            index = chunk.addConstant(VMValue(n.token.floatVal()));
             chunk.addOp(Opcode::Const, index);
         }
-        else if (n.type == Types::boolean) {
-            chunk.addOp(Opcode::U8, n.staticValue.boolean ? 1 : 0);
+        else if (n.type == &BoolType::instance) {
+            chunk.addOp(Opcode::U8, n.token.boolVal() ? 1 : 0);
         }
-        else if (n.type == Types::string) {
-            index = chunk.addConstant(VMValue(n.staticValue.string));
+        else if (n.type == &ClassDecl::String) {
+            index = chunk.addConstant(VMValue(n.token.value.c_str()));
             chunk.addOp(Opcode::Const, index);
         }
-        else if (n.type == Types::null) {
+        else if (n.type == &NullType::instance) {
             chunk.addOp(Opcode::Null);
         }
         else error(n, "Invalid literal type");
@@ -185,8 +175,6 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(BinopExpr& n) {
-        if (tryCompileAsConst(n)) return;
-
         visitChild(n.left);
         visitChild(n.right);
         switch (n.startToken.type) {
@@ -233,15 +221,15 @@ namespace Strela {
 
     void ByteCodeCompiler::visit(ScopeExpr& n) {
         visitChild(n.scopeTarget);
-        if (n.referencedFunction) {
+        if (auto fun = n.node->as<FuncDecl>()) {
             auto index = chunk.addOp(Opcode::Const, 255);
-            functionFixups[index] = n.referencedFunction;
+            functionFixups[index] = fun;
         }
-        else if (n.referencedField) {
-            chunk.addOp(Opcode::Field, n.referencedField->index);
+        else if (auto field = n.node->as<FieldDecl>()) {
+            chunk.addOp(Opcode::Field, field->index);
         }
-        else if (n.referencedEnumElement) {
-            chunk.addOp(Opcode::I32, n.referencedEnumElement->index);
+        else if (auto en = n.node->as<EnumElement>()) {
+            chunk.addOp(Opcode::I32, en->index);
         }
         else {
             error(n, "Invalid scope expr");
@@ -264,30 +252,12 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(NewExpr& n) {
-        chunk.addOp(Opcode::New, n.type->as<ClassType>()->_class->fields.size());
+        chunk.addOp(Opcode::New, n.type->as<ClassDecl>()->fields.size());
     }
 
     void ByteCodeCompiler::visit(AssignExpr& n) {
         visitChild(n.right);
         chunk.addOp(Opcode::Repeat);
-        if (n.left->referencedVar) {
-            chunk.addOp(Opcode::StoreVar, n.left->referencedVar->index);
-        }
-        else if (n.left->referencedParam) {
-            chunk.addOp(Opcode::StoreParam, n.left->referencedParam->index);
-        }
-        else if (n.left->referencedField) {
-            if (n.left->nodeParent) {
-                visitChild(n.left->nodeParent);
-                chunk.addOp(Opcode::StoreField, n.left->referencedField->index);
-            }
-            else {
-                error(n, "Invalid target");
-            }
-        }
-        else {
-            error(n, "Invalid target");
-        }
     }
 
     void ByteCodeCompiler::visit(IdTypeExpr&) {
@@ -306,39 +276,10 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(PostfixExpr& n) {
-        visitChild(n.target);
-        chunk.addOp(Opcode::Repeat);
-        chunk.addOp(Opcode::U8, 1);
-        if (n.startToken.type == TokenType::PlusPlus) {
-            chunk.addOp(Opcode::Add);
-        }
-        else if (n.startToken.type == TokenType::MinusMinus) {
-            chunk.addOp(Opcode::Sub);
-        }
-
-        if (n.referencedVar) {
-            chunk.addOp(Opcode::StoreVar, n.referencedVar->index);
-        }
-        else if (n.referencedParam) {
-            chunk.addOp(Opcode::StoreParam, n.referencedParam->index);
-        }
-        else if (n.referencedField) {
-            if (n.target->nodeParent) {
-                visitChild(n.target->nodeParent);
-                chunk.addOp(Opcode::StoreField, n.referencedField->index);
-            }
-            else {
-                error(n, "Invalid target");
-            }
-        }
-        else {
-            error(n, "Invalid target");
-        }
+        
     }
 
     void ByteCodeCompiler::visit(UnaryExpr& n) {
-        if (tryCompileAsConst(n)) return;
-
         visitChild(n.target);
         switch (n.startToken.type) {
             case TokenType::Minus:
@@ -360,19 +301,6 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(EnumElement& n) {
-    }
-
-    bool ByteCodeCompiler::tryCompileAsConst(Expr& n) {
-        if (n.isStatic) {
-            if (n.type == Types::i32) {
-                chunk.addOp(Opcode::I32, pack(n.staticValue.i32));
-            }
-            else {
-                return false;
-            }
-            return true;
-        }
-        return false;
     }
 
     void ByteCodeCompiler::error(Node& n, const std::string& msg) {

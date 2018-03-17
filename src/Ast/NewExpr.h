@@ -6,7 +6,6 @@
 #include <string>
 
 namespace Strela {
-    class Type;
     class TypeExpr;
 
     class NewExpr: public Expr {
