@@ -46,101 +46,6 @@ namespace Strela {
         }
     }
 
-    TypeChecker::TypeChecker() {
-    }
-
-    void TypeChecker::visit(ModDecl& n) {
-        visitChildren(n.functions);
-        visitChildren(n.classes);
-    }
-
-    void TypeChecker::visit(ClassDecl& n) {
-        auto oldclass = _class;
-        _class = &n;
-        
-        visitChildren(n.fields);
-        visitChildren(n.methods);
-
-        _class = oldclass;
-    }
-
-    void TypeChecker::visit(FuncDecl& n) {
-        auto oldfunction = function;
-        function = &n;
-
-        visitChild(n.returnTypeExpr);
-        visitChildren(n.params);
-        TypeDecl* returnType = n.returnTypeExpr->type;
-
-        bool unreachableWarning = false;
-        for (auto&& stmt: n.stmts) {
-            if (n.returns && !unreachableWarning) {
-                unreachableWarning = true;
-                warning(*stmt, "Unreachable code detected.");
-            }
-            stmt->accept(*this);
-            if (stmt->returns) n.returns = true;
-        }
-
-        if (!n.returns && returnType != &VoidType::instance) {
-            error(n, n.name + ": Not all paths return a value.");
-        }
-
-        function = oldfunction;
-    }
-
-    void TypeChecker::visit(Param& n) {
-        visitChild(n.typeExpr);
-    }
-
-    void TypeChecker::visit(VarDecl& n) {
-        if (n.typeExpr) {
-            visitChild(n.typeExpr);
-        }
-
-        if (n.initializer) {
-            visitChild(n.initializer);
-            if (n.typeExpr == nullptr) {
-                n.type = n.initializer->type;
-            }
-            if (!isAssignableFrom(n.type, n.initializer->type)) {
-                error(n, n.name + ": Can not assign '" + n.initializer->type->name + "' to '" + n.type->name + "'.");
-            }
-        }
-    }
-
-    void TypeChecker::visit(IdExpr& n) {
-        if (auto fun = n.symbol->node->as<FuncDecl>()) {
-            if (n.symbol->next) {
-                auto cur = n.symbol;
-                while (cur) {
-                    n.candidates.push_back(cur->node->as<FuncDecl>());
-                    cur = cur->next;
-                }
-                n.type = &OverloadedFuncType::instance;
-            }
-            else {
-                n.type = fun->type;
-                n.node = fun;
-            }
-        }
-        else if (auto param = n.symbol->node->as<Param>()) {
-            n.type = param->typeExpr->type;
-            n.node = param;
-        }
-        else if (auto var = n.symbol->node->as<VarDecl>()) {
-            n.type = var->type;
-            n.node = var;
-        }
-        else if (auto td = n.symbol->node->as<TypeDecl>()) {
-            n.type = &TypeType::instance;
-            n.node = td;
-        }
-        else {
-            error(n, "Unhandled symbol");
-        }
-    }
-
     FuncDecl* TypeChecker::findOverload(Expr* target, const std::vector<TypeDecl*>& argTypes) {
         std::vector<FuncDecl*> candidates;
         int numFound = 0;
@@ -186,10 +91,93 @@ namespace Strela {
         return candidates.front();
     }
 
+    TypeChecker::TypeChecker() {
+    }
+
+    void TypeChecker::visit(ModDecl& n) {
+        visitChildren(n.functions);
+        visitChildren(n.classes);
+    }
+
+    void TypeChecker::visit(ClassDecl& n) {
+        auto oldclass = _class;
+        _class = &n;
+        
+        visitChildren(n.methods);
+
+        _class = oldclass;
+    }
+
+    void TypeChecker::visit(FuncDecl& n) {
+        auto oldfunction = function;
+        function = &n;
+
+        bool unreachableWarning = false;
+        for (auto&& stmt: n.stmts) {
+            if (n.returns && !unreachableWarning) {
+                unreachableWarning = true;
+                warning(*stmt, "Unreachable code detected.");
+            }
+            stmt->accept(*this);
+            if (stmt->returns) n.returns = true;
+        }
+
+        if (!n.returns && n.returnTypeExpr->type != &VoidType::instance) {
+            error(n, n.name + ": Not all paths return a value.");
+        }
+
+        function = oldfunction;
+    }
+
+    void TypeChecker::visit(VarDecl& n) {
+        if (n.initializer) {
+            visitChild(n.initializer);
+            if (n.typeExpr == nullptr) {
+                n.type = n.initializer->type;
+            }
+            if (!isAssignableFrom(n.type, n.initializer->type)) {
+                error(n, n.name + ": Can not assign '" + n.initializer->type->name + "' to '" + n.type->name + "'.");
+            }
+        }
+    }
+
+    void TypeChecker::visit(IdExpr& n) {
+        if (auto fun = n.symbol->node->as<FuncDecl>()) {
+            if (n.symbol->next) {
+                auto cur = n.symbol;
+                while (cur) {
+                    n.candidates.push_back(cur->node->as<FuncDecl>());
+                    cur = cur->next;
+                }
+                n.type = &OverloadedFuncType::instance;
+            }
+            else {
+                n.type = fun->type;
+                n.node = fun;
+            }
+        }
+        else if (auto param = n.symbol->node->as<Param>()) {
+            n.type = param->typeExpr->type;
+            n.node = param;
+        }
+        else if (auto var = n.symbol->node->as<VarDecl>()) {
+            n.type = var->type;
+            n.node = var;
+        }
+        else if (auto td = n.symbol->node->as<TypeDecl>()) {
+            n.type = &TypeType::instance;
+            n.node = td;
+        }
+        else {
+            error(n, "Unhandled symbol kind");
+        }
+    }   
+
     void TypeChecker::visit(CallExpr& n) {
         visitChildren(n.arguments);
         visitChild(n.callTarget);
 
+        // gather argument types
         std::vector<TypeDecl*> argTypes;
         if (auto scope = n.callTarget->as<ScopeExpr>()) {
             argTypes.push_back(scope->scopeTarget->type);
@@ -199,6 +187,7 @@ namespace Strela {
         }
 
         if (n.callTarget->node) {
+            // non-overloaded function call
             if (isCallable(n.callTarget->node->as<FuncDecl>()->type, argTypes)) {
                 n.type = n.callTarget->type->as<FuncType>()->returnType;
             }
@@ -207,7 +196,7 @@ namespace Strela {
             }
         }
         else if (n.callTarget->candidates.size() > 0) {
-            // find suitable overload
+            // overloaded function call
             auto fun = findOverload(n.callTarget, argTypes);
             n.callTarget->type = fun->type;
             n.callTarget->node = fun;
@@ -351,10 +340,36 @@ namespace Strela {
     void TypeChecker::visit(AssignExpr& n) {
         visitChild(n.left);
         visitChild(n.right);
+
+        if (!n.left->node) {
+            error(n, "Can not assign to temp values");
+            n.type = &InvalidType::instance;
+            return;
+        }
+
+        if (auto var = n.node->as<VarDecl>()) {
+            n.type = var->type;
+        }
+        else if (auto param = n.node->as<Param>()) {
+            n.type = param->typeExpr->type;
+        }
+        else if (auto field = n.node->as<FieldDecl>()) {
+            n.type = field->typeExpr->type;
+        }
+        else {
+            error(n, std::string("Can not assign to ") + n.left->getTypeInfo()->getName());
+            n.type = &InvalidType::instance;
+            return;
+        }
     }
 
     void TypeChecker::visit(ScopeExpr& n) {
-        visitChild(n.scopeTarget);        
+        visitChild(n.scopeTarget);
+
+        if (auto t = n.scopeTarget->type->as<TypeType>()) {
+        }
+        else if (auto t = n.scopeTarget->type->as<TypeType>()) {
+        }
     }
 
     void TypeChecker::visit(IfStmt& n) {
@@ -370,10 +385,6 @@ namespace Strela {
         }
     }
 
-    void TypeChecker::visit(FieldDecl& n) {
-        visitChild(n.typeExpr);
-    }
-
     void TypeChecker::visit(NewExpr& n) {
         visitChild(n.typeExpr);
         n.type = n.typeExpr->type;
@@ -381,9 +392,6 @@ namespace Strela {
         if (!n.type->as<ClassDecl>()) {
             error(n, "Only class types are instantiable.");
         }
-    }
-
-    void TypeChecker::visit(IdTypeExpr& n) {
     }
 
     void TypeChecker::visit(WhileStmt& n) {
@@ -403,13 +411,6 @@ namespace Strela {
         }
         n.type = n.target->type;
         n.node = n.target->node;
-    }
-
-    void TypeChecker::visit(ArrayTypeExpr& n) {
-        visitChild(n.base);
-    }
-
-    void TypeChecker::visit(ImportStmt& n) {
     }
 
     void TypeChecker::visit(UnaryExpr& n) {
@@ -437,13 +438,6 @@ namespace Strela {
         }
         error(n, "Unhandled unary prefix operator '" + n.startToken.value + "'.");
         n.type = &InvalidType::instance;
-    }
-
-    void TypeChecker::visit(EnumDecl& n) {
-        visitChildren(n.elements);
-    }
-
-    void TypeChecker::visit(EnumElement& n) {
     }
 
     void TypeChecker::error(Node& node, const std::string& msg) {
