@@ -10,6 +10,7 @@
 #include "VM.h"
 #include "ByteCodeChunk.h"
 #include "Decompiler.h"
+#include "SourceFile.h"
 
 #include <iostream>
 #include <fstream>
@@ -167,10 +168,10 @@ int main(int argc, char** argv) {
         if (isSourcecode) {
             //std::cout << "Lexing...\n";
             Lexer lexer(file);
-            auto tokens = lexer.tokenize();
+            auto source = new SourceFile(fileName, lexer.tokenize());
 
             //std::cout << "Parsing...\n";
-            Parser parser(tokens);
+            Parser parser(*source);
             auto module = parser.parseModule();
             module->filename = fileName;
 
@@ -208,9 +209,9 @@ int main(int argc, char** argv) {
                         }
 
                         Lexer lexer(importFile);
-                        auto tokens = lexer.tokenize();
+                        auto source = new SourceFile(importFilename, lexer.tokenize());
                         
-                        Parser parser(tokens);
+                        Parser parser(*source);
                         auto importedModule = parser.parseModule();
                         importedModule->filename = importFilename;
 
@@ -267,7 +268,7 @@ int main(int argc, char** argv) {
         return vm.run().value.integer;
     }
     catch (const Exception& e) {
-        error(fileName + ":" + e.what());
+        error(e.what());
         return 1;
     }
 }

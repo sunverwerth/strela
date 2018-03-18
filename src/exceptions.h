@@ -2,8 +2,7 @@
 #define Strela_exceptions_h
 
 #include <stdexcept>
-#include "Ast/Token.h"
-#include "Ast/Node.h"
+#include <string>
 
 namespace Strela {
 
@@ -17,41 +16,34 @@ namespace Strela {
         LexerException(const std::string& msg): Exception(msg) {}
     };
 
-    class InvalidTokenException: public LexerException {
-    public:
-        InvalidTokenException(): LexerException("Invalid Token") {}
-    };
-
     class ParseException: public Exception {
     public:
-        ParseException(int line, int column, const std::string& msg): Exception(std::to_string(line) + ":" + std::to_string(column) + " " + msg) {}
+        ParseException(const std::string& msg): Exception(msg) {}
     };
 
     class MissingTokenException: public ParseException {
     public:
-        MissingTokenException(TokenType type, int line, int column): ParseException(line, column, "Missing Token " + getTokenName(type)) {}
+        MissingTokenException(const std::string& msg): ParseException(msg) {}
     };
 
     class UnexpectedTokenException: public ParseException {
     public:
-        UnexpectedTokenException(const Token& token, TokenType expectedType): ParseException(token.line, token.column, "Unexpected Token " + getTokenName(token.type) + ", expected " + getTokenName(expectedType)) {}
-        UnexpectedTokenException(const Token& token, const std::string& expected): ParseException(token.line, token.column, "Unexpected Token " + getTokenName(token.type) + ", expected " + expected) {}
+        UnexpectedTokenException(const std::string& msg): ParseException(msg) {}
     };
 
     class DuplicateSymbolException: public Exception {
     public:
-        DuplicateSymbolException(const std::string& name, const Node& n): Exception(std::to_string(n.line) + ":" + std::to_string(n.column) + " Duplicate symbol " + name) {}
-        DuplicateSymbolException(const std::string& name): Exception("Duplicate symbol " + name) {}
+        DuplicateSymbolException(const std::string& msg): Exception(msg) {}
     };
 
     class UnresolvedSymbolException: public Exception {
     public:
-        UnresolvedSymbolException(const std::string& name, const Node& n): Exception(std::to_string(n.line) + ":" + std::to_string(n.column) + " Unresolved symbol " + name) {}
+        UnresolvedSymbolException(const std::string& msg): Exception(msg) {}
     };
 
     class TypeException: public Exception {
     public:
-        TypeException(const std::string& msg, const Node& n): Exception(std::to_string(n.line) + ":" + std::to_string(n.column) + " " + msg) {}
+        TypeException(const std::string& msg): Exception(msg) {}
     };
 }
 

@@ -5,8 +5,11 @@
 #include "IExprVisitor.h"
 #include "ITypeExprVisitor.h"
 
+#include <string>
+
 namespace Strela {
     class Scope;
+    class Node;
 
     class NameResolver: public IStmtVisitor, public IExprVisitor, public ITypeExprVisitor {
     public:
@@ -47,6 +50,8 @@ namespace Strela {
         template<typename T> void visitChild(T& child) {
             child->accept(*this);
         }
+
+        void error(const Node& n, const std::string& msg);
 
     private:
         Scope* scope;

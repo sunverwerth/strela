@@ -67,12 +67,6 @@ namespace Strela {
         {TokenType::MinusMinus, 13},
     };
 
-    template <typename T> T* addPosition(T* node, const Token& tok) {
-        node->line = tok.line;
-        node->column = tok.column;
-        return node;
-    }
-
     ModDecl* Parser::parseModule() {
         auto startToken = eat(TokenType::Module);
         auto name = eat(TokenType::Identifier).value;
@@ -313,7 +307,7 @@ namespace Strela {
         while (matchSecondary()) {
             auto it = precedenceMap.find(token->type);
             if (it == precedenceMap.end()) {
-                throw ParseException(token->line, token->column, "No precedence for operator '" + token->value + "'");
+                error(*token, "No precedence for operator '" + token->value + "'");
             }
             if (it->second < precedence) {
                 break;
@@ -545,11 +539,17 @@ namespace Strela {
     }
 
     void Parser::expected(TokenType expectedType) {
-        throw UnexpectedTokenException(*token, expectedType);
+        std::string msg = "Unexpected '" + getTokenName(token->type) + "', expected '" + getTokenName(expectedType) + "'.";
+        throw UnexpectedTokenException(source.filename + ":" + std::to_string(token->line) + ":" + std::to_string(token->column) + " Error: " + msg);
     }
 
     void Parser::expected(const std::string& expected) {
-        throw UnexpectedTokenException(*token, expected);
+        std::string msg = "Unexpected '" + getTokenName(token->type) + "', expected " + expected + ".";
+        throw UnexpectedTokenException(source.filename + ":" + std::to_string(token->line) + ":" + std::to_string(token->column) + " Error: " + msg);
+    }
+
+    void Parser::error(const Token& t, const std::string& msg) {
+        throw ParseException(source.filename + ":" + std::to_string(t.line) + ":" + std::to_string(t.column) + " Error: " + msg);
     }
 
 }

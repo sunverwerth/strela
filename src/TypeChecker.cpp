@@ -2,6 +2,7 @@
 #include "Ast/nodes.h"
 #include "exceptions.h"
 #include "Scope.h"
+#include "SourceFile.h"
 
 #include <sstream>
 
@@ -482,10 +483,10 @@ namespace Strela {
 
     void TypeChecker::error(Node& node, const std::string& msg) {
         //std::cerr << msg << "\n";
-        throw TypeException(msg, node);
+        throw TypeException(node.source->filename + ":" + std::to_string(node.line) + ":" + std::to_string(node.column) + " Error: " + msg);
     }
 
     void TypeChecker::warning(Node& node, const std::string& msg) {
-        std::cerr << node.line << ":" << node.column << " " << msg << "\n";
+        std::cerr << node.source->filename << ":" << node.line << ":" << node.column << " " << msg << "\n";
     }
 }

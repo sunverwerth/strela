@@ -2,6 +2,7 @@
 #include "Ast/nodes.h"
 #include "exceptions.h"
 #include "Scope.h"
+#include "SourceFile.h"
 
 namespace Strela {
     NameResolver::NameResolver(Scope* globals): scope(globals) {
@@ -134,7 +135,7 @@ namespace Strela {
     void NameResolver::visit(IdExpr& n) {
         auto symbol = scope->find(n.name);
         if (!symbol) {
-            throw UnresolvedSymbolException(n.name, n);
+            error(n, "Unresolved symbol '" + n.name + "'.");
         }
 
         if (auto td = symbol->node->as<TypeDecl>()) {
@@ -165,7 +166,7 @@ namespace Strela {
             }
         }
         else {
-            throw Exception("Unhandled symbol kind.");
+            error(n, "Unhandled symbol kind.");
             n.type = &InvalidType::instance;
         }
     }
@@ -232,7 +233,7 @@ namespace Strela {
     void NameResolver::visit(IdTypeExpr& n) {
         auto symbol = scope->find(n.name);
         if (!symbol) {
-            throw UnresolvedSymbolException(n.name, n);
+            error(n, "Unresolved symbol '" + n.name + "'.");
         }
         
         if (auto td = symbol->node->as<TypeDecl>()) {
@@ -240,7 +241,7 @@ namespace Strela {
         }
         else {
             n.type = &InvalidType::instance;
-            throw Exception("'" + n.name + "' does not name a type.");
+            error(n, "'" + n.name + "' does not name a type.");
         }
     }
 
@@ -272,4 +273,12 @@ namespace Strela {
     void NameResolver::visit(EnumElement& n) {
     }
 
+    void NameResolver::error(const Node& n, const std::string& msg) {
+        if (n.source) {
+            throw Exception(n.source->filename + ":" + std::to_string(n.line) + ":" + std::to_string(n.column) + " Error: " + msg);
+        }
+        else {
+            throw Exception("Error: " + msg);
+        }
+    }
 }

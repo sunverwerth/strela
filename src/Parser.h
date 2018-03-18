@@ -3,6 +3,7 @@
 
 #include "Ast/nodes.h"
 #include "Ast/Token.h"
+#include "SourceFile.h"
 
 #include <vector>
 #include <memory>
@@ -10,7 +11,7 @@
 namespace Strela {
     class Parser {
     public:
-        Parser(const std::vector<Token>& tokens): tokens(tokens), token(tokens.begin()) {}
+        Parser(const SourceFile& source): source(source), tokens(source.tokens), token(tokens.begin()) {}
 
         ModDecl* parseModule();
         IdExpr* parseIdentifierExpression();
@@ -48,11 +49,22 @@ namespace Strela {
         void expected(TokenType expectedType);
         void expected(const std::string& expected);
 
+        void error(const Token& t, const std::string& msg);
+
     private:
         const std::vector<Token>& tokens;
+        const SourceFile& source;
         std::vector<Token>::const_iterator token;
 
         int numVariables = 0;
+
+        template <typename T> T* addPosition(T* node, const Token& tok) {
+            node->line = tok.line;
+            node->column = tok.column;
+            node->source = &source;
+            return node;
+        }
+
     };
 }
 

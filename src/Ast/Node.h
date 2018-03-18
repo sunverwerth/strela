@@ -7,6 +7,7 @@
 #include <iostream>
 
 namespace Strela {
+    class SourceFile;
     class Node {
     public:
         Node() {}
@@ -16,6 +17,7 @@ namespace Strela {
     public:
         int line = 0;
         int column = 0;
+        const SourceFile* source = nullptr;
     };
 }
 #endif
