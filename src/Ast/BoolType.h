@@ -6,7 +6,7 @@
 namespace Strela {
     class BoolType: public TypeDecl {
     public:
-        BoolType(const Token& startToken): TypeDecl(startToken, "bool") {}
+        BoolType(): TypeDecl("bool") {}
         STRELA_GET_TYPE(Strela::BoolType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

@@ -11,7 +11,7 @@
 namespace Strela {
     class Stmt: public Node {
     public:
-        Stmt(const Token& startToken): Node(startToken) {}
+        Stmt(): Node() {}
         STRELA_GET_TYPE(Strela::Stmt, Strela::Node);
         virtual void accept(IStmtVisitor&) = 0;
 

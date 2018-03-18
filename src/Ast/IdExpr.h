@@ -8,7 +8,7 @@
 namespace Strela {
     class IdExpr: public Expr {
     public:
-        IdExpr(const Token& startToken, const std::string& name): Expr(startToken), name(name) {}
+        IdExpr(const std::string& name): Expr(), name(name) {}
         STRELA_GET_TYPE(Strela::IdExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 

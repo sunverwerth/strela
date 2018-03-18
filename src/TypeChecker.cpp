@@ -268,7 +268,7 @@ namespace Strela {
         bool leftScalar = lint || lfloat;
         bool rightScalar = rint || rfloat;
 
-        auto op = n.startToken.type;
+        auto op = n.op;
 
         if (
             op == TokenType::Plus ||
@@ -282,7 +282,7 @@ namespace Strela {
         ) {
             
             if (!leftScalar || !rightScalar) {
-                error(n, "Binary operator '" + n.startToken.value + "' is only applicable to scalar values. Types are '" + ltype->name + "' and '" + rtype->name + "'.");
+                error(n, "Binary operator '" + getTokenName(op) + "' is only applicable to scalar values. Types are '" + ltype->name + "' and '" + rtype->name + "'.");
             }
 
             if (op == TokenType::LessThan || op == TokenType::GreaterThan || op == TokenType::LessThanEquals || op == TokenType::GreaterThanEquals) {
@@ -305,18 +305,18 @@ namespace Strela {
         }
         else if (op == TokenType::EqualsEquals || op == TokenType::ExclamationMarkEquals) {
             if (!((leftScalar && rightScalar) || (ltype == rtype))) {
-                error(n, "Binary operator '" + n.startToken.value + "' is not applicable to types '" + ltype->name + "' and '" + rtype->name + "'.");
+                error(n, "Binary operator '" + getTokenName(op) + "' is not applicable to types '" + ltype->name + "' and '" + rtype->name + "'.");
             }
             n.type = &BoolType::instance;
         }
         else if (op == TokenType::PipePipe || op == TokenType::AmpAmp) {
             if (!(ltype == &BoolType::instance && rtype == &BoolType::instance)) {
-                error(n, "Binary operator '" + n.startToken.value + "': Both operands must have boolean type. Actual types are '" + ltype->name + "' and '" + rtype->name + "'.");
+                error(n, "Binary operator '" + getTokenName(op) + "': Both operands must have boolean type. Actual types are '" + ltype->name + "' and '" + rtype->name + "'.");
             }
             n.type = &BoolType::instance;
         }
         else {
-            error(n, "Invalid binary operator '" + n.startToken.value + "'");
+            error(n, "Invalid binary operator '" + getTokenName(op) + "'");
         }
     }
 
@@ -441,11 +441,11 @@ namespace Strela {
         n.type = &InvalidType::instance;
         visitChild(n.target);
         if (!n.target->node || !(n.target->node->as<FieldDecl>() || n.target->node->as<Param>() || n.target->node->as<VarDecl>())) {
-            error(n, "Target for operator '" + n.startToken.value + "' must be a reference to a mutable value.");
+            error(n, "Target for operator '" + getTokenName(n.op) + "' must be a reference to a mutable value.");
             return;
         }
         if (!isScalar(n.target->type)) {
-            error(n, "Operator '" + n.startToken.value + "' is only applicable to scalar values. Target type is '" + n.target->type->name + "'.");
+            error(n, "Operator '" + getTokenName(n.op) + "' is only applicable to scalar values. Target type is '" + n.target->type->name + "'.");
             return;
         }
         n.type = n.target->type;
@@ -455,7 +455,7 @@ namespace Strela {
     void TypeChecker::visit(UnaryExpr& n) {
         n.type = &InvalidType::instance;
         visitChild(n.target);
-        switch (n.startToken.type) {
+        switch (n.op) {
             case TokenType::Minus:
             if (auto intt = n.target->type->as<IntType>()) {
                 n.type = getSignedType(intt);
@@ -476,7 +476,7 @@ namespace Strela {
             error(n, "Unary operator '!' is only applicable to boolean values.");
             break;
         }
-        error(n, "Unhandled unary prefix operator '" + n.startToken.value + "'.");
+        error(n, "Unhandled unary prefix operator '" + getTokenName(n.op) + "'.");
         n.type = &InvalidType::instance;
     }
 
@@ -486,6 +486,6 @@ namespace Strela {
     }
 
     void TypeChecker::warning(Node& node, const std::string& msg) {
-        std::cerr << node.startToken.line << ":" << node.startToken.column << " " << msg << "\n";
+        std::cerr << node.line << ":" << node.column << " " << msg << "\n";
     }
 }

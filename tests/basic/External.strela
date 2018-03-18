@@ -1,6 +1,6 @@
 module External {
     import Std.IO.*;
-    
+
     function main(args: String[]): int {
         println(sqrt(1024));
         println(sqrt(256));

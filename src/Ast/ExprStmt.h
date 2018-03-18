@@ -8,7 +8,7 @@ namespace Strela {
 
     class ExprStmt: public Stmt {
     public:
-        ExprStmt(const Token& startToken, Expr* expression): Stmt(startToken), expression(expression) {}
+        ExprStmt(Expr* expression): Stmt(), expression(expression) {}
         STRELA_GET_TYPE(Strela::ExprStmt, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 

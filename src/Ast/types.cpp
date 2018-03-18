@@ -13,19 +13,19 @@
 #include "Token.h"
 
 namespace Strela {
-    VoidType VoidType::instance(Token(TokenType::Identifier, "", 0, 0));
-    NullType NullType::instance(Token(TokenType::Identifier, "", 0, 0));
-    BoolType BoolType::instance(Token(TokenType::Identifier, "", 0, 0));
-    TypeType TypeType::instance(Token(TokenType::Identifier, "", 0, 0));
-    OverloadedFuncType OverloadedFuncType::instance(Token(TokenType::Identifier, "", 0, 0));
+    VoidType VoidType::instance;
+    NullType NullType::instance;
+    BoolType BoolType::instance;
+    TypeType TypeType::instance;
+    OverloadedFuncType OverloadedFuncType::instance;
 
-    IntType IntType::instance(Token(TokenType::Identifier, "", 0, 0), "int", false, 8);
+    IntType IntType::instance("int", false, 8);
 
-    FloatType FloatType::instance(Token(TokenType::Identifier, "", 0, 0), "float", 8);
+    FloatType FloatType::instance("float", 8);
 
-    InvalidType InvalidType::instance(Token(TokenType::Identifier, "", 0, 0));
+    InvalidType InvalidType::instance;
 
-    ClassDecl ClassDecl::String(Token(TokenType::Identifier, "", 0, 0), "String", {}, {});
+    ClassDecl ClassDecl::String("String", {}, {});
 
     std::map<TypeDecl*, ArrayType*> ArrayType::arrayTypes;
     std::vector<FuncType*> FuncType::funcTypes;

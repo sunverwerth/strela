@@ -7,11 +7,12 @@ namespace Strela {
 
     class BinopExpr: public Expr {
     public:
-        BinopExpr(const Token& startToken, Expr* left, Expr* right): Expr(startToken), left(left), right(right) {}
+        BinopExpr(TokenType op, Expr* left, Expr* right): Expr(), op(op), left(left), right(right) {}
         STRELA_GET_TYPE(Strela::BinopExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 
     public:
+        TokenType op;
         Expr* left;
         Expr* right;
     };

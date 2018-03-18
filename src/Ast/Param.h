@@ -11,7 +11,7 @@ namespace Strela {
     
     class Param: public Stmt {
     public:
-        Param(const Token& startToken, const std::string& name, TypeExpr* typeExpr): Stmt(startToken), name(name), typeExpr(typeExpr) {}
+        Param(const std::string& name, TypeExpr* typeExpr): Stmt(), name(name), typeExpr(typeExpr) {}
         STRELA_GET_TYPE(Strela::Param, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 

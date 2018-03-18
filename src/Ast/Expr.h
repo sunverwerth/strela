@@ -21,7 +21,7 @@ namespace Strela {
 
     class Expr: public Node {
     public:
-        Expr(const Token& startToken): Node(startToken) {}
+        Expr(): Node() {}
         STRELA_GET_TYPE(Strela::Expr, Strela::Node);
         virtual void accept(IExprVisitor&) = 0;
 

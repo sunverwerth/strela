@@ -6,7 +6,7 @@
 namespace Strela {
     class NullType: public TypeDecl {
     public:
-        NullType(const Token& startToken): TypeDecl(startToken, "null") {}
+        NullType(): TypeDecl("null") {}
         STRELA_GET_TYPE(Strela::NullType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

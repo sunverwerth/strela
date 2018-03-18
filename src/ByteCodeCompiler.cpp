@@ -149,7 +149,7 @@ namespace Strela {
     void ByteCodeCompiler::visit(BinopExpr& n) {
         visitChild(n.left);
         visitChild(n.right);
-        switch (n.startToken.type) {
+        switch (n.op) {
             case TokenType::Plus:
             chunk.addOp(Opcode::Add);
             break;
@@ -261,7 +261,7 @@ namespace Strela {
 
     void ByteCodeCompiler::visit(UnaryExpr& n) {
         visitChild(n.target);
-        switch (n.startToken.type) {
+        switch (n.op) {
             case TokenType::Minus:
             chunk.addOp(Opcode::INT, pack(-1));
             chunk.addOp(Opcode::Mul);
@@ -273,7 +273,7 @@ namespace Strela {
             return;
             break;
         }
-        error(n, "Unhandled unary prefix operator '" + n.startToken.value + "'.");
+        error(n, "Unhandled unary prefix operator '" + getTokenName(n.op) + "'.");
     }
 
     void ByteCodeCompiler::visit(EnumDecl& n) {

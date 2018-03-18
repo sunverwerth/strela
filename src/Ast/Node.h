@@ -9,12 +9,13 @@
 namespace Strela {
     class Node {
     public:
-        Node(const Token& startToken): startToken(startToken) {}
+        Node() {}
         virtual ~Node() {}
         STRELA_BASE_TYPE(Strela::Node);
 
     public:
-        Token startToken;
+        int line = 0;
+        int column = 0;
     };
 }
 #endif

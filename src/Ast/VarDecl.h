@@ -11,7 +11,7 @@ namespace Strela {
     
     class VarDecl: public Stmt {
     public:
-        VarDecl(const Token& startToken, const std::string& name, TypeExpr* typeExpr, Expr* initializer): Stmt(startToken), name(name), typeExpr(typeExpr), initializer(initializer) {}
+        VarDecl(const std::string& name, TypeExpr* typeExpr, Expr* initializer): Stmt(), name(name), typeExpr(typeExpr), initializer(initializer) {}
         STRELA_GET_TYPE(Strela::VarDecl, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 

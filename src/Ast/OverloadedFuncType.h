@@ -6,7 +6,7 @@
 namespace Strela {
     class OverloadedFuncType: public TypeDecl {
     public:
-        OverloadedFuncType(const Token& startToken): TypeDecl(startToken, "$overloaded") {}
+        OverloadedFuncType(): TypeDecl("$overloaded") {}
         STRELA_GET_TYPE(Strela::OverloadedFuncType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

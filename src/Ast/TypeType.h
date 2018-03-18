@@ -6,7 +6,7 @@
 namespace Strela {
     class TypeType: public TypeDecl {
     public:
-        TypeType(const Token& startToken): TypeDecl(startToken, "Type") {}
+        TypeType(): TypeDecl("Type") {}
         STRELA_GET_TYPE(Strela::TypeType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

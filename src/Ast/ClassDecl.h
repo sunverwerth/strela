@@ -12,7 +12,7 @@ namespace Strela {
     
     class ClassDecl: public TypeDecl {
     public:
-        ClassDecl(const Token& startToken, const std::string& name, const std::vector<FuncDecl*>& methods, const std::vector<FieldDecl*>& fields): TypeDecl(startToken, name), methods(methods), fields(fields) {}
+        ClassDecl(const std::string& name, const std::vector<FuncDecl*>& methods, const std::vector<FieldDecl*>& fields): TypeDecl(name), methods(methods), fields(fields) {}
         STRELA_GET_TYPE(Strela::ClassDecl, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

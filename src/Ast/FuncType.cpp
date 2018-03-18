@@ -17,7 +17,7 @@ namespace Strela {
             }
         }
         sstr << "): " << returnType->name;
-        auto ftype = new FuncType(Token(TokenType::Identifier, "", 0, 0), sstr.str());
+        auto ftype = new FuncType(sstr.str());
         ftype->returnType = returnType;
         ftype->paramTypes = paramTypes;
         funcTypes.push_back(ftype);

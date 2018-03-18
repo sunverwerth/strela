@@ -9,7 +9,7 @@
 namespace Strela {
     class CallExpr: public Expr {
     public:
-        CallExpr(const Token& startToken, Expr* callTarget, const std::vector<Expr*>& arguments): Expr(startToken), callTarget(callTarget), arguments(arguments) {}
+        CallExpr(Expr* callTarget, const std::vector<Expr*>& arguments): Expr(), callTarget(callTarget), arguments(arguments) {}
         STRELA_GET_TYPE(Strela::CallExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 

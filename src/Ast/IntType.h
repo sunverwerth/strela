@@ -6,7 +6,7 @@
 namespace Strela {
     class IntType: public TypeDecl {
     public:
-        IntType(const Token& startToken, const std::string& name, bool isSigned, int bytes): TypeDecl(startToken, name), isSigned(isSigned), bytes(bytes) {}
+        IntType(const std::string& name, bool isSigned, int bytes): TypeDecl(name), isSigned(isSigned), bytes(bytes) {}
         STRELA_GET_TYPE(Strela::IntType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

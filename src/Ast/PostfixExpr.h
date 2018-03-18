@@ -6,11 +6,12 @@
 namespace Strela {
     class PostfixExpr: public Expr {
     public:
-        PostfixExpr(const Token& startToken, Expr* target): Expr(startToken), target(target) {}
+        PostfixExpr(Expr* target, TokenType op): Expr(), target(target), op(op) {}
         STRELA_GET_TYPE(Strela::PostfixExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 
     public:
+        TokenType op;
         Expr* target;
     };
 }

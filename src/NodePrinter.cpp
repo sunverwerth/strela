@@ -136,7 +136,7 @@ namespace Strela {
 
     void NodePrinter::visit(BinopExpr& n) {
         visitChild(n.left);
-        std::cout << " " << n.startToken.value << " ";
+        std::cout << " " << getTokenVal(n.op) << " ";
         visitChild(n.right);
     }
 
@@ -186,7 +186,7 @@ namespace Strela {
 
     void NodePrinter::visit(PostfixExpr& n) {
         visitChild(n.target);
-        std::cout << n.startToken.value;
+        std::cout << getTokenVal(n.op);
     }
 
     void NodePrinter::visit(ArrayTypeExpr& n) {
@@ -207,7 +207,7 @@ namespace Strela {
     }
 
     void NodePrinter::visit(UnaryExpr& n) {
-        std::cout << n.startToken.value;
+        std::cout << getTokenVal(n.op);
         visitChild(n.target);
     }
 

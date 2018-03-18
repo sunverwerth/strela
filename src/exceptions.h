@@ -40,18 +40,18 @@ namespace Strela {
 
     class DuplicateSymbolException: public Exception {
     public:
-        DuplicateSymbolException(const std::string& name, const Node& n): Exception(std::to_string(n.startToken.line) + ":" + std::to_string(n.startToken.column) + " Duplicate symbol " + name) {}
+        DuplicateSymbolException(const std::string& name, const Node& n): Exception(std::to_string(n.line) + ":" + std::to_string(n.column) + " Duplicate symbol " + name) {}
         DuplicateSymbolException(const std::string& name): Exception("Duplicate symbol " + name) {}
     };
 
     class UnresolvedSymbolException: public Exception {
     public:
-        UnresolvedSymbolException(const std::string& name, const Node& n): Exception(std::to_string(n.startToken.line) + ":" + std::to_string(n.startToken.column) + " Unresolved symbol " + name) {}
+        UnresolvedSymbolException(const std::string& name, const Node& n): Exception(std::to_string(n.line) + ":" + std::to_string(n.column) + " Unresolved symbol " + name) {}
     };
 
     class TypeException: public Exception {
     public:
-        TypeException(const std::string& msg, const Node& n): Exception(std::to_string(n.startToken.line) + ":" + std::to_string(n.startToken.column) + " " + msg) {}
+        TypeException(const std::string& msg, const Node& n): Exception(std::to_string(n.line) + ":" + std::to_string(n.column) + " " + msg) {}
     };
 }
 

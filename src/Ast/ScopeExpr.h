@@ -10,7 +10,7 @@ namespace Strela {
 
     class ScopeExpr: public Expr {
     public:
-        ScopeExpr(const Token& startToken, Expr* scopeTarget, const std::string& name): Expr(startToken), scopeTarget(scopeTarget), name(name) {}
+        ScopeExpr(Expr* scopeTarget, const std::string& name): Expr(), scopeTarget(scopeTarget), name(name) {}
         STRELA_GET_TYPE(Strela::ScopeExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 

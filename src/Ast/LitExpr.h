@@ -7,7 +7,7 @@
 namespace Strela {
     class LitExpr: public Expr {
     public:
-        LitExpr(const Token& token): Expr(token), token(token) {}
+        LitExpr(const Token& token): Expr(), token(token) {}
         STRELA_GET_TYPE(Strela::LitExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 

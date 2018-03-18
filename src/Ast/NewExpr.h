@@ -10,7 +10,7 @@ namespace Strela {
 
     class NewExpr: public Expr {
     public:
-        NewExpr(const Token& startToken, TypeExpr* typeExpr): Expr(startToken), typeExpr(typeExpr) {}
+        NewExpr(TypeExpr* typeExpr): Expr(), typeExpr(typeExpr) {}
         STRELA_GET_TYPE(Strela::NewExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 

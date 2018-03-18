@@ -92,6 +92,7 @@ namespace Strela {
 
     std::ostream& operator<<(std::ostream& stream, const Token& t);
     std::string getTokenName(TokenType type);
+    std::string getTokenVal(TokenType type);
 }
 
 #endif

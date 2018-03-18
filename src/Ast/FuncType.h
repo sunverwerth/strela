@@ -8,7 +8,7 @@
 namespace Strela {
     class FuncType: public TypeDecl {
     public:
-        FuncType(const Token& startToken, const std::string& name): TypeDecl(startToken, name) {}
+        FuncType(const std::string& name): TypeDecl(name) {}
         STRELA_GET_TYPE(Strela::FuncType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

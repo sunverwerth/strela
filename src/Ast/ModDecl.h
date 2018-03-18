@@ -16,13 +16,12 @@ namespace Strela {
     class ModDecl: public TypeDecl {
     public:
         ModDecl(
-            const Token& startToken,
             const std::string& name,
             const std::vector<ImportStmt*>& imports,
             const std::vector<FuncDecl*>& functions,
             const std::vector<ClassDecl*>& classes,
             const std::vector<EnumDecl*>& enums
-        ): TypeDecl(startToken, name), imports(imports), functions(functions), classes(classes), enums(enums) {}
+        ): TypeDecl(name), imports(imports), functions(functions), classes(classes), enums(enums) {}
 
         STRELA_GET_TYPE(Strela::ModDecl, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;

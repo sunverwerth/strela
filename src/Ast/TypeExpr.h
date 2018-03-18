@@ -11,7 +11,7 @@ namespace Strela {
     
     class TypeExpr: public Node {
     public:
-        TypeExpr(const Token& startToken): Node(startToken) {}
+        TypeExpr(): Node() {}
         STRELA_GET_TYPE(Strela::TypeExpr, Strela::Node);
         virtual void accept(ITypeExprVisitor&) = 0;
 

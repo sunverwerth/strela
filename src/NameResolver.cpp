@@ -82,7 +82,7 @@ namespace Strela {
             scope->add(field->name, field);
         }
         for (auto&& method: n.methods) {
-            method->params.insert(method->params.begin(), new Param(method->startToken, "this", new IdTypeExpr(method->startToken, n.name)));
+            method->params.insert(method->params.begin(), new Param("this", new IdTypeExpr(n.name)));
             scope->add(method->name, method);
         }
 

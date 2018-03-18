@@ -6,7 +6,7 @@
 namespace Strela {
     class VoidType: public TypeDecl {
     public:
-        VoidType(const Token& startToken): TypeDecl(startToken, "void") {}
+        VoidType(): TypeDecl("void") {}
         STRELA_GET_TYPE(Strela::VoidType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

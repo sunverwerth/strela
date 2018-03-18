@@ -6,7 +6,7 @@
 namespace Strela {
     class ArrayType: public TypeDecl {
     public:
-        ArrayType(const Token& startToken, const std::string& name, TypeDecl* baseType): TypeDecl(startToken, name), baseType(baseType) {}
+        ArrayType(const std::string& name, TypeDecl* baseType): TypeDecl(name), baseType(baseType) {}
         STRELA_GET_TYPE(Strela::ArrayType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

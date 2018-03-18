@@ -17,7 +17,7 @@ namespace Strela {
 
     class FuncDecl: public Stmt {
     public:
-        FuncDecl(const Token& startToken, const std::string& name, const std::vector<Param*>& params, TypeExpr* returnTypeExpr, const std::vector<Stmt*>& stmts): Stmt(startToken), name(name), params(params), returnTypeExpr(returnTypeExpr), stmts(stmts) {}
+        FuncDecl(const std::string& name, const std::vector<Param*>& params, TypeExpr* returnTypeExpr, const std::vector<Stmt*>& stmts): Stmt(), name(name), params(params), returnTypeExpr(returnTypeExpr), stmts(stmts) {}
         STRELA_GET_TYPE(Strela::FuncDecl, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 
