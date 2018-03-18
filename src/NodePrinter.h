@@ -3,12 +3,12 @@
 
 #include "IStmtVisitor.h"
 #include "IExprVisitor.h"
-
+#include "ITypeExprVisitor.h"
 
 #include <string>
 
 namespace Strela {
-    class NodePrinter: public IStmtVisitor, public IExprVisitor {
+    class NodePrinter: public IStmtVisitor, public IExprVisitor, public ITypeExprVisitor {
     public:
         void visit(ModDecl&) override;
         void visit(FuncDecl&) override;

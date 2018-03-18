@@ -12,6 +12,7 @@ namespace Strela {
         if (to->as<IntType>() && from->as<IntType>()) return true;
         if (to->as<FloatType>() && from->as<FloatType>()) return true;
         if (to->as<BoolType>() && from->as<BoolType>()) return true;
+        if (to->as<EnumDecl>() && from == to) return true;
         return false;
     }
 
@@ -122,7 +123,7 @@ namespace Strela {
             if (stmt->returns) n.returns = true;
         }
 
-        if (!n.returns && n.returnTypeExpr->type != &VoidType::instance) {
+        if (!n.returns && n.type->returnType != &VoidType::instance) {
             error(n, n.name + ": Not all paths return a value.");
         }
 
@@ -141,55 +142,28 @@ namespace Strela {
         }
     }
 
-    void TypeChecker::visit(IdExpr& n) {
-        if (auto fun = n.symbol->node->as<FuncDecl>()) {
-            if (n.symbol->next) {
-                auto cur = n.symbol;
-                while (cur) {
-                    n.candidates.push_back(cur->node->as<FuncDecl>());
-                    cur = cur->next;
-                }
-                n.type = &OverloadedFuncType::instance;
-            }
-            else {
-                n.type = fun->type;
-                n.node = fun;
-            }
-        }
-        else if (auto param = n.symbol->node->as<Param>()) {
-            n.type = param->typeExpr->type;
-            n.node = param;
-        }
-        else if (auto var = n.symbol->node->as<VarDecl>()) {
-            n.type = var->type;
-            n.node = var;
-        }
-        else if (auto td = n.symbol->node->as<TypeDecl>()) {
-            n.type = &TypeType::instance;
-            n.node = td;
-        }
-        else {
-            error(n, "Unhandled symbol kind");
-        }
-    }   
-
     void TypeChecker::visit(CallExpr& n) {
+        n.type = &InvalidType::instance;
+
         visitChildren(n.arguments);
         visitChild(n.callTarget);
+
 
         // gather argument types
         std::vector<TypeDecl*> argTypes;
         if (auto scope = n.callTarget->as<ScopeExpr>()) {
-            argTypes.push_back(scope->scopeTarget->type);
+            if (!scope->scopeTarget->type->as<TypeType>()) {
+                argTypes.push_back(scope->scopeTarget->type);
+            }
         }
         for (auto&& argument: n.arguments) {
             argTypes.push_back(argument->type);
         }
 
-        if (n.callTarget->node) {
+        if (auto ftype = n.callTarget->type->as<FuncType>()) {
             // non-overloaded function call
-            if (isCallable(n.callTarget->node->as<FuncDecl>()->type, argTypes)) {
-                n.type = n.callTarget->type->as<FuncType>()->returnType;
+            if (isCallable(ftype, argTypes)) {
+                n.type = ftype->returnType;
             }
             else {
                 error(*n.callTarget, "Is not callable");
@@ -198,10 +172,15 @@ namespace Strela {
         else if (n.callTarget->candidates.size() > 0) {
             // overloaded function call
             auto fun = findOverload(n.callTarget, argTypes);
-            n.callTarget->type = fun->type;
-            n.callTarget->node = fun;
-
-            n.type = fun->type->returnType;
+            if (fun) {
+                n.callTarget->type = fun->type;
+                n.callTarget->node = fun;
+                n.callTarget->candidates.clear();
+                n.type = fun->type->returnType;
+            }
+            else {
+                error(n, "No matching overload found.");
+            }
         }
         else {
             error(n, "Can not call value of type '" + n.callTarget->type->name + "'");
@@ -227,6 +206,8 @@ namespace Strela {
     }
 
     void TypeChecker::visit(LitExpr& n) {
+        n.type = &InvalidType::instance;
+
         switch (n.token.type) {
             case TokenType::Integer: {
                 n.type = &IntType::instance;
@@ -271,6 +252,8 @@ namespace Strela {
     }
 
     void TypeChecker::visit(BinopExpr& n) {
+        n.type = &InvalidType::instance;
+
         visitChild(n.left);
         visitChild(n.right);
 
@@ -338,37 +321,91 @@ namespace Strela {
     }
 
     void TypeChecker::visit(AssignExpr& n) {
+        n.type = &InvalidType::instance;
+
         visitChild(n.left);
         visitChild(n.right);
 
         if (!n.left->node) {
-            error(n, "Can not assign to temp values");
+            error(n, "Assignment target must be storage node.");
             n.type = &InvalidType::instance;
             return;
         }
-
-        if (auto var = n.node->as<VarDecl>()) {
+        else if (auto var = n.left->node->as<VarDecl>()) {
             n.type = var->type;
         }
-        else if (auto param = n.node->as<Param>()) {
+        else if (auto param = n.left->node->as<Param>()) {
             n.type = param->typeExpr->type;
         }
-        else if (auto field = n.node->as<FieldDecl>()) {
+        else if (auto field = n.left->node->as<FieldDecl>()) {
             n.type = field->typeExpr->type;
         }
         else {
             error(n, std::string("Can not assign to ") + n.left->getTypeInfo()->getName());
-            n.type = &InvalidType::instance;
             return;
         }
     }
 
+    void TypeChecker::visit(IdExpr& n) {
+        if (n.node) {
+            if (auto var = n.node->as<VarDecl>()) {
+                n.type = var->type;
+            }
+            else if (auto fun = n.node->as<FuncDecl>()) {
+                n.type = fun->type;
+            }
+        }
+    }
+
     void TypeChecker::visit(ScopeExpr& n) {
+        n.type = &InvalidType::instance;
         visitChild(n.scopeTarget);
 
-        if (auto t = n.scopeTarget->type->as<TypeType>()) {
+        if (n.scopeTarget->type->as<TypeType>()) {
+            if (auto mod = n.scopeTarget->node->as<ModDecl>()) {
+                n.node = mod->getMember(n.name);
+                if (n.node) {
+                    if (n.node->as<TypeDecl>()) {
+                        n.type = &TypeType::instance;
+                    }
+                    else if (auto f = n.node->as<FuncDecl>()) {
+                        n.type = f->type;
+                    }
+                    else {
+                        error(n, "unhandled member kind");
+                    }
+                }
+                else {
+                    error(n, "no member");
+                }
+            }
+            else if (auto en = n.scopeTarget->node->as<EnumDecl>()) {
+                n.node = en->getMember(n.name);
+                n.type = n.node ? (TypeDecl*)en : (TypeDecl*)&InvalidType::instance;
+            }
+            else {
+                error(n, "Direct member acces only for modules and enums.");
+            }
         }
-        else if (auto t = n.scopeTarget->type->as<TypeType>()) {
+        else if (auto cls = n.scopeTarget->type->as<ClassDecl>()) {
+            n.node = cls->getMember(n.name);
+            if (n.node) {
+                if (auto field = n.node->as<FieldDecl>()) {
+                    n.type = field->type;
+                }
+                else if (auto fun = n.node->as<FuncDecl>()) {
+                    n.type = fun->type;
+                }
+                else {
+                    error(n, "unhandled member kind");
+                }
+            }
+            else {
+                error(n, "no member");
+            }
+        }
+        else {
+            error(n, "Scope operator not applicable to '" + n.scopeTarget->type->name + "'.");
         }
     }
 
@@ -386,10 +423,11 @@ namespace Strela {
     }
 
     void TypeChecker::visit(NewExpr& n) {
-        visitChild(n.typeExpr);
-        n.type = n.typeExpr->type;
-
-        if (!n.type->as<ClassDecl>()) {
+        n.type = &InvalidType::instance;
+        if (auto cls = n.typeExpr->type->as<ClassDecl>()) {
+            n.type = cls;
+        }
+        else {
             error(n, "Only class types are instantiable.");
         }
     }
@@ -400,6 +438,7 @@ namespace Strela {
     }
 
     void TypeChecker::visit(PostfixExpr& n) {
+        n.type = &InvalidType::instance;
         visitChild(n.target);
         if (!n.target->node || !(n.target->node->as<FieldDecl>() || n.target->node->as<Param>() || n.target->node->as<VarDecl>())) {
             error(n, "Target for operator '" + n.startToken.value + "' must be a reference to a mutable value.");
@@ -414,6 +453,7 @@ namespace Strela {
     }
 
     void TypeChecker::visit(UnaryExpr& n) {
+        n.type = &InvalidType::instance;
         visitChild(n.target);
         switch (n.startToken.type) {
             case TokenType::Minus:

@@ -82,8 +82,8 @@ namespace Strela {
             auto index = chunk.addOp(Opcode::Const, 255);
             functionFixups[index] = fun;
         }
-        else if (auto par = n.node->as<Param>()) {
-            chunk.addOp(Opcode::Param, par->index);
+        else if (auto param = n.node->as<Param>()) {
+            chunk.addOp(Opcode::Param, param->index);
         }
         else if (auto var = n.node->as<VarDecl>()) {
             chunk.addOp(Opcode::Var, var->index);
@@ -102,8 +102,7 @@ namespace Strela {
             n.arguments[i - 1]->accept(*this);
         }
 
-        auto fun = n.callTarget->node->as<FuncDecl>();
-        if (fun->name == "print") {
+        if (n.callTarget->node && n.callTarget->node->as<FuncDecl>()->name == "print") {
             chunk.addOp(Opcode::Print);
         }
         else {
@@ -201,8 +200,8 @@ namespace Strela {
         else if (auto field = n.node->as<FieldDecl>()) {
             chunk.addOp(Opcode::Field, field->index);
         }
-        else if (auto en = n.node->as<EnumElement>()) {
-            chunk.addOp(Opcode::INT, en->index);
+        else if (auto ee = n.node->as<EnumElement>()) {
+            chunk.addOp(Opcode::INT, ee->index);
         }
         else {
             error(n, "Invalid scope expr");
@@ -231,9 +230,17 @@ namespace Strela {
     void ByteCodeCompiler::visit(AssignExpr& n) {
         visitChild(n.right);
         chunk.addOp(Opcode::Repeat);
-    }
 
-    void ByteCodeCompiler::visit(IdTypeExpr&) {
+        if (auto var = n.left->node->as<VarDecl>()) {
+            chunk.addOp(Opcode::StoreVar, var->index);
+        }
+        else if (auto par = n.left->node->as<Param>()) {
+            chunk.addOp(Opcode::StoreParam, par->index);
+        }
+        else if (auto field = n.left->node->as<FieldDecl>()) {
+            visitChild(n.left);
+            chunk.addOp(Opcode::StoreField, field->index);
+        }
     }
 
     void ByteCodeCompiler::visit(WhileStmt& n) {

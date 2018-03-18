@@ -9,9 +9,7 @@ namespace Strela {
     class ScopeExpr;
     class NewExpr;
     class AssignExpr;
-    class IdTypeExpr;
     class PostfixExpr;
-    class ArrayTypeExpr;
     class UnaryExpr;
 
     class IExprVisitor {
@@ -25,9 +23,6 @@ namespace Strela {
         virtual void visit(AssignExpr&) = 0;
         virtual void visit(PostfixExpr&) = 0;
         virtual void visit(UnaryExpr&) = 0;
-
-        virtual void visit(IdTypeExpr&) = 0;
-        virtual void visit(ArrayTypeExpr&) = 0;
     };
 }
 

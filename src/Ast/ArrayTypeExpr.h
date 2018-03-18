@@ -9,7 +9,7 @@ namespace Strela {
     public:
         ArrayTypeExpr(const Token& startToken, TypeExpr* base): TypeExpr(startToken), base(base) {}
         STRELA_GET_TYPE(Strela::ArrayTypeExpr, Strela::TypeExpr);
-        STRELA_IMPL_EXPR_VISITOR;
+        STRELA_IMPL_TYPE_EXPR_VISITOR;
 
     public:
         TypeExpr* base;

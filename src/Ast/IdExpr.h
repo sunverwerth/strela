@@ -6,8 +6,6 @@
 #include <string>
 
 namespace Strela {
-    class Symbol;
-
     class IdExpr: public Expr {
     public:
         IdExpr(const Token& startToken, const std::string& name): Expr(startToken), name(name) {}
@@ -16,7 +14,6 @@ namespace Strela {
 
     public:
         std::string name;
-        Symbol* symbol = nullptr;
     };
 }
 

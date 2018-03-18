@@ -11,6 +11,7 @@ namespace Strela {
     public:
         TypeDecl(const Token& startToken, const std::string& name): Stmt(startToken), name(name) {}
         STRELA_GET_TYPE(Strela::TypeDecl, Strela::Stmt);
+        virtual Node* getMember(const std::string& name) { return nullptr; }
 
     public:
         std::string name;

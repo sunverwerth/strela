@@ -3,12 +3,12 @@
 
 #include "IStmtVisitor.h"
 #include "IExprVisitor.h"
-
+#include "ITypeExprVisitor.h"
 
 namespace Strela {
     class Scope;
 
-    class NameResolver: public IStmtVisitor, public IExprVisitor {
+    class NameResolver: public IStmtVisitor, public IExprVisitor, public ITypeExprVisitor {
     public:
         NameResolver(Scope* globals);
 

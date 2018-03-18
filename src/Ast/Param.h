@@ -7,6 +7,7 @@
 
 namespace Strela {
     class TypeExpr;
+    class TypeDecl;
     
     class Param: public Stmt {
     public:
@@ -18,6 +19,7 @@ namespace Strela {
         int index = 0;
         std::string name;
         TypeExpr* typeExpr;
+        TypeDecl* type = nullptr;
     };
 }
 

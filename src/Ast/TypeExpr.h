@@ -1,13 +1,22 @@
 #ifndef Strela_Ast_AstTypeExpr_h
 #define Strela_Ast_AstTypeExpr_h
 
-#include "Expr.h"
+#include "Node.h"
+#include "../ITypeExprVisitor.h"
+
+#define STRELA_IMPL_TYPE_EXPR_VISITOR void accept(Strela::ITypeExprVisitor& v) override { v.visit(*this); }
 
 namespace Strela {
-    class TypeExpr: public Expr {
+    class TypeDecl;
+    
+    class TypeExpr: public Node {
     public:
-        TypeExpr(const Token& startToken): Expr(startToken) {}
-        STRELA_GET_TYPE(Strela::TypeExpr, Strela::Expr);
+        TypeExpr(const Token& startToken): Node(startToken) {}
+        STRELA_GET_TYPE(Strela::TypeExpr, Strela::Node);
+        virtual void accept(ITypeExprVisitor&) = 0;
+
+    public:
+        TypeDecl* type = nullptr;
     };
 }
 

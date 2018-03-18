@@ -4,7 +4,6 @@
 #include "IStmtVisitor.h"
 #include "IExprVisitor.h"
 
-
 #include <string>
 #include <vector>
 
@@ -21,7 +20,6 @@ namespace Strela {
         void visit(ModDecl&) override;
         void visit(FuncDecl&) override;
         void visit(VarDecl&) override;
-        void visit(IdExpr&) override;
         void visit(RetStmt&) override;
         void visit(LitExpr&) override;
         void visit(BlockStmt&) override;
@@ -37,9 +35,8 @@ namespace Strela {
         void visit(PostfixExpr&) override;
         void visit(UnaryExpr&) override;
 
+        void visit(IdExpr&) override;
         void visit(FieldDecl&) override {}
-        void visit(IdTypeExpr&) override {}
-        void visit(ArrayTypeExpr&) override {}
         void visit(ImportStmt&) override {}
         void visit(EnumDecl&) override {}
         void visit(EnumElement&) override {}

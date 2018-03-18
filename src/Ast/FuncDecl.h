@@ -13,6 +13,7 @@ namespace Strela {
     class TypeExpr;
     class ByteCodeChunk;
     class FuncType;
+    class TypeDecl;
 
     class FuncDecl: public Stmt {
     public:

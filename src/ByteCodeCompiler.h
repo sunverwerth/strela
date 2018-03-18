@@ -33,10 +33,8 @@ namespace Strela {
         void visit(FieldDecl&) override;
         void visit(NewExpr&) override;
         void visit(AssignExpr&) override;
-        void visit(IdTypeExpr&) override;
         void visit(WhileStmt&) override;
         void visit(PostfixExpr&) override;
-        void visit(ArrayTypeExpr&) override {}
         void visit(ImportStmt&) override {}
         void visit(UnaryExpr&) override;
         void visit(EnumDecl&) override;

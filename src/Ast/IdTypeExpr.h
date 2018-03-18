@@ -12,11 +12,10 @@ namespace Strela {
     public:
         IdTypeExpr(const Token& startToken, const std::string& name): TypeExpr(startToken), name(name) {}
         STRELA_GET_TYPE(Strela::IdTypeExpr, Strela::TypeExpr);
-        STRELA_IMPL_EXPR_VISITOR;
+        STRELA_IMPL_TYPE_EXPR_VISITOR;
 
     public:
         std::string name;
-        Symbol* symbol = nullptr;
     };
 }
 

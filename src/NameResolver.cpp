@@ -113,6 +113,7 @@ namespace Strela {
 
     void NameResolver::visit(Param& n) {
         visitChild(n.typeExpr);
+        n.type = n.typeExpr->type;
         scope->add(n.name, &n);
     }
 
@@ -121,6 +122,9 @@ namespace Strela {
             visitChild(n.typeExpr);
             n.type = n.typeExpr->type;
         }
+        else {
+            n.type = &InvalidType::instance;
+        }
         if (n.initializer) {
             visitChild(n.initializer);
         }
@@ -128,9 +132,41 @@ namespace Strela {
     }
 
     void NameResolver::visit(IdExpr& n) {
-        n.symbol = scope->find(n.name);
-        if (!n.symbol) {
+        auto symbol = scope->find(n.name);
+        if (!symbol) {
             throw UnresolvedSymbolException(n.name, n);
+        }
+
+        if (auto td = symbol->node->as<TypeDecl>()) {
+            n.type = &TypeType::instance;
+            n.node = td;
+        }
+        else if (auto var = symbol->node->as<VarDecl>()) {
+            n.node = var;
+            n.type = var->type;
+        }
+        else if (auto par = symbol->node->as<Param>()) {
+            n.node = par;
+            n.type = par->typeExpr->type;
+        }
+        else if (auto fun = symbol->node->as<FuncDecl>()) {
+            if (symbol->next) {
+                auto cur = symbol;
+                while (cur) {
+                    n.candidates.push_back(cur->node->as<FuncDecl>());
+                    cur = cur->next;
+                }
+                n.type = &OverloadedFuncType::instance;
+                n.node = nullptr;
+            }
+            else {
+                n.node = fun;
+                n.type = fun->type;
+            }
+        }
+        else {
+            throw Exception("Unhandled symbol kind.");
+            n.type = &InvalidType::instance;
         }
     }
 
@@ -181,6 +217,7 @@ namespace Strela {
 
     void NameResolver::visit(FieldDecl& n) {
         visitChild(n.typeExpr);
+        n.type = n.typeExpr->type;
     }
 
     void NameResolver::visit(NewExpr& n) {
@@ -193,13 +230,13 @@ namespace Strela {
     }
 
     void NameResolver::visit(IdTypeExpr& n) {
-        n.symbol = scope->find(n.name);
-        if (!n.symbol) {
+        auto symbol = scope->find(n.name);
+        if (!symbol) {
             throw UnresolvedSymbolException(n.name, n);
         }
         
-        if (auto t = n.symbol->node->as<TypeDecl>()) {
-            n.type = t;
+        if (auto td = symbol->node->as<TypeDecl>()) {
+            n.type = td;
         }
         else {
             n.type = &InvalidType::instance;

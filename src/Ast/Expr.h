@@ -11,6 +11,13 @@
 namespace Strela {
     class TypeDecl;
     class FuncDecl;
+    class Param;
+    class FieldDecl;
+    class VarDecl;
+    class ClassDecl;
+    class EnumDecl;
+    class EnumElement;
+    class ModDecl;
 
     class Expr: public Node {
     public:
