@@ -1,12 +1,12 @@
 module Fib {
     import Std.IO.*;
 
-    function fibonacci(i: u64): u64 {
+    function fibonacci(i: int): int {
         if (i < 2) return i;
         return fibonacci(i-1) + fibonacci(i-2);
     }
 
-    function main(): i32 {
+    function main(): int {
         println("Hello, world!");
         println("Calculating fibonacci(40).");
         println("This may take a while...");
