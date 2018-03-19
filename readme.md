@@ -1,6 +1,8 @@
 # Strela programming language
 Strela is a static and strongly typed object oriented programming language with heavy focus on composition and language assisted delegation.
 
+[![Build Status](https://travis-ci.org/MadHed/strela.svg?branch=master)](https://travis-ci.org/MadHed/strela)
+
 ## Setup  
     git clone git@github.com:MadHed/strela.git  
     cd strela  
