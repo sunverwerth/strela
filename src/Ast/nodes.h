@@ -28,6 +28,8 @@
 #include "UnaryExpr.h"
 #include "VarDecl.h"
 #include "WhileStmt.h"
+#include "InterfaceDecl.h"
+#include "InterfaceMethodDecl.h"
 
 // types
 #include "ArrayType.h"

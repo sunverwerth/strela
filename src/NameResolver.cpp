@@ -26,6 +26,11 @@ namespace Strela {
                         scope->add(cls->name, cls);
                     }
                 }
+                for (auto&& iface: imp->module->interfaces) {
+                    if (iface->isExported) {
+                        scope->add(iface->name, iface);
+                    }
+                }
                 for (auto&& en: imp->module->enums) {
                     if (en->isExported) {
                         scope->add(en->name, en);
@@ -64,12 +69,16 @@ namespace Strela {
         for (auto&& cls: n.classes) {
             scope->add(cls->name, cls);
         }
+        for (auto&& iface: n.interfaces) {
+            scope->add(iface->name, iface);
+        }
         for (auto&& en: n.enums) {
             scope->add(en->name, en);
         }
 
         visitChildren(n.functions);
         visitChildren(n.classes);
+        visitChildren(n.interfaces);
 
         delete scope;
         scope = oldscope;
@@ -271,6 +280,21 @@ namespace Strela {
     }
 
     void NameResolver::visit(EnumElement& n) {
+    }
+
+    void NameResolver::visit(InterfaceDecl& n) {
+        visitChildren(n.methods);
+    }
+
+    void NameResolver::visit(InterfaceMethodDecl& n) {
+        visitChild(n.returnTypeExpr);
+        visitChildren(n.params);
+
+        std::vector<TypeDecl*> paramTypes;
+        for (auto&& param: n.params) {
+            paramTypes.push_back(param->typeExpr->type);
+        }
+        n.type = FuncType::get(n.returnTypeExpr->type, paramTypes);
     }
 
     void NameResolver::error(const Node& n, const std::string& msg) {

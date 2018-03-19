@@ -29,6 +29,8 @@ namespace Strela {
     class OverloadedFuncType;
     class TypeType;
     class InvalidType;
+    class InterfaceMethodDecl;
+    class InterfaceDecl;
 
     class IStmtVisitor {
     public:
@@ -41,6 +43,8 @@ namespace Strela {
         virtual void visit(FieldDecl&) = 0;
         virtual void visit(EnumDecl&) = 0;
         virtual void visit(EnumElement&) = 0;
+        virtual void visit(InterfaceDecl&) = 0;
+        virtual void visit(InterfaceMethodDecl&) = 0;
 
         virtual void visit(RetStmt&) = 0;
         virtual void visit(BlockStmt&) = 0;

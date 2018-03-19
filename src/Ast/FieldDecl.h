@@ -11,7 +11,7 @@ namespace Strela {
     
     class FieldDecl: public Stmt {
     public:
-        FieldDecl(const std::string& name, TypeExpr* typeExpr): Stmt(), name(name) {}
+        FieldDecl(const std::string& name, TypeExpr* typeExpr): Stmt(), name(name), typeExpr(typeExpr) {}
         STRELA_GET_TYPE(Strela::FieldDecl, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 

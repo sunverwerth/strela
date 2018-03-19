@@ -405,6 +405,20 @@ namespace Strela {
                 error(n, "no member");
             }
         }
+        else if (auto iface = n.scopeTarget->type->as<InterfaceDecl>()) {
+            n.node = iface->getMember(n.name);
+            if (n.node) {
+                if (auto met = n.node->as<InterfaceMethodDecl>()) {
+                    n.type = met->type;
+                }
+                else {
+                    error(n, "unhandled member kind");
+                }
+            }
+            else {
+                error(n, "no member");
+            }
+        }
         else {
             error(n, "Scope operator not applicable to '" + n.scopeTarget->type->name + "'.");
         }
@@ -479,6 +493,12 @@ namespace Strela {
         }
         error(n, "Unhandled unary prefix operator '" + getTokenName(n.op) + "'.");
         n.type = &InvalidType::instance;
+    }
+
+    void TypeChecker::visit(InterfaceDecl&) {
+    }
+
+    void TypeChecker::visit(InterfaceMethodDecl&) {
     }
 
     void TypeChecker::error(Node& node, const std::string& msg) {

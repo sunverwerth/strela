@@ -88,8 +88,8 @@ std::string getImportFile(const std::string& baseFilename, ImportStmt* import) {
     if (!import->all) tries.push_back({relativeBase + import->getBaseName("/") + ".strela", false});
 
     // home
-    tries.push_back({Strela::g_homePath + "/.strela/" + import->getFullName("/") + ".strela", true});
-    if (!import->all) tries.push_back({ Strela::g_homePath + "/.strela/" + import->getBaseName("/") + ".strela", false});
+    tries.push_back({Strela::g_homePath + "/.strela/lib/" + import->getFullName("/") + ".strela", true});
+    if (!import->all) tries.push_back({ Strela::g_homePath + "/.strela/lib/" + import->getBaseName("/") + ".strela", false});
     
     // global
     tries.push_back({"/usr/local/lib/strela/" + import->getFullName("/") + ".strela", true});

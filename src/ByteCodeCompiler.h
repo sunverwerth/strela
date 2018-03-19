@@ -39,6 +39,8 @@ namespace Strela {
         void visit(UnaryExpr&) override;
         void visit(EnumDecl&) override;
         void visit(EnumElement&) override;
+        void visit(InterfaceDecl&) {}
+        void visit(InterfaceMethodDecl&) {}
 
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {

@@ -23,6 +23,8 @@ namespace Strela {
         FieldDecl* parseFieldDecl();
         EnumDecl* parseEnumDecl();
         ImportStmt* parseImportStmt();
+        InterfaceDecl* parseInterfaceDecl();
+        InterfaceMethodDecl* parseInterfaceMethodDecl();
 
         Stmt* parseStatement();
         RetStmt* parseReturnStatement();

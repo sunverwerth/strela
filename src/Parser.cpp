@@ -79,6 +79,7 @@ namespace Strela {
 
         std::vector<FuncDecl*> functions;
         std::vector<ClassDecl*> classes;
+        std::vector<InterfaceDecl*> interfaces;
         std::vector<ImportStmt*> imports;
         std::vector<EnumDecl*> enums;
 
@@ -96,6 +97,11 @@ namespace Strela {
                 if (exportNext) cls->isExported = true;
                 classes.push_back(cls);
             }
+            else if (match(TokenType::Interface)) {
+                auto iface = parseInterfaceDecl();
+                if (exportNext) iface->isExported = true;
+                interfaces.push_back(iface);
+            }
             else if (match(TokenType::Enum)) {
                 auto en = parseEnumDecl();
                 if (exportNext) en->isExported = true;
@@ -110,7 +116,7 @@ namespace Strela {
         }
         eat(TokenType::CurlyClose);
 
-        return addPosition(new ModDecl(name, imports, functions, classes, enums), startToken);
+        return addPosition(new ModDecl(name, imports, functions, classes, interfaces, enums), startToken);
     }
 
     ImportStmt* Parser::parseImportStmt() {
@@ -434,6 +440,42 @@ namespace Strela {
         }
         eat(TokenType::CurlyClose);
         return addPosition(new ClassDecl(name, methods, fields), startToken);
+    }
+
+    InterfaceDecl* Parser::parseInterfaceDecl() {
+        auto startToken = eat(TokenType::Interface);
+        auto name = eat(TokenType::Identifier).value;
+        std::vector<InterfaceMethodDecl*> methods;
+        eat(TokenType::CurlyOpen);
+        while (!eof() && !match(TokenType::CurlyClose)) {
+            methods.push_back(parseInterfaceMethodDecl());
+            eat(TokenType::Semicolon);
+        }
+        eat(TokenType::CurlyClose);
+        return addPosition(new InterfaceDecl(name, methods), startToken);
+    }
+
+    InterfaceMethodDecl* Parser::parseInterfaceMethodDecl() {
+        auto startToken = eat(TokenType::Function);
+        auto name = eat(TokenType::Identifier).value;
+        eat(TokenType::ParenOpen);
+        std::vector<Param*> parameters;
+        while (!eof() && !match(TokenType::ParenClose)) {
+            auto param = parseParameter();
+            param->index = parameters.size();
+            parameters.push_back(param);
+            if (match(TokenType::Comma)) {
+                eat();
+            }
+            else {
+                break;
+            }
+        }
+        eat(TokenType::ParenClose);
+        eat(TokenType::Colon);
+        auto returnTypeExpr = parseTypeExpr();
+        
+        return addPosition(new InterfaceMethodDecl(name, parameters, returnTypeExpr), startToken);
     }
 
     EnumDecl* Parser::parseEnumDecl() {

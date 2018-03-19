@@ -222,6 +222,12 @@ namespace Strela {
         std::cout << indent <<  "}\n";
     }
 
+    void NodePrinter::visit(InterfaceDecl&) {
+    }
+
+    void NodePrinter::visit(InterfaceMethodDecl&) {        
+    }
+
     void NodePrinter::visit(EnumElement& n) {
         std::cout << n.name << ",\n";
     }
