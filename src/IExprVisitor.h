@@ -13,6 +13,7 @@ namespace Strela {
     class UnaryExpr;
     class ThisExpr;
     class CastExpr;
+    class IsExpr;
 
     class IExprVisitor {
     public:
@@ -27,6 +28,7 @@ namespace Strela {
         virtual void visit(UnaryExpr&) = 0;
         virtual void visit(ThisExpr&) = 0;
         virtual void visit(CastExpr&) = 0;
+        virtual void visit(IsExpr&) = 0;
     };
 }
 

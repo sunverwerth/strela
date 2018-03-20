@@ -45,6 +45,7 @@ namespace Strela {
         void visit(EnumDecl&) override {}
         void visit(EnumElement&) override {}
         void visit(Param&) override {}
+        void visit(IsExpr&) override;
 
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {
@@ -57,9 +58,9 @@ namespace Strela {
         }
 
     private:
-		FuncDecl* findOverload(Expr* target, const std::vector<TypeDecl*>& argtypes);
-		FuncDecl* findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<Expr*>& args);
-		FuncDecl* findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<TypeDecl*>& argTypes);
+		std::vector<FuncDecl*> findOverload(Expr* target, const std::vector<TypeDecl*>& argtypes);
+		std::vector<FuncDecl*> findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<Expr*>& args);
+		std::vector<FuncDecl*> findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<TypeDecl*>& argTypes);
         void error(Node& node, const std::string& msg);
         void warning(Node& node, const std::string& msg);
 

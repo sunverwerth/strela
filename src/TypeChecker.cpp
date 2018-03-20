@@ -91,7 +91,7 @@ namespace Strela {
         }
     }
 
-	FuncDecl* TypeChecker::findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<Expr*>& args) {
+	std::vector<FuncDecl*> TypeChecker::findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<Expr*>& args) {
         std::vector<TypeDecl*> argTypes;
         for (auto&& arg: args) {
             argTypes.push_back(arg->type);
@@ -99,7 +99,7 @@ namespace Strela {
         return findOverload(funcs, argTypes);
     }
 
-	FuncDecl* TypeChecker::findOverload(const std::vector<FuncDecl*>& candidates, const std::vector<TypeDecl*>& argTypes) {
+	std::vector<FuncDecl*> TypeChecker::findOverload(const std::vector<FuncDecl*>& candidates, const std::vector<TypeDecl*>& argTypes) {
         std::vector<FuncDecl*> remaining;
         int numFound = 0;
         for (auto&& candidate: candidates) {
@@ -110,7 +110,7 @@ namespace Strela {
 
             if (candidate->type->as<FuncType>()->paramTypes == argTypes) {
                 // exact match
-                return candidate;
+                return {candidate};
             }
 
             if (isCallable(candidate->type, argTypes)) {
@@ -119,32 +119,10 @@ namespace Strela {
             }
         }
 
-        if (remaining.empty()) {
-            error(*candidates.front(), "No suitable overload found.");
-        }
-
-        if (remaining.size() > 1) {
-            std::stringstream sstr;
-            sstr << "Multiple suitable overloads found. Arguments are (";
-            for (auto&& arg: argTypes) {
-                sstr << arg->name;
-                if (&arg != &argTypes.back()) {
-                    sstr << ", ";
-                }
-            }
-            sstr << ").";
-            error(*candidates.front(), sstr.str());
-            int i = 0;
-            for (auto&& candidate: remaining) {
-                ++i;
-                error(*candidate, "Candidate " + std::to_string(i) + " is " + candidate->type->name);
-            }
-        }
-
-        return remaining.front();
+        return remaining;
     }
 
-    FuncDecl* TypeChecker::findOverload(Expr* target, const std::vector<TypeDecl*>& argTypes) {
+    std::vector<FuncDecl*> TypeChecker::findOverload(Expr* target, const std::vector<TypeDecl*>& argTypes) {
         return findOverload(target->candidates, argTypes);
     }
 
@@ -154,6 +132,26 @@ namespace Strela {
     void TypeChecker::visit(ModDecl& n) {
         visitChildren(n.functions);
         visitChildren(n.classes);
+    }
+
+    void TypeChecker::visit(IsExpr& n) {
+        n.type = &InvalidType::instance;
+
+        visitChild(n.target);
+        if (auto un = n.target->type->as<UnionType>()) {
+            if (un->containedTypes.find(n.typeExpr->type) != un->containedTypes.end()) {
+                if (n.target->node) {
+                    n.refinements.push_back(new TypeRefinement{n.target->node, n.typeExpr->type});
+                }
+                n.type = &BoolType::instance;
+            }
+            else {
+                error(n, "'" + n.typeExpr->type->name + "' is not part of union type '" + un->name + "'.");
+            }
+        }
+        else {
+            error(n, "Only union types allowed.");
+        }
     }
 
     void TypeChecker::visit(ClassDecl& n) {
@@ -231,16 +229,20 @@ namespace Strela {
         }
         else if (n.callTarget->candidates.size() > 0) {
             // overloaded function call
-            auto fun = findOverload(n.callTarget, argTypes);
-            if (fun) {
+            auto funs = findOverload(n.callTarget, argTypes);
+            if (funs.size() == 1) {
+                auto fun = funs.front();
                 n.callTarget->type = fun->type;
                 n.callTarget->node = fun;
                 n.callTarget->candidates.clear();
                 n.type = fun->type->returnType;
                 prepareArguments(n.arguments, fun->type);
             }
-            else {
+            else if (funs.empty()) {
                 error(n, "No matching overload found.");
+            }
+            else {
+                error(n, "Multiple matching overloads found.");
             }
         }
         else {
@@ -512,7 +514,15 @@ namespace Strela {
             }
             else {
                 auto init = findOverload(inits, n.arguments);
-                n.initMethod = init;
+                if (init.size() == 1) {
+                    n.initMethod = init.front();
+                }
+                else if (init.empty()) {
+                    error(n, "Multiple matching constructors found.");
+                }
+                else {
+                    error(n, "No matching constructors found.");
+                }
             }
         }
         else {

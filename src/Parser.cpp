@@ -15,6 +15,8 @@ namespace Strela {
     };
 
     std::map<TokenType, int> precedenceMap {
+        {TokenType::Is, 0},
+
         // Assignment
         {TokenType::Equals, 1},
         {TokenType::PlusEquals, 1},
@@ -278,6 +280,10 @@ namespace Strela {
                 eat(TokenType::BracketClose);
                 expression = addPosition(new ArrayTypeExpr(expression), st);
             }
+            else if (match(TokenType::Pipe)) {
+                auto st = eat();
+                expression = addPosition(new UnionTypeExpr(expression, parseTypeExpr()), st);
+            }
             else {
                 expected("secondary type expression.");
             }
@@ -335,6 +341,10 @@ namespace Strela {
             else if (match(TokenType::MinusMinus) || match(TokenType::PlusPlus)) {
                 auto st = eat();
                 expression = addPosition(new PostfixExpr(expression, st.type), st);
+            }
+            else if (match(TokenType::Is)) {
+                auto startToken = eat(TokenType::Is);
+                expression = addPosition(new IsExpr(expression, parseTypeExpr()), startToken);
             }
             else if (matchBinary()) {
 				auto op = eat();
@@ -555,6 +565,7 @@ namespace Strela {
             match(TokenType::Period) ||
             match(TokenType::MinusMinus) ||
             match(TokenType::PlusPlus) ||
+            match(TokenType::Is) ||
             matchBinary();
     }
 
@@ -578,7 +589,8 @@ namespace Strela {
 
     bool Parser::matchTypeSecondary() {
         return
-            match(TokenType::BracketOpen)
+            match(TokenType::BracketOpen) ||
+            match(TokenType::Pipe)
             ;
     }
 

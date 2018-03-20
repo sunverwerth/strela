@@ -18,6 +18,7 @@
 #include "ImportStmt.h"
 #include "LitExpr.h"
 #include "CastExpr.h"
+#include "IsExpr.h"
 #include "NewExpr.h"
 #include "Node.h"
 #include "Param.h"
@@ -31,6 +32,7 @@
 #include "VarDecl.h"
 #include "WhileStmt.h"
 #include "InterfaceDecl.h"
+#include "UnionTypeExpr.h"
 #include "InterfaceMethodDecl.h"
 
 // types
@@ -46,6 +48,7 @@
 #include "BoolType.h"
 #include "TypeType.h"
 #include "InvalidType.h"
+#include "UnionType.h"
 #include "OverloadedFuncType.h"
 
 

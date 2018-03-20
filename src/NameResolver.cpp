@@ -145,6 +145,17 @@ namespace Strela {
         scope->add(n.name, &n);
     }
 
+    void NameResolver::visit(IsExpr& n) {
+        visitChild(n.target);
+        visitChild(n.typeExpr);
+    }
+
+    void NameResolver::visit(UnionTypeExpr& n) {
+        visitChild(n.base);
+        visitChild(n.next);
+        n.type = UnionType::get(n.base->type, n.next->type);
+    }
+
     void NameResolver::visit(IdExpr& n) {
         auto symbol = scope->find(n.name);
         if (!symbol) {

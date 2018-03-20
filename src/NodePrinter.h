@@ -40,6 +40,8 @@ namespace Strela {
         void visit(InterfaceMethodDecl&) override;
         void visit(ThisExpr&) override;
         void visit(CastExpr&) override;
+        void visit(IsExpr&) override;
+        void visit(UnionTypeExpr&) override;
 
         void push();
         void pop();

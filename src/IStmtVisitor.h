@@ -17,6 +17,7 @@ namespace Strela {
     class EnumDecl;
     class EnumElement;
     class ArrayType;
+    class UnionType;
     class ClassDecl;
     class EnumDecl;
     class FloatType;
@@ -61,6 +62,7 @@ namespace Strela {
         virtual void visit(VoidType&) {}
         virtual void visit(BoolType&) {}
         virtual void visit(TypeType&) {}
+        virtual void visit(UnionType&) {}
         virtual void visit(InvalidType&) {}
         virtual void visit(OverloadedFuncType&) {}
     };

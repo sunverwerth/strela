@@ -28,6 +28,7 @@ namespace Strela {
         X(ExclamationMark) \
         X(Export) \
         X(Import) \
+        X(Is) \
         X(ExclamationMarkEquals) \
         X(Float) \
         X(Function) \

@@ -4,11 +4,11 @@ module Unions {
     function printUnion(union: int | String) {
         if (union is int) {
             print("Union is an int and its value is ");
-            println(sum);
+            println(union);
         }
         else {
             print("Union is a String and its value is ");
-            case int println(sum);
+            println(union);
         }
     }
 

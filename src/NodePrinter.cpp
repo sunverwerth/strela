@@ -48,10 +48,7 @@ namespace Strela {
             std::cout << "export ";
         }
         std::cout << "function " << n.name << "(";
-        for(auto&& param: n.params) {
-            visitChild(param);
-            list(n.params, ", ");
-        }
+        list(n.params, ", ");
         std::cout << "): ";
         visitChild(n.returnTypeExpr);
         std::cout << " {\n";
@@ -105,10 +102,7 @@ namespace Strela {
     void NodePrinter::visit(CallExpr& n) {
         visitChild(n.callTarget);
         std::cout << "(";
-        for (auto&& arg: n.arguments) {
-            arg->accept(*this);
-            list(n.arguments, ", ");
-        }
+        list(n.arguments, ", ");
         std::cout << ")";
     }
 
@@ -149,7 +143,7 @@ namespace Strela {
         std::cout << ") ";
         visitChild(n.trueBranch);
         if (n.falseBranch) {
-            std::cout << "else ";
+            std::cout << indent << "else ";
             visitChild(n.falseBranch);
         }
     }
@@ -238,10 +232,7 @@ namespace Strela {
 
     void NodePrinter::visit(InterfaceMethodDecl& n) {
         std::cout << "function " << n.name << "(";
-        for(auto&& param: n.params) {
-            visitChild(param);
-            list(n.params, ", ");
-        }
+        list(n.params, ", ");
         std::cout << "): ";
         visitChild(n.returnTypeExpr);
         std::cout << ";\n";
@@ -255,12 +246,24 @@ namespace Strela {
         std::cout << "this";
     }
 
+    void NodePrinter::visit(IsExpr& n) {
+        visitChild(n.target);
+        std::cout << " is ";
+        visitChild(n.typeExpr);
+    }
+
     void NodePrinter::visit(CastExpr& n) {
         std::cout << "cast<";
         n.targetType->name;
         std::cout << ">(";
         visitChild(n.sourceExpr);
         std::cout << ")";
+    }
+
+    void NodePrinter::visit(UnionTypeExpr& n) {
+        visitChild(n.base);
+        std::cout << " | ";
+        visitChild(n.next);
     }
 
     void NodePrinter::push() {

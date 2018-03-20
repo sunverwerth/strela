@@ -44,6 +44,8 @@ namespace Strela {
         void visit(InterfaceMethodDecl&) override;
         void visit(ThisExpr&) override {};
         void visit(CastExpr&) override {};
+        void visit(IsExpr&) override;
+        void visit(UnionTypeExpr&) override;
 
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {

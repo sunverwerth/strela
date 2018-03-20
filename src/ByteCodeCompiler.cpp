@@ -154,6 +154,10 @@ namespace Strela {
         else error(n, "Invalid literal type");
     }
 
+    void ByteCodeCompiler::visit(IsExpr& n) {
+        error(n, "IsExpr Not implemented");
+    }
+
     void ByteCodeCompiler::visit(CastExpr& n) {
         auto targetIface = n.targetType->as<InterfaceDecl>();
         auto sourceClass = n.sourceExpr->type->as<ClassDecl>();

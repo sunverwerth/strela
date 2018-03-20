@@ -68,6 +68,7 @@ namespace Strela {
         { "while", TokenType::While },
         { "enum", TokenType::Enum },
         { "this", TokenType::This },
+        { "is", TokenType::Is },
     };
 
     std::string unescape(const std::string& str) {
