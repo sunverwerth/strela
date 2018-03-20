@@ -356,7 +356,21 @@ namespace Strela {
     NewExpr* Parser::parseNewExpr() {
         auto startToken = eat(TokenType::New);
         auto typeExpr = parseTypeExpr();
-        return addPosition(new NewExpr(typeExpr), startToken);
+        std::vector<Expr*> arguments;
+        if (match(TokenType::ParenOpen)) {
+            eat();
+            while (!eof() && !match(TokenType::ParenClose)) {
+                arguments.push_back(parseExpression());
+                if (match(TokenType::Comma)) {
+                    eat();
+                }
+                else {
+                    break;
+                }
+            }
+            eat(TokenType::ParenClose);
+        }
+        return addPosition(new NewExpr(typeExpr, arguments), startToken);
     }
 
     CallExpr* Parser::parseCallExpr(Expr* callTarget) {

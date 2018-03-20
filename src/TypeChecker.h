@@ -58,6 +58,8 @@ namespace Strela {
 
     private:
 		FuncDecl* findOverload(Expr* target, const std::vector<TypeDecl*>& argtypes);
+		FuncDecl* findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<Expr*>& args);
+		FuncDecl* findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<TypeDecl*>& argTypes);
         void error(Node& node, const std::string& msg);
         void warning(Node& node, const std::string& msg);
 

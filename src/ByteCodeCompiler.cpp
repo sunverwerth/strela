@@ -56,6 +56,9 @@ namespace Strela {
         function = &n;
         n.opcodeStart = chunk.opcodes.size();
         std::stringstream sstr;
+        if (_class) {
+            sstr << _class->name << ".";
+        }
         sstr << n.name << n.type->name;
         chunk.addFunction(n.opcodeStart, sstr.str());
 
@@ -70,7 +73,7 @@ namespace Strela {
         visitChildren(n.stmts);
 
         if (!n.returns) {
-            chunk.addOp(Opcode::ReturnVoid, n.params.size());
+            chunk.addOp(Opcode::ReturnVoid, n.params.size() + (_class ? 1 : 0));
         }
 
         function = oldfunc;
@@ -123,10 +126,10 @@ namespace Strela {
     void ByteCodeCompiler::visit(RetStmt& n) {
         if (n.expression) {
             visitChild(n.expression);
-            chunk.addOp(Opcode::Return, function->params.size());
+            chunk.addOp(Opcode::Return, function->params.size() + (_class ? 1 : 0));
         }
         else {
-            chunk.addOp(Opcode::ReturnVoid, function->params.size());
+            chunk.addOp(Opcode::ReturnVoid, function->params.size() + (_class ? 1 : 0));
         }
     }
 
@@ -156,9 +159,18 @@ namespace Strela {
         auto sourceClass = n.sourceExpr->type->as<ClassDecl>();
         
         if (sourceClass && targetIface && n.implementation) {
+            chunk.addOp(Opcode::New, targetIface->methods.size() + 1);
+            chunk.addOp(Opcode::Repeat);
             visitChild(n.sourceExpr);
-            chunk.addOp(Opcode::INT, reinterpret_cast<int64_t>(n.implementation));
-            chunk.addOp(Opcode::ICast);
+            chunk.addOp(Opcode::Swap);
+            chunk.addOp(Opcode::StoreField, 0);
+            for(size_t i = 0; i < targetIface->methods.size(); ++i) {
+                chunk.addOp(Opcode::Repeat);
+                auto index = chunk.addOp(Opcode::Const, 255);
+                functionFixups[index] = n.implementation->classMethods[i];
+                chunk.addOp(Opcode::Swap);
+                chunk.addOp(Opcode::StoreField, i + 1);
+            }
         }
         else {
             visitChild(n.sourceExpr);
@@ -223,6 +235,9 @@ namespace Strela {
         else if (auto im = n.node->as<InterfaceMethodDecl>()) {
             chunk.addOp(Opcode::Repeat);
             chunk.addOp(Opcode::Field, 1 + im->index);
+            chunk.addOp(Opcode::Swap);
+            chunk.addOp(Opcode::Field, 0);
+            chunk.addOp(Opcode::Swap);
         }
         else if (auto field = n.node->as<FieldDecl>()) {
             chunk.addOp(Opcode::Field, field->index);
@@ -252,6 +267,16 @@ namespace Strela {
 
     void ByteCodeCompiler::visit(NewExpr& n) {
         chunk.addOp(Opcode::New, n.type->as<ClassDecl>()->fields.size());
+        if (n.initMethod) {
+            chunk.addOp(Opcode::Repeat);
+            for (int i = n.arguments.size() - 1; i >= 0; --i) {
+                n.arguments[i]->accept(*this);
+                chunk.addOp(Opcode::Swap);
+            }
+            auto index = chunk.addOp(Opcode::Const, 255);
+            functionFixups[index] = n.initMethod;
+            chunk.addOp(Opcode::Call);
+        }
     }
 
     void ByteCodeCompiler::visit(AssignExpr& n) {
@@ -265,9 +290,8 @@ namespace Strela {
             chunk.addOp(Opcode::StoreParam, par->index);
         }
         else if (auto field = n.left->node->as<FieldDecl>()) {
-            visitChild(n.left);
+            visitChild(n.left->context);
             chunk.addOp(Opcode::StoreField, field->index);
-            chunk.addOp(Opcode::Pop);
         }
     }
 

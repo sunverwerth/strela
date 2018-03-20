@@ -41,7 +41,7 @@ namespace Strela {
         X(Print, 0, null) \
         X(AndL, 0, null) \
         X(OrL, 0, null) \
-        X(ICast, 0, null) \
+        X(Swap, 0, null) \
     
     #define AS_ENUM(X, A, T) X,
     enum class Opcode {

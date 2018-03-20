@@ -236,6 +236,7 @@ namespace Strela {
 
     void NameResolver::visit(NewExpr& n) {
         visitChild(n.typeExpr);
+        visitChildren(n.arguments);
     }
 
     void NameResolver::visit(AssignExpr& n) {

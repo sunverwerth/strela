@@ -6,6 +6,7 @@
 #include "ITypeExprVisitor.h"
 
 #include <string>
+#include <iostream>
 
 namespace Strela {
     class NodePrinter: public IStmtVisitor, public IExprVisitor, public ITypeExprVisitor {
@@ -51,6 +52,15 @@ namespace Strela {
 
         template<typename T> void visitChild(T& child) {
             child->accept(*this);
+        }
+
+        template<typename T> void list(const T& children, const std::string& separator) {
+            for (auto&& child: children) {
+                child->accept(*this);
+                if (&child != &children.back()) {
+                    std::cout << separator;
+                }
+            }
         }
 
     private:

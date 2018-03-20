@@ -50,9 +50,7 @@ namespace Strela {
         std::cout << "function " << n.name << "(";
         for(auto&& param: n.params) {
             visitChild(param);
-            if (&param != &n.params.back()) {
-                std::cout << ", ";
-            }
+            list(n.params, ", ");
         }
         std::cout << "): ";
         visitChild(n.returnTypeExpr);
@@ -109,9 +107,7 @@ namespace Strela {
         std::cout << "(";
         for (auto&& arg: n.arguments) {
             arg->accept(*this);
-            if (&arg != &n.arguments.back()) {
-                std::cout << ", ";
-            }
+            list(n.arguments, ", ");
         }
         std::cout << ")";
     }
@@ -167,6 +163,11 @@ namespace Strela {
     void NodePrinter::visit(NewExpr& n) {
         std::cout << "new ";
         visitChild(n.typeExpr);
+        if (!n.arguments.empty()) {
+            std::cout << "(";
+            list(n.arguments, ", ");
+            std::cout << ")";
+        }
     }
 
     void NodePrinter::visit(AssignExpr& n) {
@@ -239,9 +240,7 @@ namespace Strela {
         std::cout << "function " << n.name << "(";
         for(auto&& param: n.params) {
             visitChild(param);
-            if (&param != &n.params.back()) {
-                std::cout << ", ";
-            }
+            list(n.params, ", ");
         }
         std::cout << "): ";
         visitChild(n.returnTypeExpr);

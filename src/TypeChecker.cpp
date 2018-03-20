@@ -91,10 +91,18 @@ namespace Strela {
         }
     }
 
-    FuncDecl* TypeChecker::findOverload(Expr* target, const std::vector<TypeDecl*>& argTypes) {
-        std::vector<FuncDecl*> candidates;
+	FuncDecl* TypeChecker::findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<Expr*>& args) {
+        std::vector<TypeDecl*> argTypes;
+        for (auto&& arg: args) {
+            argTypes.push_back(arg->type);
+        }
+        return findOverload(funcs, argTypes);
+    }
+
+	FuncDecl* TypeChecker::findOverload(const std::vector<FuncDecl*>& candidates, const std::vector<TypeDecl*>& argTypes) {
+        std::vector<FuncDecl*> remaining;
         int numFound = 0;
-        for (auto&& candidate: target->candidates) {
+        for (auto&& candidate: candidates) {
             if (candidate->params.size() != argTypes.size()) {
                 // mismatching number of arguments
                 continue;
@@ -107,15 +115,15 @@ namespace Strela {
 
             if (isCallable(candidate->type, argTypes)) {
                 // match with conversion
-                candidates.push_back(candidate);
+                remaining.push_back(candidate);
             }
         }
 
-        if (candidates.empty()) {
-            error(*target, "No suitable overload found.");
+        if (remaining.empty()) {
+            error(*candidates.front(), "No suitable overload found.");
         }
 
-        if (candidates.size() > 1) {
+        if (remaining.size() > 1) {
             std::stringstream sstr;
             sstr << "Multiple suitable overloads found. Arguments are (";
             for (auto&& arg: argTypes) {
@@ -125,15 +133,19 @@ namespace Strela {
                 }
             }
             sstr << ").";
-            error(*target, sstr.str());
+            error(*candidates.front(), sstr.str());
             int i = 0;
-            for (auto&& candidate: candidates) {
+            for (auto&& candidate: remaining) {
                 ++i;
                 error(*candidate, "Candidate " + std::to_string(i) + " is " + candidate->type->name);
             }
         }
 
-        return candidates.front();
+        return remaining.front();
+    }
+
+    FuncDecl* TypeChecker::findOverload(Expr* target, const std::vector<TypeDecl*>& argTypes) {
+        return findOverload(target->candidates, argTypes);
     }
 
     TypeChecker::TypeChecker() {
@@ -491,6 +503,17 @@ namespace Strela {
         n.type = &InvalidType::instance;
         if (auto cls = n.typeExpr->type->as<ClassDecl>()) {
             n.type = cls;
+
+            auto inits = cls->getMethods("init");
+            if (inits.empty()) {
+                if (!n.arguments.empty()) {
+                    error(n, "'" + cls->name + "' has no matching constructor.");
+                }
+            }
+            else {
+                auto init = findOverload(inits, n.arguments);
+                n.initMethod = init;
+            }
         }
         else {
             error(n, "Only class types are instantiable.");

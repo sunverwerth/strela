@@ -240,7 +240,6 @@ namespace Strela {
             case Opcode::StoreField: {
                 auto obj = pop();
                 auto val = pop();
-                push(obj);
                 obj.value.object->setField(arg.value.integer, val);
                 break;
             }
@@ -252,17 +251,13 @@ namespace Strela {
                 pop();
                 break;
             }
-			case Opcode::ICast: {
-                auto impl = reinterpret_cast<Implementation*>(pop().value.integer);
-				auto cls = pop();
-				auto iface = gc.allocObject(1 + impl->classMethods.size());
-				iface->setField(0, cls);
-				for (size_t i = 0; i < impl->classMethods.size(); ++i) {
-					iface->setField(i + 1 , VMValue((int64_t)impl->classMethods[i]->opcodeStart));
-				}
-				push(VMValue(iface));
-                break;
-            }
+			case Opcode::Swap: {
+				auto a = pop();
+				auto b = pop();
+				push(a);
+				push(b);
+				break;
+			}
 			default:
 				throw Exception(std::string("Opcode '") + info.name + "' not implemented");
 			}
