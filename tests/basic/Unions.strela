@@ -1,0 +1,27 @@
+module Unions {
+    import Std.IO.*;
+
+    function printUnion(union: int | String) {
+        if (union is int) {
+            print("Union is an int and its value is ");
+            println(sum);
+        }
+        else {
+            print("Union is a String and its value is ");
+            case int println(sum);
+        }
+    }
+
+    function main(args: String[]): int {
+
+        var union: String | int;
+
+        union = 1337;
+        printUnion(union);
+
+        union = "Hello";
+        printUnion(union);
+
+        return 0;
+    }
+}

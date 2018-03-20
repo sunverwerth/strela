@@ -2,14 +2,12 @@ module Nullable {
     import Std.IO.*;
 
     function tryPrint(val: String?) {
-        match(val) {
-            case String {
-                print("Value is: ");
-                println(val);
-            }
-            case Null {
-                println("Is null");
-            }
+        if (val is String) {
+            print("Value is: ");
+            println(val);
+        }
+        else {
+            println("Value is: null");
         }
     }
 
