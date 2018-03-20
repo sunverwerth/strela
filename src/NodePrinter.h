@@ -37,6 +37,8 @@ namespace Strela {
         void visit(EnumElement&) override;
         void visit(InterfaceDecl&) override;
         void visit(InterfaceMethodDecl&) override;
+        void visit(ThisExpr&) override;
+        void visit(CastExpr&) override;
 
         void push();
         void pop();

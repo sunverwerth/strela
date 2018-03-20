@@ -8,16 +8,46 @@
 
 namespace Strela {
 
-    bool isAssignableFrom(const TypeDecl* to, const TypeDecl* from) {
+    bool isCallable(TypeDecl* ftype, const std::vector<TypeDecl*>& argTypes);
+    bool isAssignableFrom(TypeDecl* to, TypeDecl* from);
+
+    Implementation* getImplementation(ClassDecl* cls, InterfaceDecl* iface) {
+        auto it = iface->implementations.find(cls);
+        if (it != iface->implementations.end()) return it->second;
+
+        std::vector<FuncDecl*> classMethods;
+        for (auto&& imethod: iface->methods) {
+            bool found = false;
+            for (auto&& method: cls->methods) {
+                if (method->name == imethod->name && isCallable(method->type, imethod->type->paramTypes)) {
+                    found = true;
+                    classMethods.push_back(method);
+                    break;
+                }
+            }
+            if (!found) return nullptr;
+        }
+        auto implementation = new Implementation{iface, cls, classMethods};
+        iface->implementations.insert(std::make_pair(cls, implementation));
+        return implementation;
+    }
+
+    bool isAssignableFrom(TypeDecl* to, TypeDecl* from) {
         if (to->as<ClassDecl>() && to == from) return true;
         if (to->as<IntType>() && from->as<IntType>()) return true;
         if (to->as<FloatType>() && from->as<FloatType>()) return true;
         if (to->as<BoolType>() && from->as<BoolType>()) return true;
         if (to->as<EnumDecl>() && from == to) return true;
+        if (auto iface = to->as<InterfaceDecl>()) {
+            if (to == from) return true;
+            auto cls = from->as<ClassDecl>();
+            if (!cls) return false;
+            return getImplementation(cls, iface) != nullptr;
+        }
         return false;
     }
 
-    bool isCallable(const TypeDecl* ftype, const std::vector<TypeDecl*>& argTypes) {
+    bool isCallable(TypeDecl* ftype, const std::vector<TypeDecl*>& argTypes) {
         auto signature = ftype->as<FuncType>();
         if (!signature) return false;
 
@@ -29,12 +59,22 @@ namespace Strela {
         return true;
     }
 
-    bool isScalar(const TypeDecl* type) {
+    bool isScalar(TypeDecl* type) {
         return
             type->as<FloatType>() ||
             type->as<IntType>()
             ;
     }
+
+    void prepareArguments(std::vector<Expr*>& arguments, FuncType* ftype) {
+        for (size_t i = 0; i < ftype->paramTypes.size(); ++i) {
+            if (arguments[i]->type->as<ClassDecl>() && ftype->paramTypes[i]->as<InterfaceDecl>()) {
+                auto cast = new CastExpr(arguments[i], ftype->paramTypes[i]);
+                arguments[i] = cast;
+            }
+        }
+    }
+
 
     TypeDecl* getSignedType(TypeDecl* t) {
         if (auto intt = t->as<IntType>()) {
@@ -152,11 +192,6 @@ namespace Strela {
 
         // gather argument types
         std::vector<TypeDecl*> argTypes;
-        if (auto scope = n.callTarget->as<ScopeExpr>()) {
-            if (!scope->scopeTarget->type->as<TypeType>()) {
-                argTypes.push_back(scope->scopeTarget->type);
-            }
-        }
         for (auto&& argument: n.arguments) {
             argTypes.push_back(argument->type);
         }
@@ -165,9 +200,18 @@ namespace Strela {
             // non-overloaded function call
             if (isCallable(ftype, argTypes)) {
                 n.type = ftype->returnType;
+                prepareArguments(n.arguments, ftype);
             }
             else {
-                error(*n.callTarget, "Is not callable");
+                std::string msg = "'" + n.callTarget->type->name + "' is not callable with arguments (";
+                for (auto&& argType: argTypes) {
+                    msg += argType->name;
+                    if (&argType != &argTypes.back()) {
+                        msg += ", ";
+                    }
+                }
+                msg += ")";
+                error(*n.callTarget, msg);
             }
         }
         else if (n.callTarget->candidates.size() > 0) {
@@ -178,6 +222,7 @@ namespace Strela {
                 n.callTarget->node = fun;
                 n.callTarget->candidates.clear();
                 n.type = fun->type->returnType;
+                prepareArguments(n.arguments, fun->type);
             }
             else {
                 error(n, "No matching overload found.");
@@ -390,6 +435,7 @@ namespace Strela {
         }
         else if (auto cls = n.scopeTarget->type->as<ClassDecl>()) {
             n.node = cls->getMember(n.name);
+            n.context = n.scopeTarget;
             if (n.node) {
                 if (auto field = n.node->as<FieldDecl>()) {
                     n.type = field->type;
@@ -407,6 +453,7 @@ namespace Strela {
         }
         else if (auto iface = n.scopeTarget->type->as<InterfaceDecl>()) {
             n.node = iface->getMember(n.name);
+            n.context = n.scopeTarget;
             if (n.node) {
                 if (auto met = n.node->as<InterfaceMethodDecl>()) {
                     n.type = met->type;
@@ -500,6 +547,18 @@ namespace Strela {
 
     void TypeChecker::visit(InterfaceMethodDecl&) {
     }
+
+    void TypeChecker::visit(ThisExpr& n) {
+        if (_class) {
+            n._class = _class;
+            n.type = _class;
+        }
+        else {
+            error(n, "'this' expression outside of class.");
+        }
+    }
+
+
 
     void TypeChecker::error(Node& node, const std::string& msg) {
         //std::cerr << msg << "\n";

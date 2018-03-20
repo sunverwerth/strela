@@ -306,6 +306,10 @@ namespace Strela {
         else if (match(TokenType::New)) {
             expression = parseNewExpr();
         }
+        else if (match(TokenType::This)) {
+            auto st = eat();
+            expression = addPosition(new ThisExpr(), st);
+        }
         else {
             expected("primary expression or prefix operator");
         }
@@ -448,7 +452,9 @@ namespace Strela {
         std::vector<InterfaceMethodDecl*> methods;
         eat(TokenType::CurlyOpen);
         while (!eof() && !match(TokenType::CurlyClose)) {
-            methods.push_back(parseInterfaceMethodDecl());
+            auto im = parseInterfaceMethodDecl();
+            im->index = methods.size();
+            methods.push_back(im);
             eat(TokenType::Semicolon);
         }
         eat(TokenType::CurlyClose);
@@ -506,6 +512,7 @@ namespace Strela {
 
     bool Parser::matchExpr() {
         return
+            match(TokenType::This) ||
             match(TokenType::Null) ||
             match(TokenType::Integer) ||
             match(TokenType::Float) ||

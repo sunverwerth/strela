@@ -28,6 +28,7 @@ namespace Strela {
     public:
         TypeDecl* type = nullptr;
         Node* node = nullptr;
+        Expr* context = nullptr;
         std::vector<FuncDecl*> candidates;
     };
 }

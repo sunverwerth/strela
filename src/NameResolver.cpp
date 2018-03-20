@@ -88,16 +88,20 @@ namespace Strela {
         auto oldscope = scope;
         scope = new Scope(scope);
 
+        auto oldclass = _class;
+        _class = &n;
+
         for (auto&& field: n.fields) {
             scope->add(field->name, field);
         }
         for (auto&& method: n.methods) {
-            method->params.insert(method->params.begin(), new Param("this", new IdTypeExpr(n.name)));
             scope->add(method->name, method);
         }
 
         visitChildren(n.fields);
         visitChildren(n.methods);
+
+        _class = oldclass;
 
         delete scope;
         scope = oldscope;
@@ -283,7 +287,10 @@ namespace Strela {
     }
 
     void NameResolver::visit(InterfaceDecl& n) {
+        auto oldinterface = _interface;
+        _interface = &n;
         visitChildren(n.methods);
+        _interface = oldinterface;
     }
 
     void NameResolver::visit(InterfaceMethodDecl& n) {

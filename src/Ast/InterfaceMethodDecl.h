@@ -27,6 +27,7 @@ namespace Strela {
         std::vector<Param*> params;
         TypeExpr* returnTypeExpr;
         FuncType* type = nullptr;
+        size_t index = 0;
     };
 }
 

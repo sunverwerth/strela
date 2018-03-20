@@ -237,7 +237,9 @@ namespace Strela {
             }
             case Opcode::StoreField: {
                 auto obj = pop();
-                obj.value.object->setField(arg.value.integer, pop());
+                auto val = pop();
+                push(obj);
+                obj.value.object->setField(arg.value.integer, val);
                 break;
             }
             case Opcode::Repeat: {

@@ -8,6 +8,13 @@
 
 namespace Strela {
     class InterfaceMethodDecl;
+
+    class Implementation {
+    public:
+        InterfaceDecl* interface;
+        ClassDecl* _class;
+        std::vector<FuncDecl*> classMethods;
+    };
     
     class InterfaceDecl: public TypeDecl {
     public:
@@ -21,6 +28,8 @@ namespace Strela {
     public:
         bool isExported = false;
         std::vector<InterfaceMethodDecl*> methods;
+
+        std::map<ClassDecl*, Implementation*> implementations;
     };
 }
 

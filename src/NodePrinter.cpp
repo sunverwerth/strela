@@ -212,7 +212,7 @@ namespace Strela {
     }
 
     void NodePrinter::visit(EnumDecl& n) {
-        std::cout << "enum {\n";
+        std::cout << (n.isExported ? "export " : "") << "enum {\n";
         push();
         for (auto&& el: n.elements) {
             std::cout << indent;
@@ -222,14 +222,44 @@ namespace Strela {
         std::cout << indent <<  "}\n";
     }
 
-    void NodePrinter::visit(InterfaceDecl&) {
+    void NodePrinter::visit(InterfaceDecl& n) {
+        std::cout << (n.isExported ? "export " : "") << "interface {\n";
+        push();
+        for (auto&& m: n.methods) {
+            std::cout << indent;
+            visitChild(m);
+        }
+        pop();
+        std::cout << indent << "}\n";
     }
 
-    void NodePrinter::visit(InterfaceMethodDecl&) {        
+    void NodePrinter::visit(InterfaceMethodDecl& n) {
+        std::cout << "function " << n.name << "(";
+        for(auto&& param: n.params) {
+            visitChild(param);
+            if (&param != &n.params.back()) {
+                std::cout << ", ";
+            }
+        }
+        std::cout << "): ";
+        visitChild(n.returnTypeExpr);
+        std::cout << ";\n";
     }
 
     void NodePrinter::visit(EnumElement& n) {
         std::cout << n.name << ",\n";
+    }
+
+    void NodePrinter::visit(ThisExpr& n) {
+        std::cout << "this";
+    }
+
+    void NodePrinter::visit(CastExpr& n) {
+        std::cout << "cast<";
+        n.targetType->name;
+        std::cout << ">(";
+        visitChild(n.sourceExpr);
+        std::cout << ")";
     }
 
     void NodePrinter::push() {

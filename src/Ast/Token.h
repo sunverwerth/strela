@@ -68,6 +68,7 @@ namespace Strela {
         X(Var) \
         X(While) \
         X(Enum) \
+        X(This) \
 
 
     #define AS_ENUM(X) X,

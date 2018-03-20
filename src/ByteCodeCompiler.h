@@ -41,6 +41,8 @@ namespace Strela {
         void visit(EnumElement&) override;
         void visit(InterfaceDecl&) {}
         void visit(InterfaceMethodDecl&) {}
+        void visit(ThisExpr&) override;
+        void visit(CastExpr&) override;
 
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {
@@ -61,6 +63,7 @@ namespace Strela {
 
     public:
         ByteCodeChunk& chunk;
+        ClassDecl* _class = nullptr;
     };
 }
 #endif

@@ -42,6 +42,8 @@ namespace Strela {
         void visit(EnumElement&) override;
         void visit(InterfaceDecl&) override;
         void visit(InterfaceMethodDecl&) override;
+        void visit(ThisExpr&) override {};
+        void visit(CastExpr&) override {};
 
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {
@@ -56,6 +58,8 @@ namespace Strela {
         void error(const Node& n, const std::string& msg);
 
     private:
+        ClassDecl* _class = nullptr;
+        InterfaceDecl* _interface = nullptr;
         Scope* scope;
     };
 }

@@ -11,6 +11,8 @@ namespace Strela {
     class AssignExpr;
     class PostfixExpr;
     class UnaryExpr;
+    class ThisExpr;
+    class CastExpr;
 
     class IExprVisitor {
     public:
@@ -23,6 +25,8 @@ namespace Strela {
         virtual void visit(AssignExpr&) = 0;
         virtual void visit(PostfixExpr&) = 0;
         virtual void visit(UnaryExpr&) = 0;
+        virtual void visit(ThisExpr&) = 0;
+        virtual void visit(CastExpr&) = 0;
     };
 }
 

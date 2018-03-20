@@ -4,6 +4,7 @@
 #include "ByteCodeChunk.h"
 #include "Opcode.h"
 #include "Scope.h"
+#include "SourceFile.h"
 
 #include <sstream>
 #include <cstring>
@@ -44,7 +45,10 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(ClassDecl& n) {
+        auto oldclass = _class;
+        _class = &n;
         visitChildren(n.methods);
+        _class = oldclass;
     }
 
     void ByteCodeCompiler::visit(FuncDecl& n) {
@@ -54,6 +58,11 @@ namespace Strela {
         std::stringstream sstr;
         sstr << n.name << n.type->name;
         chunk.addFunction(n.opcodeStart, sstr.str());
+
+        for (size_t i = 0; i < n.params.size(); ++i) {
+            n.params[i]->index = _class ? i + 1 : i;
+        }
+
         visitChildren(n.params);
         if (n.numVariables > 0) {
             chunk.addOp(Opcode::GrowStack, n.numVariables);
@@ -102,7 +111,7 @@ namespace Strela {
             n.arguments[i - 1]->accept(*this);
         }
 
-        if (n.callTarget->node && n.callTarget->node->as<FuncDecl>()->name == "print") {
+        if (!n.callTarget->context && n.callTarget->node && n.callTarget->node->as<FuncDecl>() && n.callTarget->node->as<FuncDecl>()->name == "print") {
             chunk.addOp(Opcode::Print);
         }
         else {
@@ -140,6 +149,31 @@ namespace Strela {
             chunk.addOp(Opcode::Null);
         }
         else error(n, "Invalid literal type");
+    }
+
+    void ByteCodeCompiler::visit(CastExpr& n) {
+        auto targetIface = n.targetType->as<InterfaceDecl>();
+        auto sourceClass = n.sourceExpr->type->as<ClassDecl>();
+        
+        if (sourceClass && targetIface) {
+            auto impl = targetIface->implementations.find(sourceClass);
+            if (impl != targetIface->implementations.end()) {
+                visitChild(n.sourceExpr);
+                chunk.addOp(Opcode::New, targetIface->methods.size() + 1);
+                chunk.addOp(Opcode::StoreField, 0);
+                for (size_t i = 0; i < impl->second->classMethods.size(); ++i) {
+                    auto index = chunk.addOp(Opcode::Const, 255);
+                    functionFixups[index] = impl->second->classMethods[i];
+                    chunk.addOp(Opcode::StoreField, i + 1);
+                }
+            }
+            else {
+                error(*n.sourceExpr, "No implementation for interface '" + targetIface->name + "'");
+            }
+        }
+        else {
+            visitChild(n.sourceExpr);
+        }
     }
 
     void ByteCodeCompiler::visit(BlockStmt& n) {
@@ -197,6 +231,10 @@ namespace Strela {
             auto index = chunk.addOp(Opcode::Const, 255);
             functionFixups[index] = fun;
         }
+        else if (auto im = n.node->as<InterfaceMethodDecl>()) {
+            chunk.addOp(Opcode::Repeat);
+            chunk.addOp(Opcode::Field, 1 + im->index);
+        }
         else if (auto field = n.node->as<FieldDecl>()) {
             chunk.addOp(Opcode::Field, field->index);
         }
@@ -240,6 +278,7 @@ namespace Strela {
         else if (auto field = n.left->node->as<FieldDecl>()) {
             visitChild(n.left);
             chunk.addOp(Opcode::StoreField, field->index);
+            chunk.addOp(Opcode::Pop);
         }
     }
 
@@ -283,7 +322,16 @@ namespace Strela {
     void ByteCodeCompiler::visit(EnumElement& n) {
     }
 
+    void ByteCodeCompiler::visit(ThisExpr& n) {
+        chunk.addOp(Opcode::Param, 0);
+    }
+
     void ByteCodeCompiler::error(Node& n, const std::string& msg) {
-        throw Exception("ByteCodeCompiler: " + msg);
+        if (n.source) {
+            throw Exception(n.source->filename + ":" + std::to_string(n.line) + ":" + std::to_string(n.column) + " Error: " + msg);
+        }
+        else {
+            throw Exception("Error: " + msg);
+        }
     }
 }
