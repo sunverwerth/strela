@@ -155,21 +155,10 @@ namespace Strela {
         auto targetIface = n.targetType->as<InterfaceDecl>();
         auto sourceClass = n.sourceExpr->type->as<ClassDecl>();
         
-        if (sourceClass && targetIface) {
-            auto impl = targetIface->implementations.find(sourceClass);
-            if (impl != targetIface->implementations.end()) {
-                visitChild(n.sourceExpr);
-                chunk.addOp(Opcode::New, targetIface->methods.size() + 1);
-                chunk.addOp(Opcode::StoreField, 0);
-                for (size_t i = 0; i < impl->second->classMethods.size(); ++i) {
-                    auto index = chunk.addOp(Opcode::Const, 255);
-                    functionFixups[index] = impl->second->classMethods[i];
-                    chunk.addOp(Opcode::StoreField, i + 1);
-                }
-            }
-            else {
-                error(*n.sourceExpr, "No implementation for interface '" + targetIface->name + "'");
-            }
+        if (sourceClass && targetIface && n.implementation) {
+            visitChild(n.sourceExpr);
+            chunk.addOp(Opcode::INT, reinterpret_cast<int64_t>(n.implementation));
+            chunk.addOp(Opcode::ICast);
         }
         else {
             visitChild(n.sourceExpr);

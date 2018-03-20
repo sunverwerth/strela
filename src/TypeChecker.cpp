@@ -68,8 +68,11 @@ namespace Strela {
 
     void prepareArguments(std::vector<Expr*>& arguments, FuncType* ftype) {
         for (size_t i = 0; i < ftype->paramTypes.size(); ++i) {
-            if (arguments[i]->type->as<ClassDecl>() && ftype->paramTypes[i]->as<InterfaceDecl>()) {
+            auto iface = ftype->paramTypes[i]->as<InterfaceDecl>();
+            auto cls = arguments[i]->type->as<ClassDecl>();
+            if (cls && iface) {
                 auto cast = new CastExpr(arguments[i], ftype->paramTypes[i]);
+                cast->implementation = iface->implementations[cls];
                 arguments[i] = cast;
             }
         }

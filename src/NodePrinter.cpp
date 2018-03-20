@@ -24,6 +24,7 @@ namespace Strela {
     }
 
     void NodePrinter::visit(ClassDecl& n) {
+        std::cout << "\n" << indent;
         if (n.isExported) {
             std::cout << "export ";
         }
@@ -42,6 +43,7 @@ namespace Strela {
     }
 
     void NodePrinter::visit(FuncDecl& n) {
+        std::cout << "\n" << indent;
         if (n.isExported) {
             std::cout << "export ";
         }

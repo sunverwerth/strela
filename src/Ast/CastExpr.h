@@ -5,6 +5,8 @@
 #include "Token.h"
 
 namespace Strela {
+    class Implementation;
+    
     class CastExpr: public Expr {
     public:
         CastExpr(Expr* sourceExpr, TypeDecl* targetType): Expr(), sourceExpr(sourceExpr), targetType(targetType) {}
@@ -14,6 +16,7 @@ namespace Strela {
     public:
         Expr* sourceExpr;
         TypeDecl* targetType;
+        Implementation* implementation = nullptr;
     };
 }
 

@@ -3,6 +3,8 @@
 #include "Opcode.h"
 #include "exceptions.h"
 #include "VMObject.h"
+#include "Ast/InterfaceDecl.h"
+#include "Ast/FuncDecl.h"
 
 #include <cstring>
 #include <chrono>
@@ -198,7 +200,7 @@ namespace Strela {
                 else if (val.type == VMValue::Type::boolean) std::cout << (val.value.boolean ? "true" : "false");
                 else if (val.type == VMValue::Type::null) std::cout << "null";
                 else if (val.type == VMValue::Type::string) std::cout << val.value.string;
-                else if (val.type == VMValue::Type::object) std::cout << "(object)";
+                else if (val.type == VMValue::Type::object) std::cout << "[object]";
                 break;
             }
 			case Opcode::Jmp: {
@@ -248,6 +250,17 @@ namespace Strela {
             }
             case Opcode::Pop: {
                 pop();
+                break;
+            }
+			case Opcode::ICast: {
+                auto impl = reinterpret_cast<Implementation*>(pop().value.integer);
+				auto cls = pop();
+				auto iface = gc.allocObject(1 + impl->classMethods.size());
+				iface->setField(0, cls);
+				for (size_t i = 0; i < impl->classMethods.size(); ++i) {
+					iface->setField(i + 1 , VMValue((int64_t)impl->classMethods[i]->opcodeStart));
+				}
+				push(VMValue(iface));
                 break;
             }
 			default:
