@@ -254,6 +254,14 @@ namespace Strela {
         }
     }
 
+    void ByteCodeCompiler::visit(ArrayLitExpr& n) {
+        visitChildren(n.elements);
+    }
+
+    void ByteCodeCompiler::visit(SubscriptExpr& n) {
+        visitChildren(n.arguments);
+    }
+
     void ByteCodeCompiler::visit(IfStmt& n) {
         visitChild(n.condition);
         auto pos = chunk.addOp(Opcode::Const, 0);

@@ -17,7 +17,7 @@ namespace Strela {
         STRELA_IMPL_STMT_VISITOR;
 
         Node* getMember(const std::string& name);
-        std::vector<FuncDecl*> getMethods(const std::string& name);
+        std::vector<FuncDecl*> getMethods(const std::string& name) override;
 
     public:
         bool isExported = false;

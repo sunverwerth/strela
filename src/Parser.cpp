@@ -144,7 +144,18 @@ namespace Strela {
     FuncDecl* Parser::parseFunction() {
         numVariables = 0;
         auto startToken = eat(TokenType::Function);
-        auto name = eat(TokenType::Identifier);
+        std::string name;
+        if (match(TokenType::Identifier)) {
+            name = eat().value;
+        }
+        else if (match(TokenType::BracketOpen)) {
+            eat();
+            eat(TokenType::BracketClose);
+            name = "[]";
+        }
+        else {
+            expected("function name");
+        }
         eat(TokenType::ParenOpen);
         std::vector<Param*> parameters;
         while (!eof() && !match(TokenType::ParenClose)) {
@@ -179,7 +190,7 @@ namespace Strela {
             }
         }
         eat(TokenType::CurlyClose);
-        auto fun = new FuncDecl(name.value, parameters, returnTypeExpr, stmts);
+        auto fun = new FuncDecl(name, parameters, returnTypeExpr, stmts);
         fun->numVariables = numVariables;
         return addPosition(fun, startToken);
     }
@@ -316,6 +327,9 @@ namespace Strela {
             auto st = eat();
             expression = addPosition(new ThisExpr(), st);
         }
+        else if (match(TokenType::BracketOpen)) {
+            expression = parseArrayLitExpr();
+        }
         else {
             expected("primary expression or prefix operator");
         }
@@ -332,6 +346,9 @@ namespace Strela {
 
             if (match(TokenType::ParenOpen)) {
                 expression = parseCallExpr(expression);
+            }
+            else if (match(TokenType::BracketOpen)) {
+                expression = parseSubscriptExpr(expression);
             }
             else if (match(TokenType::Period)) {
                 auto st = eat();
@@ -396,6 +413,19 @@ namespace Strela {
         return addPosition(new CallExpr(callTarget, arguments), startToken);
     }
 
+    SubscriptExpr* Parser::parseSubscriptExpr(Expr* callTarget) {
+        auto startToken = eat(TokenType::BracketOpen);
+        std::vector<Expr*> arguments;
+        while (!eof() && !match(TokenType::BracketClose)) {
+            arguments.push_back(parseExpression());
+            if (match(TokenType::Comma)) {
+                eat();
+            }
+        }
+        eat(TokenType::BracketClose);
+        return addPosition(new SubscriptExpr(callTarget, arguments), startToken);
+    }
+
     LitExpr* Parser::parseLiteralExpression() {
         if (!(match(TokenType::Integer) || match(TokenType::Float) || match(TokenType::String) || match(TokenType::Boolean) || match(TokenType::Null))) {
             expected("literal");
@@ -445,6 +475,22 @@ namespace Strela {
         auto type = parseTypeExpr();
         eat(TokenType::Semicolon);
         return addPosition(new FieldDecl(name, type), startToken);
+    }
+
+    ArrayLitExpr* Parser::parseArrayLitExpr() {
+        auto startToken = eat(TokenType::BracketOpen);
+        std::vector<Expr*> elements;
+        while (!eof() && !match(TokenType::BracketClose)) {
+            elements.push_back(parseExpression());
+            if (match(TokenType::Comma)) {
+                eat();
+            }
+            else {
+                break;
+            }
+        }
+        eat(TokenType::BracketClose);
+        return addPosition(new ArrayLitExpr(elements), startToken);
     }
 
     ClassDecl* Parser::parseClassDecl() {
@@ -536,6 +582,7 @@ namespace Strela {
 
     bool Parser::matchExpr() {
         return
+            match(TokenType::BracketOpen) ||
             match(TokenType::This) ||
             match(TokenType::Null) ||
             match(TokenType::Integer) ||
@@ -566,6 +613,7 @@ namespace Strela {
             match(TokenType::MinusMinus) ||
             match(TokenType::PlusPlus) ||
             match(TokenType::Is) ||
+            match(TokenType::BracketOpen) ||
             matchBinary();
     }
 

@@ -3,7 +3,7 @@
 
 #include "Node.h"
 #include "../IExprVisitor.h"
-
+#include "InvalidType.h"
 #include <vector>
 
 #define STRELA_IMPL_EXPR_VISITOR void accept(Strela::IExprVisitor& v) override { v.visit(*this); }
@@ -44,7 +44,7 @@ namespace Strela {
         virtual void accept(IExprVisitor&) = 0;
 
     public:
-        TypeDecl* type = nullptr;
+        TypeDecl* type = &InvalidType::instance;
         Node* node = nullptr;
         Expr* context = nullptr;
         std::vector<FuncDecl*> candidates;

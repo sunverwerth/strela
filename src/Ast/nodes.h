@@ -30,6 +30,8 @@
 #include "TypeExpr.h"
 #include "UnaryExpr.h"
 #include "VarDecl.h"
+#include "ArrayLitExpr.h"
+#include "SubscriptExpr.h"
 #include "WhileStmt.h"
 #include "InterfaceDecl.h"
 #include "UnionTypeExpr.h"

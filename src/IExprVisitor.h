@@ -14,6 +14,8 @@ namespace Strela {
     class ThisExpr;
     class CastExpr;
     class IsExpr;
+    class ArrayLitExpr;
+    class SubscriptExpr;
 
     class IExprVisitor {
     public:
@@ -29,6 +31,8 @@ namespace Strela {
         virtual void visit(ThisExpr&) = 0;
         virtual void visit(CastExpr&) = 0;
         virtual void visit(IsExpr&) = 0;
+        virtual void visit(ArrayLitExpr&) = 0;
+        virtual void visit(SubscriptExpr&) = 0;
     };
 }
 

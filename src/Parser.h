@@ -37,6 +37,8 @@ namespace Strela {
         NewExpr* parseNewExpr();
         LitExpr* parseLiteralExpression();
         CallExpr* parseCallExpr(Expr* callTarget);
+        ArrayLitExpr* parseArrayLitExpr();
+        SubscriptExpr* parseSubscriptExpr(Expr* callTarget);
 
         bool match(TokenType type);
         bool matchExpr();

@@ -30,6 +30,9 @@ namespace Strela {
         std::vector<Stmt*> stmts;
         size_t opcodeStart = 0xdeadbeef;
         int numVariables = 0;
+        bool isPrototype = false;
+        InterfaceDecl* _interface = nullptr;
+        ClassDecl* _class = nullptr;
     };
 }
 

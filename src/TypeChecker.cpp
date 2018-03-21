@@ -8,6 +8,33 @@
 
 namespace Strela {
 
+    std::string operator+(const std::string& left, const std::vector<TypeDecl*>& types) {
+        std::string result(left);
+        for (auto&& type: types) {
+            result += type->name;
+            if (&type != &types.back()) {
+                result += ", ";
+            }
+        }
+        return result;
+    }
+
+    std::vector<TypeDecl*> unique(const std::vector<TypeDecl*>& types) {
+        std::set<TypeDecl*> set;
+        set.insert(types.begin(), types.end());
+        std::vector<TypeDecl*> result;
+        result.assign(set.begin(), set.end());
+        return result;
+    }
+
+    std::vector<TypeDecl*> getTypes(const std::vector<Expr*>& arguments) {
+        std::vector<TypeDecl*> result;
+        for (auto&& argument: arguments) {
+            result.push_back(argument->type);
+        }
+        return result;
+    }
+
     bool isCallable(TypeDecl* ftype, const std::vector<TypeDecl*>& argTypes);
     bool isAssignableFrom(TypeDecl* to, TypeDecl* from);
 
@@ -38,6 +65,12 @@ namespace Strela {
         if (to->as<FloatType>() && from->as<FloatType>()) return true;
         if (to->as<BoolType>() && from->as<BoolType>()) return true;
         if (to->as<EnumDecl>() && from == to) return true;
+        if (auto arrTo = to->as<ArrayType>()) {
+            if (to == from) return true;
+            auto arrFrom = from->as<ArrayType>();
+            if (!arrFrom) return false;
+            return arrFrom->baseType == arrTo->baseType;
+        }
         if (auto iface = to->as<InterfaceDecl>()) {
             if (to == from) return true;
             auto cls = from->as<ClassDecl>();
@@ -92,11 +125,7 @@ namespace Strela {
     }
 
 	std::vector<FuncDecl*> TypeChecker::findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<Expr*>& args) {
-        std::vector<TypeDecl*> argTypes;
-        for (auto&& arg: args) {
-            argTypes.push_back(arg->type);
-        }
-        return findOverload(funcs, argTypes);
+        return findOverload(funcs, getTypes(args));
     }
 
 	std::vector<FuncDecl*> TypeChecker::findOverload(const std::vector<FuncDecl*>& candidates, const std::vector<TypeDecl*>& argTypes) {
@@ -135,8 +164,6 @@ namespace Strela {
     }
 
     void TypeChecker::visit(IsExpr& n) {
-        n.type = &InvalidType::instance;
-
         visitChild(n.target);
         if (auto un = n.target->type->as<UnionType>()) {
             if (un->containedTypes.find(n.typeExpr->type) != un->containedTypes.end()) {
@@ -184,6 +211,57 @@ namespace Strela {
         function = oldfunction;
     }
 
+    void TypeChecker::visit(ArrayLitExpr& n) {
+        visitChildren(n.elements);
+        // unify types
+        if (!n.elements.empty()) {
+            auto types = unique(getTypes(n.elements));
+            if (types.size() == 1) {
+                n.type = ArrayType::get(types.front());
+            }
+            else {
+                error(n, "Array literal can not contain different types.");
+            }
+        }
+        else {
+            error(n, "Empty array literal is not allowed.");
+        }
+    }
+
+    void TypeChecker::visit(SubscriptExpr& n) {
+        visitChildren(n.arguments);
+        visitChild(n.callTarget);
+
+        if (auto arr = n.callTarget->type->as<ArrayType>()) {
+            if (n.arguments.size() == 1) {
+                if (n.arguments.front()->type == &IntType::instance) {
+                    n.type = arr->baseType;
+                }
+                else {
+                    error(n, "Array subscript operator argument must be integer.");
+                }
+            }
+            else {
+                error(n, "Array subscript operator takes one argument.");
+            }
+        }
+        else {
+            auto candidates = n.callTarget->type->getMethods("[]");
+            auto funs = findOverload(candidates, n.arguments);
+            if (funs.empty()) {
+                error(n, "Type '" + n.callTarget->type->name + "' has no subscript operator with arguments (" + getTypes(n.arguments) + ").");
+            }
+            else if (funs.size() > 1) {
+                error(n, "Type '" + n.callTarget->type->name + "' has multiple matching subscript operators for arguments (" + getTypes(n.arguments) + ").");
+            }
+            else {
+                auto fun = funs.front();
+                n.node = fun;
+                n.type = fun->type->returnType;
+            }
+        }
+    }
+
     void TypeChecker::visit(VarDecl& n) {
         if (n.initializer) {
             visitChild(n.initializer);
@@ -197,17 +275,12 @@ namespace Strela {
     }
 
     void TypeChecker::visit(CallExpr& n) {
-        n.type = &InvalidType::instance;
-
         visitChildren(n.arguments);
         visitChild(n.callTarget);
 
 
         // gather argument types
-        std::vector<TypeDecl*> argTypes;
-        for (auto&& argument: n.arguments) {
-            argTypes.push_back(argument->type);
-        }
+        auto argTypes = getTypes(n.arguments);
 
         if (auto ftype = n.callTarget->type->as<FuncType>()) {
             // non-overloaded function call
@@ -216,14 +289,7 @@ namespace Strela {
                 prepareArguments(n.arguments, ftype);
             }
             else {
-                std::string msg = "'" + n.callTarget->type->name + "' is not callable with arguments (";
-                for (auto&& argType: argTypes) {
-                    msg += argType->name;
-                    if (&argType != &argTypes.back()) {
-                        msg += ", ";
-                    }
-                }
-                msg += ")";
+                std::string msg = "'" + n.callTarget->type->name + "' is not callable with arguments (" + argTypes + ")";
                 error(*n.callTarget, msg);
             }
         }
@@ -239,7 +305,7 @@ namespace Strela {
                 prepareArguments(n.arguments, fun->type);
             }
             else if (funs.empty()) {
-                error(n, "No matching overload found.");
+                error(n, "'" + n.callTarget->candidates.front()->name + "': No matching overload found. arguments are: (" + argTypes + ")");
             }
             else {
                 error(n, "Multiple matching overloads found.");
@@ -269,8 +335,6 @@ namespace Strela {
     }
 
     void TypeChecker::visit(LitExpr& n) {
-        n.type = &InvalidType::instance;
-
         switch (n.token.type) {
             case TokenType::Integer: {
                 n.type = &IntType::instance;
@@ -315,8 +379,6 @@ namespace Strela {
     }
 
     void TypeChecker::visit(BinopExpr& n) {
-        n.type = &InvalidType::instance;
-
         visitChild(n.left);
         visitChild(n.right);
 
@@ -384,14 +446,11 @@ namespace Strela {
     }
 
     void TypeChecker::visit(AssignExpr& n) {
-        n.type = &InvalidType::instance;
-
         visitChild(n.left);
         visitChild(n.right);
 
         if (!n.left->node) {
             error(n, "Assignment target must be storage node.");
-            n.type = &InvalidType::instance;
             return;
         }
         else if (auto var = n.left->node->as<VarDecl>()) {
@@ -421,7 +480,6 @@ namespace Strela {
     }
 
     void TypeChecker::visit(ScopeExpr& n) {
-        n.type = &InvalidType::instance;
         visitChild(n.scopeTarget);
 
         if (n.scopeTarget->type->as<TypeType>()) {
@@ -439,19 +497,24 @@ namespace Strela {
                     }
                 }
                 else {
-                    error(n, "no member");
+                    error(n, "Module '" + mod->name + "' has no member named '" + n.name + "'");
                 }
             }
             else if (auto en = n.scopeTarget->node->as<EnumDecl>()) {
                 n.node = en->getMember(n.name);
-                n.type = n.node ? (TypeDecl*)en : (TypeDecl*)&InvalidType::instance;
+                if (n.node) {
+                    n.type = en;
+                }
+                else {
+                    error(n, "Enum '" + en->name + "' has no element named '" + n.name + "'");
+                }
             }
             else {
                 error(n, "Direct member acces only for modules and enums.");
             }
         }
-        else if (auto cls = n.scopeTarget->type->as<ClassDecl>()) {
-            n.node = cls->getMember(n.name);
+        else if (auto type = n.scopeTarget->type->as<TypeDecl>()) {
+            n.node = type->getMember(n.name);
             n.context = n.scopeTarget;
             if (n.node) {
                 if (auto field = n.node->as<FieldDecl>()) {
@@ -460,19 +523,7 @@ namespace Strela {
                 else if (auto fun = n.node->as<FuncDecl>()) {
                     n.type = fun->type;
                 }
-                else {
-                    error(n, "unhandled member kind");
-                }
-            }
-            else {
-                error(n, "no member");
-            }
-        }
-        else if (auto iface = n.scopeTarget->type->as<InterfaceDecl>()) {
-            n.node = iface->getMember(n.name);
-            n.context = n.scopeTarget;
-            if (n.node) {
-                if (auto met = n.node->as<InterfaceMethodDecl>()) {
+                else if (auto met = n.node->as<InterfaceMethodDecl>()) {
                     n.type = met->type;
                 }
                 else {
@@ -480,11 +531,11 @@ namespace Strela {
                 }
             }
             else {
-                error(n, "no member");
+                error(n, "Type '" + type->name + "' has no member named '" + n.name + "'");
             }
-        }
+        }        
         else {
-            error(n, "Scope operator not applicable to '" + n.scopeTarget->type->name + "'.");
+            error(n, "Scope operator not applicable to type '" + n.scopeTarget->type->name + "'.");
         }
     }
 
@@ -502,7 +553,6 @@ namespace Strela {
     }
 
     void TypeChecker::visit(NewExpr& n) {
-        n.type = &InvalidType::instance;
         if (auto cls = n.typeExpr->type->as<ClassDecl>()) {
             n.type = cls;
 
@@ -536,7 +586,6 @@ namespace Strela {
     }
 
     void TypeChecker::visit(PostfixExpr& n) {
-        n.type = &InvalidType::instance;
         visitChild(n.target);
         if (!n.target->node || !(n.target->node->as<FieldDecl>() || n.target->node->as<Param>() || n.target->node->as<VarDecl>())) {
             error(n, "Target for operator '" + getTokenName(n.op) + "' must be a reference to a mutable value.");
@@ -551,7 +600,6 @@ namespace Strela {
     }
 
     void TypeChecker::visit(UnaryExpr& n) {
-        n.type = &InvalidType::instance;
         visitChild(n.target);
         switch (n.op) {
             case TokenType::Minus:
@@ -575,7 +623,6 @@ namespace Strela {
             break;
         }
         error(n, "Unhandled unary prefix operator '" + getTokenName(n.op) + "'.");
-        n.type = &InvalidType::instance;
     }
 
     void TypeChecker::visit(InterfaceDecl&) {

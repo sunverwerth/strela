@@ -290,6 +290,15 @@ namespace Strela {
     void NameResolver::visit(UnaryExpr& n) {
         visitChild(n.target);
     }
+    
+    void NameResolver::visit(ArrayLitExpr& n) {
+        visitChildren(n.elements);
+    }
+
+    void NameResolver::visit(SubscriptExpr& n) {
+        visitChildren(n.arguments);
+        visitChild(n.callTarget);
+    }
 
     void NameResolver::visit(EnumDecl& n) {
         visitChildren(n.elements);

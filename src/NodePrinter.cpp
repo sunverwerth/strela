@@ -265,6 +265,18 @@ namespace Strela {
         std::cout << " | ";
         visitChild(n.next);
     }
+    
+    void NodePrinter::visit(ArrayLitExpr& n) {
+        std::cout << "[";
+        list(n.elements, ", ");
+        std::cout << "]";
+    }
+
+    void NodePrinter::visit(SubscriptExpr& n) {
+        std::cout << "[";
+        list(n.arguments, ", ");
+        std::cout << "]";
+    }
 
     void NodePrinter::push() {
         ++indentation;
