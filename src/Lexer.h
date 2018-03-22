@@ -17,6 +17,7 @@ namespace Strela {
 
     private:
         int get();
+        int peek();
         bool eof();
         bool match(char c);
 

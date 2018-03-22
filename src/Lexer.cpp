@@ -122,29 +122,25 @@ namespace Strela {
                         get();
                     }
 
-                    if (match('/')) {
+                    auto next = peek();
+                    if (match('/') && next == '/') {
                         get();
-                        if (match('/')) {
+                        get();
+                        while (!eof() && !match('\n')) {
                             get();
-                            while (!eof() && !match('\n')) {
-                                get();
-                            }
                         }
-                        else if (match('*')) {
+                        get();
+                    }
+                    else if (match('/') && next == '*') {
+                        get();
+                        get();
+                        while (!eof()) {
+                            int ch2 = ch;
                             get();
-                            while (!eof()) {
-                                int ch2 = ch;
+                            if (ch2 == '*' && match('/')) {
                                 get();
-                                if (ch2 == '*' && match('/')) {
-                                    get();
-                                    break;
-                                }
-                                get();
+                                break;
                             }
-                        }
-                        else {
-                            tokens.push_back(Token(TokenType::Slash, "/", line, column));
-                            break;
                         }
                     }
                     else {
@@ -250,9 +246,13 @@ namespace Strela {
         lastch = ch;
         return ch;
     }
+
+    int Lexer::peek() {
+        return in.peek();
+    }
     
     bool Lexer::eof() {
-        return in.eof();
+        return ch == EOF;
     }
 
     bool Lexer::match(char c) {
