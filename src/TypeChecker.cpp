@@ -421,6 +421,7 @@ namespace Strela {
 
         auto lint = ltype->as<IntType>();
         auto rint = rtype->as<IntType>();
+        
         auto lfloat = ltype->as<FloatType>();
         auto rfloat = rtype->as<FloatType>();
 
@@ -440,7 +441,7 @@ namespace Strela {
             op == TokenType::GreaterThanEquals
         ) {
             
-            if (!leftScalar || !rightScalar) {
+            if (!((leftScalar && rightScalar) || (op == TokenType::Plus && ltype == &ClassDecl::String && rtype == &ClassDecl::String))) {
                 error(n, "Binary operator '" + getTokenName(op) + "' is only applicable to scalar values. Types are '" + ltype->name + "' and '" + rtype->name + "'.");
             }
 
@@ -459,6 +460,9 @@ namespace Strela {
                 }
                 else if (rfloat) {
                     n.type = rfloat;
+                }
+                else if (ltype == &ClassDecl::String) {
+                    n.type = &ClassDecl::String;
                 }
             }
         }

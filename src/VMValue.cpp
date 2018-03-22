@@ -18,26 +18,44 @@ namespace Strela {
 	VMValue::VMValue(VMObject* val) : type(Type::object) { value.object = val; }
 
     VMValue VMValue::operator==(const VMValue& other) const {
+        if (type == Type::string && other.type == Type::string) {
+            return VMValue(strcmp(value.string, other.value.string) == 0);
+        }
         VMVALUE_OP(==);
     }
 
     VMValue VMValue::operator!=(const VMValue& other) const {
+        if (type == Type::string && other.type == Type::string) {
+            return VMValue(strcmp(value.string, other.value.string) != 0);
+        }
         VMVALUE_OP(!=);
     }
 
     VMValue VMValue::operator<(const VMValue& other) const {
+        if (type == Type::string && other.type == Type::string) {
+            return VMValue(strcmp(value.string, other.value.string) < 0);
+        }
         VMVALUE_OP(<);
     }
 
     VMValue VMValue::operator>(const VMValue& other) const {
+        if (type == Type::string && other.type == Type::string) {
+            return VMValue(strcmp(value.string, other.value.string) > 0);
+        }
         VMVALUE_OP(>);
     }
 
     VMValue VMValue::operator<=(const VMValue& other) const {
+        if (type == Type::string && other.type == Type::string) {
+            return VMValue(strcmp(value.string, other.value.string) <= 0);
+        }
         VMVALUE_OP(<=);
     }
 
     VMValue VMValue::operator>=(const VMValue& other) const {
+        if (type == Type::string && other.type == Type::string) {
+            return VMValue(strcmp(value.string, other.value.string) >= 0);
+        }
         VMVALUE_OP(>=);
     }
 
@@ -51,6 +69,15 @@ namespace Strela {
 
     
     VMValue VMValue::operator+(const VMValue& other) const {
+        if (type == Type::string && other.type == Type::string) {
+            auto len1 = strlen(value.string);
+            auto len2 = strlen(other.value.string);
+            auto str = new char[len1 + len2 + 1];
+            str[len1 + len2] = 0;
+            memcpy(&str[0], value.string, len1);
+            memcpy(&str[len1], other.value.string, len2);
+            return VMValue(str);
+        }
         VMVALUE_OP(+);
     }
 
