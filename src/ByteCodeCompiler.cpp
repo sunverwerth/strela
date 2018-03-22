@@ -19,6 +19,10 @@ namespace Strela {
     ByteCodeCompiler::ByteCodeCompiler(ByteCodeChunk& chunk): chunk(chunk) {
     }
 
+    void ByteCodeCompiler::addFixup(int address, FuncDecl* function) {
+        functionFixups[address] = function;
+    }
+
     void ByteCodeCompiler::visit(ModDecl& n) {
         visitChildren(n.functions);
         visitChildren(n.classes);
@@ -92,7 +96,7 @@ namespace Strela {
     void ByteCodeCompiler::visit(IdExpr& n) {
         if (auto fun = n.node->as<FuncDecl>()) {
             auto index = chunk.addOp(Opcode::Const, 255);
-            functionFixups[index] = fun;
+            addFixup(index, fun);
         }
         else if (auto param = n.node->as<Param>()) {
             chunk.addOp(Opcode::Param, param->index);
@@ -171,7 +175,7 @@ namespace Strela {
             for(size_t i = 0; i < targetIface->methods.size(); ++i) {
                 chunk.addOp(Opcode::Repeat);
                 auto index = chunk.addOp(Opcode::Const, 255);
-                functionFixups[index] = n.implementation->classMethods[i];
+                addFixup(index, n.implementation->classMethods[i]);
                 chunk.addOp(Opcode::Swap);
                 chunk.addOp(Opcode::StoreField, i + 1);
             }
@@ -234,7 +238,7 @@ namespace Strela {
         visitChild(n.scopeTarget);
         if (auto fun = n.node->as<FuncDecl>()) {
             auto index = chunk.addOp(Opcode::Const, 255);
-            functionFixups[index] = fun;
+            addFixup(index, fun);
         }
         else if (auto im = n.node->as<InterfaceMethodDecl>()) {
             chunk.addOp(Opcode::Repeat);
@@ -278,7 +282,7 @@ namespace Strela {
 
         if (n.subscriptFunction) {
             auto index = chunk.addOp(Opcode::Const, 255);
-            functionFixups[index] = n.subscriptFunction;
+            addFixup(index, n.subscriptFunction);
             chunk.addOp(Opcode::Call);
         }
         else {
@@ -310,7 +314,7 @@ namespace Strela {
                 chunk.addOp(Opcode::Swap);
             }
             auto index = chunk.addOp(Opcode::Const, 255);
-            functionFixups[index] = n.initMethod;
+            addFixup(index, n.initMethod);
             chunk.addOp(Opcode::Call);
         }
     }

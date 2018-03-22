@@ -59,6 +59,7 @@ namespace Strela {
 
     private:
         void error(Node& node, const std::string& msg);
+        void addFixup(int address, FuncDecl* function);
 
     private:
         std::map<int, FuncDecl*> functionFixups;
