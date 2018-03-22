@@ -27,6 +27,7 @@ namespace Strela {
         X(EqualsEquals) \
         X(ExclamationMark) \
         X(Export) \
+        X(External) \
         X(Import) \
         X(Is) \
         X(ExclamationMarkEquals) \

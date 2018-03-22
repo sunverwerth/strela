@@ -52,6 +52,7 @@ namespace Strela {
     std::map<std::string, TokenType> keywords {
         { "var", TokenType::Var },
         { "export", TokenType::Export },
+        { "external", TokenType::External },
         { "import", TokenType::Import },
         { "class", TokenType::Class },
         { "interface", TokenType::Interface },

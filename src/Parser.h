@@ -15,7 +15,7 @@ namespace Strela {
 
         ModDecl* parseModule();
         IdExpr* parseIdentifierExpression();
-        FuncDecl* parseFunction();
+        FuncDecl* parseFunction(bool external = false);
         Param* parseParameter();
         VarDecl* parseVarDecl();
         BlockStmt* parseBlockStatement();

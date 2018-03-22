@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <chrono>
+#include <cmath>
 
 namespace Strela {
 
@@ -18,6 +19,9 @@ namespace Strela {
     }
 
     VM::VM(const ByteCodeChunk& chunk): chunk(chunk), ip(chunk.main), sp(0) {
+		for (auto& ff: chunk.foreignFunctions) {
+			ff.ptr = reinterpret_cast<char*>(&sqrt);
+		}
     }
 
     VMValue VM::run() {
@@ -87,6 +91,23 @@ namespace Strela {
 				push(VMValue(ip));
 				sp = push(VMValue(sp));
 				ip = newip;
+				break;
+			}
+			case Opcode::F2I: {
+				push(VMValue((int64_t)pop().value.floating));
+				break;
+			}
+			case Opcode::I2F: {
+				push(VMValue((double)pop().value.integer));
+				break;
+			}
+			case Opcode::NativeCall: {
+				auto funcindex = pop();
+				auto func = chunk.foreignFunctions[funcindex.value.integer].ptr;
+				auto par = pop();
+				typedef double(*mathfunc)(double);
+				auto sqr = (mathfunc)func;
+				push(VMValue(sqr(par.value.floating)));
 				break;
 			}
 			case Opcode::Return: {

@@ -21,6 +21,7 @@ namespace Strela {
         X(StoreElement, 0, null) \
         X(GrowStack, 1, integer) \
         X(Call, 0, null) \
+        X(NativeCall, 0, null) \
         X(Jmp, 0, null) \
         X(JmpIf, 0, null) \
         X(JmpIfNot, 0, null) \
@@ -43,6 +44,8 @@ namespace Strela {
         X(AndL, 0, null) \
         X(OrL, 0, null) \
         X(Swap, 0, null) \
+        X(I2F, 0, null) \
+        X(F2I, 0, null) \
     
     #define AS_ENUM(X, A, T) X,
     enum class Opcode {

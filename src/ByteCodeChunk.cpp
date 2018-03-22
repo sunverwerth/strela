@@ -14,6 +14,16 @@ namespace Strela {
         return constants.size() - 1;
     }
 
+    int ByteCodeChunk::addForeignFunction(const std::string& name) {
+        for (int i = 0; i < foreignFunctions.size(); ++i) {
+            if (foreignFunctions[i].name == name) {
+                return i;
+            }
+        }
+        foreignFunctions.push_back({name, nullptr});
+        return foreignFunctions.size() - 1;
+    }
+
     int ByteCodeChunk::addOp(Opcode code) {
         if (opcodeInfo[(int)code].argWidth > 0) throw Exception(std::string("Opcode ") + opcodeInfo[(int)code].name + " requires arguments.");
         opcodes.push_back((char)code);

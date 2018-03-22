@@ -9,15 +9,23 @@
 #include <iostream>
 
 namespace Strela {
+    class ForeignFunction {
+    public:
+        std::string name;
+        mutable char* ptr;
+    };
+
     class ByteCodeChunk {
     public:
         std::vector<VMValue> constants;
         std::vector<char> opcodes;
         std::map<size_t, std::string> functions;
+        std::vector<ForeignFunction> foreignFunctions;
         size_t main;
 
         void addFunction(size_t address, const std::string& name);
         int addConstant(VMValue c);
+        int addForeignFunction(const std::string& name);
         int addOp(Opcode code);
         int addOp(Opcode code, uint64_t arg);
         void writeArgument(size_t pos, uint64_t arg);

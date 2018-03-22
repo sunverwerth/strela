@@ -85,12 +85,24 @@ namespace Strela {
         std::vector<ImportStmt*> imports;
         std::vector<EnumDecl*> enums;
 
+        bool exportNext = false;
+        bool externalNext = false;
+
         while (!eof() && !match(TokenType::CurlyClose)) {
-            bool exportNext = match(TokenType::Export);
-            if (exportNext) eat();
+            if (match(TokenType::Export)) {
+                eat();
+                exportNext = true;
+                continue;
+            }
+
+            if (match(TokenType::External)) {
+                eat();
+                externalNext = true;
+                continue;
+            }
 
             if (match(TokenType::Function)) {
-                auto fun = parseFunction();
+                auto fun = parseFunction(externalNext);
                 if (exportNext) fun->isExported = true;
                 functions.push_back(fun);
             }
@@ -115,6 +127,9 @@ namespace Strela {
             else {
                 expected("module member declaration");
             }
+
+            exportNext = false;
+            externalNext = false;
         }
         eat(TokenType::CurlyClose);
 
@@ -141,7 +156,7 @@ namespace Strela {
         return addPosition(new ImportStmt(parts, all), st);
     }
 
-    FuncDecl* Parser::parseFunction() {
+    FuncDecl* Parser::parseFunction(bool external) {
         numVariables = 0;
         auto startToken = eat(TokenType::Function);
         std::string name;
@@ -178,20 +193,27 @@ namespace Strela {
         else {
             returnTypeExpr = new IdTypeExpr("void");
         }
-        
-        eat(TokenType::CurlyOpen);
+
         std::vector<Stmt*> stmts;
-        while (!eof() && !match(TokenType::CurlyClose)) {
-            if (match(TokenType::Semicolon)) {
-                eat();
-            }
-            else {
-                stmts.push_back(parseStatement());
-            }
+        if (external) {
+            eat(TokenType::Semicolon);
         }
-        eat(TokenType::CurlyClose);
+        else {        
+            eat(TokenType::CurlyOpen);
+            while (!eof() && !match(TokenType::CurlyClose)) {
+                if (match(TokenType::Semicolon)) {
+                    eat();
+                }
+                else {
+                    stmts.push_back(parseStatement());
+                }
+            }
+            eat(TokenType::CurlyClose);
+        }
+
         auto fun = new FuncDecl(name, parameters, returnTypeExpr, stmts);
         fun->numVariables = numVariables;
+        fun->isExternal = external;
         return addPosition(fun, startToken);
     }
 

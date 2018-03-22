@@ -76,7 +76,21 @@ namespace Strela {
         }
         visitChildren(n.stmts);
 
-        if (!n.returns) {
+        if (n.isExternal) {
+            for (int i = n.params.size() - 1; i >= 0; --i) {
+                chunk.addOp(Opcode::Param, i);
+            }
+            auto index = chunk.addForeignFunction(n.name);
+            chunk.addOp(Opcode::INT, index);
+            chunk.addOp(Opcode::NativeCall);
+            if (n.type->returnType != &VoidType::instance) {
+                chunk.addOp(Opcode::Return, n.params.size() + (_class ? 1 : 0));
+            }
+            else {
+                chunk.addOp(Opcode::ReturnVoid, n.params.size() + (_class ? 1 : 0));
+            }
+        }
+        else if (!n.returns) {
             chunk.addOp(Opcode::ReturnVoid, n.params.size() + (_class ? 1 : 0));
         }
 
@@ -206,6 +220,14 @@ namespace Strela {
         else if (fromunion) {
             visitChild(n.sourceExpr);
             chunk.addOp(Opcode::Field, 1);
+        }
+        else if (totype->as<IntType>() && fromtype->as<FloatType>()) {
+            visitChild(n.sourceExpr);
+            chunk.addOp(Opcode::F2I);
+        }
+        else if (fromtype->as<IntType>() && totype->as<FloatType>()) {
+            visitChild(n.sourceExpr);
+            chunk.addOp(Opcode::I2F);
         }
         else {
             visitChild(n.sourceExpr);

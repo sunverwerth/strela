@@ -84,7 +84,7 @@ namespace Strela {
     bool isAssignableFrom(TypeDecl* to, TypeDecl* from) {
         if (to->as<ClassDecl>() && to == from) return true;
         if (to->as<IntType>() && from->as<IntType>()) return true;
-        if (to->as<FloatType>() && from->as<FloatType>()) return true;
+        if (to->as<FloatType>() && (from->as<FloatType>() || from->as<IntType>())) return true;
         if (to->as<BoolType>() && from->as<BoolType>()) return true;
         if (to->as<EnumDecl>() && from == to) return true;
         if (to->as<UnionType>() && from == to) return true;
@@ -126,12 +126,14 @@ namespace Strela {
         auto iface = targetType->as<InterfaceDecl>();
         auto targetunion = targetType->as<UnionType>();
         auto cls = expr->type->as<ClassDecl>();
+        
         if (cls && iface) {
             auto cast = new CastExpr(expr, targetType);
             cast->implementation = iface->implementations[cls];
             return cast;
         }
-        else if (targetType != expr->type) {
+        
+        if (targetType != expr->type) {
             return new CastExpr(expr, targetType);
         }
         
@@ -238,7 +240,7 @@ namespace Strela {
             if (stmt->returns) n.returns = true;
         }
 
-        if (!n.returns && n.type->returnType != &VoidType::instance) {
+        if (!n.isExternal && !n.returns && n.type->returnType != &VoidType::instance) {
             error(n, n.name + ": Not all paths return a value.");
         }
 
