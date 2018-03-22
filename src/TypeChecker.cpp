@@ -485,6 +485,18 @@ namespace Strela {
 
     void TypeChecker::visit(AssignExpr& n) {
         visitChild(n.left);
+
+        if (n.op != TokenType::Equals) {
+            TokenType op;
+            switch (n.op) {
+                case TokenType::PlusEquals: op = TokenType::Plus; break;
+                case TokenType::MinusEquals: op = TokenType::Minus; break;
+                case TokenType::AsteriskEquals: op = TokenType::Asterisk; break;
+                case TokenType::SlashEquals: op = TokenType::Slash; break;
+                default: error(n, "invalid op");
+            }
+            n.right = new BinopExpr(op, n.left, n.right);
+        }
         visitChild(n.right);
 
         if (!n.left->node) {

@@ -369,8 +369,14 @@ namespace Strela {
             }
             else if (matchBinary()) {
 				auto op = eat();
-                if (op.type == TokenType::Equals) {
-                    expression = addPosition(new AssignExpr(expression, parseExpression(myprec)), op);
+                if (
+                    op.type == TokenType::Equals ||
+                    op.type == TokenType::PlusEquals ||
+                    op.type == TokenType::MinusEquals ||
+                    op.type == TokenType::AsteriskEquals ||
+                    op.type == TokenType::SlashEquals
+                ) {
+                    expression = addPosition(new AssignExpr(op.type, expression, parseExpression(myprec)), op);
                 }
                 else {
                     expression = addPosition(new BinopExpr(op.type, expression, parseExpression(myprec)), op);
@@ -628,6 +634,10 @@ namespace Strela {
             match(TokenType::Asterisk) ||
             match(TokenType::Slash) ||
             match(TokenType::Equals) ||
+            match(TokenType::PlusEquals) ||
+            match(TokenType::MinusEquals) ||
+            match(TokenType::AsteriskEquals) ||
+            match(TokenType::SlashEquals) ||
             match(TokenType::EqualsEquals) ||
             match(TokenType::ExclamationMarkEquals) ||
             match(TokenType::AmpAmp) ||
