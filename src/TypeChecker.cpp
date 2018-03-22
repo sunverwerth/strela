@@ -37,10 +37,22 @@ namespace Strela {
         return result;
     }
 
-    std::vector<TypeDecl*> getTypes(const std::vector<Expr*>& arguments) {
+    TypeDecl* TypeChecker::getType(Expr* expr) {
+        if (expr->node) {
+            auto it = refinements.find(expr->node);
+            if (it != refinements.end()) {
+                for (auto& ref: it->second) {
+                    if (ref.type) return ref.type;
+                }
+            }
+        }
+        return expr->type;
+    }
+
+    std::vector<TypeDecl*> TypeChecker::getTypes(const std::vector<Expr*>& arguments) {
         std::vector<TypeDecl*> result;
         for (auto&& argument: arguments) {
-            result.push_back(argument->type);
+            result.push_back(getType(argument));
         }
         return result;
     }
@@ -75,6 +87,7 @@ namespace Strela {
         if (to->as<FloatType>() && from->as<FloatType>()) return true;
         if (to->as<BoolType>() && from->as<BoolType>()) return true;
         if (to->as<EnumDecl>() && from == to) return true;
+        if (to->as<UnionType>() && from == to) return true;
         if (auto arrTo = to->as<ArrayType>()) {
             if (to == from) return true;
             auto arrFrom = from->as<ArrayType>();
@@ -109,15 +122,25 @@ namespace Strela {
             ;
     }
 
+    Expr* addCast(Expr* expr, TypeDecl* targetType) {
+        auto iface = targetType->as<InterfaceDecl>();
+        auto targetunion = targetType->as<UnionType>();
+        auto cls = expr->type->as<ClassDecl>();
+        if (cls && iface) {
+            auto cast = new CastExpr(expr, targetType);
+            cast->implementation = iface->implementations[cls];
+            return cast;
+        }
+        else if (targetType != expr->type) {
+            return new CastExpr(expr, targetType);
+        }
+        
+        return expr;
+    }
+
     void prepareArguments(std::vector<Expr*>& arguments, FuncType* ftype) {
         for (size_t i = 0; i < ftype->paramTypes.size(); ++i) {
-            auto iface = ftype->paramTypes[i]->as<InterfaceDecl>();
-            auto cls = arguments[i]->type->as<ClassDecl>();
-            if (cls && iface) {
-                auto cast = new CastExpr(arguments[i], ftype->paramTypes[i]);
-                cast->implementation = iface->implementations[cls];
-                arguments[i] = cast;
-            }
+            arguments[i] = addCast(arguments[i], ftype->paramTypes[i]);
         }
     }
 
@@ -177,8 +200,9 @@ namespace Strela {
         visitChild(n.target);
         if (auto un = n.target->type->as<UnionType>()) {
             if (un->containedTypes.find(n.typeExpr->type) != un->containedTypes.end()) {
+                n.typeTag = un->getTypeTag(n.typeExpr->type);
                 if (n.target->node) {
-                    n.refinements.push_back(new TypeRefinement{n.target->node, n.typeExpr->type});
+                    refinements[n.target->node].push_back(Refinement{n.target->node, n.typeExpr->type});
                 }
                 n.type = &BoolType::instance;
             }
@@ -476,6 +500,8 @@ namespace Strela {
             error(n, std::string("Can not assign to ") + n.left->getTypeInfo()->getName());
             return;
         }
+
+        n.right = addCast(n.right, n.left->type);
     }
 
     void TypeChecker::visit(IdExpr& n) {
@@ -550,6 +576,7 @@ namespace Strela {
     }
 
     void TypeChecker::visit(IfStmt& n) {
+        refinements.clear();
         visitChild(n.condition);
         if (n.condition->type != &BoolType::instance) {
             error(*n.condition, "Condition must yield boolean value.");
@@ -557,9 +584,36 @@ namespace Strela {
         visitChild(n.trueBranch);
         auto ret = n.trueBranch->returns;
         if (n.falseBranch) {
+            negateRefinements();
             visitChild(n.falseBranch);
             n.returns = ret && n.falseBranch->returns;
         }
+    }
+
+    void TypeChecker::negateRefinements() {
+        std::map<Node*, std::vector<Refinement>> newRefinements;
+        for (auto& pair: refinements) {
+            auto& node = pair.first;
+            for (auto&& ref: pair.second) {
+                if (ref.type) {
+                    if (auto var = ref.node->as<VarDecl>()) {
+                        if (auto uni = var->type->as<UnionType>()) {
+                            if (uni->containedTypes.size() == 2) {
+                                newRefinements[node].push_back(Refinement{node, uni->getComplementaryType(ref.type)});
+                            }
+                        }
+                    }
+                    else if (auto par = ref.node->as<Param>()) {
+                        if (auto uni = par->type->as<UnionType>()) {
+                            if (uni->containedTypes.size() == 2) {
+                                newRefinements[node].push_back(Refinement{node, uni->getComplementaryType(ref.type)});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        refinements = newRefinements;
     }
 
     void TypeChecker::visit(NewExpr& n) {
@@ -655,7 +709,9 @@ namespace Strela {
 
     void TypeChecker::error(Node& node, const std::string& msg) {
         //std::cerr << msg << "\n";
-        throw TypeException(node.source->filename + ":" + std::to_string(node.line) + ":" + std::to_string(node.column) + " Error: " + msg);
+        //throw TypeException(node.source->filename + ":" + std::to_string(node.line) + ":" + std::to_string(node.column) + " Error: " + msg);
+        std::cerr << "\033[1;31m" << node.source->filename << ":" << node.line << ":" << node.column << " Error: " << msg << "\033[0m\n";
+        _hasErrors = true;
     }
 
     void TypeChecker::warning(Node& node, const std::string& msg) {

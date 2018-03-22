@@ -13,6 +13,8 @@ namespace Strela {
         STRELA_IMPL_STMT_VISITOR;
 
         static UnionType* get(TypeDecl* left, TypeDecl* right);
+        TypeDecl* getComplementaryType(TypeDecl* t);
+        int getTypeTag(TypeDecl* t);
 
     public:
         std::set<TypeDecl*> containedTypes;

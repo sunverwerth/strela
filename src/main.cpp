@@ -234,9 +234,14 @@ int main(int argc, char** argv) {
             }
 
             //std::cout << "Running type checker...\n";
+            bool errors = false;
             for (auto&& it: modules) {
                 TypeChecker typeChecker;
                 it.second->accept(typeChecker);
+                errors |= typeChecker.hasErrors();
+            }
+            if (errors) {
+                return 1;
             }
 
             //std::cout << "Compiling bytecode...\n";

@@ -21,20 +21,8 @@ namespace Strela {
 
     class Refinement {
     public:
-        Refinement(Node* node): node(node) {}
         Node* node;
-    };
-
-    class TypeRefinement: public Refinement {
-    public:
-        TypeRefinement(Node* node, TypeDecl* type): Refinement(node), type(type) {}
         TypeDecl* type;
-    };
-
-    class RangeRefinement: public Refinement {
-    public:
-        int lower;
-        int upper;
     };
 
     class Expr: public Node {

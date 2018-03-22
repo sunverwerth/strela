@@ -12,6 +12,7 @@ namespace Strela {
         STRELA_IMPL_EXPR_VISITOR;
 
     public:
+        int typeTag;
         Expr* target;
         TypeExpr* typeExpr;
     };

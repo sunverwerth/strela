@@ -6,8 +6,10 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 namespace Strela {
+    class Refinement;
     class TypeDecl;
     class Node;
     class Stmt;
@@ -59,6 +61,12 @@ namespace Strela {
             child->accept(*this);
         }
 
+        bool hasErrors() { return _hasErrors; }
+        void negateRefinements();
+        
+        std::vector<TypeDecl*> getTypes(const std::vector<Expr*>& arguments);
+        TypeDecl* getType(Expr* expr);
+
     private:
 		std::vector<FuncDecl*> findOverload(Expr* target, const std::vector<TypeDecl*>& argtypes);
 		std::vector<FuncDecl*> findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<Expr*>& args);
@@ -71,6 +79,9 @@ namespace Strela {
         ClassDecl* _class = nullptr;
 
         bool returns = false;
+        bool _hasErrors = false;
+
+        std::map<Node*, std::vector<Refinement>> refinements;
     };
 }
 #endif

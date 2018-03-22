@@ -159,26 +159,53 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(IsExpr& n) {
-        error(n, "IsExpr Not implemented");
+        visitChild(n.target);
+        chunk.addOp(Opcode::Field, 0);
+        chunk.addOp(Opcode::INT, n.typeTag);
+        chunk.addOp(Opcode::CmpEQ);
     }
 
     void ByteCodeCompiler::visit(CastExpr& n) {
-        auto targetIface = n.targetType->as<InterfaceDecl>();
-        auto sourceClass = n.sourceExpr->type->as<ClassDecl>();
-        
-        if (sourceClass && targetIface && n.implementation) {
-            chunk.addOp(Opcode::New, targetIface->methods.size() + 1);
+        auto totype = n.targetType;
+        auto fromtype = n.sourceExpr->type;
+
+        auto toiface = totype->as<InterfaceDecl>();
+        auto fromclass = fromtype->as<ClassDecl>();
+
+        auto tounion = totype->as<UnionType>();
+        auto fromunion = fromtype->as<UnionType>();
+
+        if (fromclass && toiface && n.implementation) {
+            chunk.addOp(Opcode::New, toiface->methods.size() + 1);
             chunk.addOp(Opcode::Repeat);
             visitChild(n.sourceExpr);
             chunk.addOp(Opcode::Swap);
             chunk.addOp(Opcode::StoreField, 0);
-            for(size_t i = 0; i < targetIface->methods.size(); ++i) {
+            for(size_t i = 0; i < toiface->methods.size(); ++i) {
                 chunk.addOp(Opcode::Repeat);
                 auto index = chunk.addOp(Opcode::Const, 255);
                 addFixup(index, n.implementation->classMethods[i]);
                 chunk.addOp(Opcode::Swap);
                 chunk.addOp(Opcode::StoreField, i + 1);
             }
+        }
+        else if (tounion) {
+            auto tag = tounion->getTypeTag(fromtype);
+            chunk.addOp(Opcode::New, 2);
+            
+            chunk.addOp(Opcode::Repeat);
+            chunk.addOp(Opcode::INT, tag);
+            chunk.addOp(Opcode::Swap);
+            chunk.addOp(Opcode::StoreField, 0);
+
+            chunk.addOp(Opcode::Repeat);
+            visitChild(n.sourceExpr);
+            chunk.addOp(Opcode::Swap);
+            chunk.addOp(Opcode::StoreField, 1);
+        }
+        else if (fromunion) {
+            visitChild(n.sourceExpr);
+            chunk.addOp(Opcode::Field, 1);
         }
         else {
             visitChild(n.sourceExpr);
@@ -295,11 +322,16 @@ namespace Strela {
         auto pos = chunk.addOp(Opcode::Const, 0);
         chunk.addOp(Opcode::JmpIfNot);
         visitChild(n.trueBranch);
+        auto pos2 = chunk.addOp(Opcode::Const, 0);
+        chunk.addOp(Opcode::Jmp);
+
         auto index = chunk.addConstant(VMValue(int64_t(chunk.opcodes.size())));
         chunk.writeArgument(pos, index);
         if (n.falseBranch) {
             visitChild(n.falseBranch);
         }
+        auto index2 = chunk.addConstant(VMValue(int64_t(chunk.opcodes.size())));
+        chunk.writeArgument(pos2, index2);
     }
 
     void ByteCodeCompiler::visit(FieldDecl& n) {

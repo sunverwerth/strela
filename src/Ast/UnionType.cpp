@@ -1,4 +1,5 @@
 #include "UnionType.h"
+#include "../exceptions.h"
 
 namespace Strela {
     std::set<TypeDecl*> mergeTypes(TypeDecl* left, TypeDecl* right) {
@@ -28,8 +29,23 @@ namespace Strela {
         }
         return name;
     }
+    
+    int UnionType::getTypeTag(TypeDecl* t) {
+        int tag = 0;
+        for (auto&& type: containedTypes) {
+            if (type == t) return tag;
+            ++tag;
+        }
+    }
 
     UnionType::UnionType(const std::set<TypeDecl*>& containedTypes): containedTypes(containedTypes), TypeDecl(getUnionName(containedTypes)) {        
+    }
+    
+    TypeDecl* UnionType::getComplementaryType(TypeDecl* t) {
+        if (containedTypes.size() != 2) throw Exception("Calling UnionType::getComplementaryType() on union without exactly 2 contained types.");
+        for (auto& ct: containedTypes) {
+            if (ct != t) return ct;
+        }
     }
 
     UnionType* UnionType::get(TypeDecl* left, TypeDecl* right) {
