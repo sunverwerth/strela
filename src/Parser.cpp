@@ -313,6 +313,9 @@ namespace Strela {
                 eat(TokenType::BracketClose);
                 expression = addPosition(new ArrayTypeExpr(expression), st);
             }
+            else if (match(TokenType::LessThan)) {
+                expression = parseGenericReificationExpr(expression);
+            }
             else if (match(TokenType::Pipe)) {
                 auto st = eat();
                 expression = addPosition(new UnionTypeExpr(expression, parseTypeExpr()), st);
@@ -327,6 +330,22 @@ namespace Strela {
         }
 
         return expression;
+    }
+
+    GenericReificationExpr* Parser::parseGenericReificationExpr(TypeExpr* target) {
+        auto startToken = eat(TokenType::LessThan);
+        std::vector<TypeExpr*> genericArguments;
+        while (!eof() && !match(TokenType::GreaterThan)) {
+            genericArguments.push_back(parseTypeExpr());
+            if (match(TokenType::Comma)) {
+                eat();
+            }
+            else {
+                break;
+            }
+        }
+        eat(TokenType::GreaterThan);
+        return addPosition(new GenericReificationExpr(target, genericArguments), startToken);
     }
     
     Expr* Parser::parseExpression(int precedence) {
@@ -415,6 +434,7 @@ namespace Strela {
     NewExpr* Parser::parseNewExpr() {
         auto startToken = eat(TokenType::New);
         auto typeExpr = parseTypeExpr();
+        
         std::vector<Expr*> arguments;
         if (match(TokenType::ParenOpen)) {
             eat();
@@ -528,6 +548,19 @@ namespace Strela {
     ClassDecl* Parser::parseClassDecl() {
         auto startToken = eat(TokenType::Class);
         auto name = eat(TokenType::Identifier).value;
+
+        std::vector<GenericParam*> genericParams;
+        if (match(TokenType::LessThan)) {
+            eat();
+            while (!eof() && !match(TokenType::GreaterThan)) {
+                auto tok = eat(TokenType::Identifier);
+                genericParams.push_back(addPosition(new GenericParam(tok.value), tok));
+                if (match(TokenType::Comma)) {
+                    eat();
+                }
+            }
+            eat(TokenType::GreaterThan);
+        }
         eat(TokenType::CurlyOpen);
         std::vector<FuncDecl*> methods;
         std::vector<FieldDecl*> fields;
@@ -545,7 +578,7 @@ namespace Strela {
             }
         }
         eat(TokenType::CurlyClose);
-        return addPosition(new ClassDecl(name, methods, fields), startToken);
+        return addPosition(new ClassDecl(name, genericParams, methods, fields), startToken);
     }
 
     InterfaceDecl* Parser::parseInterfaceDecl() {
@@ -674,6 +707,7 @@ namespace Strela {
     bool Parser::matchTypeSecondary() {
         return
             match(TokenType::BracketOpen) ||
+            match(TokenType::LessThan) ||
             match(TokenType::Pipe) ||
             match(TokenType::QuestionMark)
             ;

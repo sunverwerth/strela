@@ -18,6 +18,7 @@ namespace Strela {
         int line = 0;
         int column = 0;
         const SourceFile* source = nullptr;
+        int firstToken = 0;
     };
 }
 #endif

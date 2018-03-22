@@ -81,12 +81,13 @@ namespace Strela {
 
     struct Token {
     public:
-        Token(TokenType type, const std::string& value, int line, int column): type(type), value(value), line(line), column(column) {}
+        Token(TokenType type, const std::string& value, int line, int column, int index): type(type), value(value), line(line), column(column), index(index) {}
     public:
         TokenType type;
         std::string value;
         int line;
         int column;
+        int index;
 
         double floatVal();
         int64_t intVal();

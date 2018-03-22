@@ -28,7 +28,13 @@ namespace Strela {
         if (n.isExported) {
             std::cout << "export ";
         }
-        std::cout << "class " << n.name << " {\n";
+        std::cout << "class " << n.name;
+        if (!n.genericParams.empty()) {
+            std::cout << "<";
+            list(n.genericParams, ", ");
+            std::cout << ">";
+        }
+        std::cout << " {\n";
         push();
         for (auto&& field: n.fields) {
             std::cout << indent;
@@ -281,6 +287,17 @@ namespace Strela {
     void NodePrinter::visit(NullableTypeExpr& n) {
         visitChild(n.base);
         std::cout << "?";
+    }
+
+    void NodePrinter::visit(GenericParam& n) {
+        std::cout << n.name;
+    }
+
+    void NodePrinter::visit(GenericReificationExpr& n) {
+        visitChild(n.base);
+        std::cout << "<";
+        list(n.genericArguments, ", ");
+        std::cout << ">";
     }
 
     void NodePrinter::push() {

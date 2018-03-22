@@ -85,11 +85,17 @@ namespace Strela {
     }
 
     void NameResolver::visit(ClassDecl& n) {
+        if (n.genericParams.size() > 0 && n.genericArguments.empty()) return;
+
         auto oldscope = scope;
         scope = new Scope(scope);
 
         auto oldclass = _class;
         _class = &n;
+
+        for (int i = 0; i < n.genericParams.size(); ++i) {
+            scope->add(n.genericParams[i]->name, n.genericArguments[i]);
+        }
 
         for (auto&& field: n.fields) {
             scope->add(field->name, field);
@@ -136,9 +142,7 @@ namespace Strela {
             visitChild(n.typeExpr);
             n.type = n.typeExpr->type;
         }
-        else {
-            n.type = &InvalidType::instance;
-        }
+
         if (n.initializer) {
             visitChild(n.initializer);
         }
@@ -191,7 +195,6 @@ namespace Strela {
         }
         else {
             error(n, "Unhandled symbol kind.");
-            n.type = &InvalidType::instance;
         }
     }
 
@@ -265,7 +268,6 @@ namespace Strela {
             n.type = td;
         }
         else {
-            n.type = &InvalidType::instance;
             error(n, "'" + n.name + "' does not name a type.");
         }
     }
@@ -317,6 +319,40 @@ namespace Strela {
     void NameResolver::visit(NullableTypeExpr& n) {
         visitChild(n.base);
         n.type = UnionType::get(n.base->type, &NullType::instance);
+    }
+
+    void NameResolver::visit(GenericParam&) {
+    }
+
+    void NameResolver::visit(GenericReificationExpr& n) {
+        visitChild(n.base);
+        visitChildren(n.genericArguments);
+
+        if (auto cls = n.base->type->as<ClassDecl>()) {
+            if (cls->genericParams.size() > 0) {
+                if (cls->genericParams.size() == n.genericArguments.size()) {
+                    std::vector<TypeDecl*> types;
+                    for (auto&& tex: n.genericArguments) {
+                        types.push_back(tex->type);
+                    }
+                    bool isnew;
+                    n.type = cls->getReifiedClass(types, isnew);
+
+                    if (isnew) {
+                        n.type->accept(*this);
+                    }
+                }
+                else {
+                    error(n, "Expected " + std::to_string(cls->genericParams.size()) + " type arguments, " + std::to_string(n.genericArguments.size()) + " given.");
+                }
+            }
+            else {
+                error(n, "Can not reify non-generic type '" + n.base->type->name + "'.");
+            }
+        }
+        else {
+            error(n, "Can not reify non-generic type '" + n.base->type->name + "'.");
+        }
     }
 
     void NameResolver::visit(InterfaceMethodDecl& n) {

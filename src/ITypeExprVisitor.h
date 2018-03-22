@@ -6,6 +6,7 @@ namespace Strela {
     class ArrayTypeExpr;
     class UnionTypeExpr;
     class NullableTypeExpr;
+    class GenericReificationExpr;
 
     class ITypeExprVisitor {
     public:
@@ -13,6 +14,7 @@ namespace Strela {
         virtual void visit(ArrayTypeExpr&) = 0;
         virtual void visit(UnionTypeExpr&) = 0;
         virtual void visit(NullableTypeExpr&) = 0;
+        virtual void visit(GenericReificationExpr&) = 0;
     };
 }
 

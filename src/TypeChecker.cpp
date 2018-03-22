@@ -218,12 +218,17 @@ namespace Strela {
     }
 
     void TypeChecker::visit(ClassDecl& n) {
-        auto oldclass = _class;
-        _class = &n;
-        
-        visitChildren(n.methods);
+        if (!n.genericParams.empty() && n.genericArguments.empty()) {
+            visitChildren(n.reifiedClasses);
+        }
+        else {
+            auto oldclass = _class;
+            _class = &n;
+            
+            visitChildren(n.methods);
 
-        _class = oldclass;
+            _class = oldclass;
+        }
     }
 
     void TypeChecker::visit(FuncDecl& n) {
@@ -635,13 +640,15 @@ namespace Strela {
     }
 
     void TypeChecker::visit(NewExpr& n) {
+        visitChildren(n.arguments);
+
         if (auto cls = n.typeExpr->type->as<ClassDecl>()) {
             n.type = cls;
 
             auto inits = extract<FuncDecl>(cls->getMethods("init"));
             if (inits.empty()) {
                 if (!n.arguments.empty()) {
-                    error(n, "'" + cls->name + "' has no matching constructor.");
+                    error(n, "'" + cls->name + "' has no matching constructor for arguments (" + getTypes(n.arguments) + ").");
                 }
             }
             else {
@@ -650,10 +657,10 @@ namespace Strela {
                     n.initMethod = init.front();
                 }
                 else if (init.empty()) {
-                    error(n, "Multiple matching constructors found.");
+                    error(n, "No matching constructors found for arguments (" + getTypes(n.arguments) + ").");
                 }
                 else {
-                    error(n, "No matching constructors found.");
+                    error(n, "Multiple matching constructors found for arguments (" + getTypes(n.arguments) + ").");
                 }
             }
         }

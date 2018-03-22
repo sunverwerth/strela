@@ -22,6 +22,7 @@ namespace Strela {
         bool match(char c);
 
     private:
+        int numtokens = 0;
         std::istream& in;
         int line;
         int column;

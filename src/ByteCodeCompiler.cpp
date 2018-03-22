@@ -49,10 +49,15 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(ClassDecl& n) {
-        auto oldclass = _class;
-        _class = &n;
-        visitChildren(n.methods);
-        _class = oldclass;
+        if (!n.genericParams.empty() && n.genericArguments.empty()) {
+            visitChildren(n.reifiedClasses);
+        }
+        else {
+            auto oldclass = _class;
+            _class = &n;
+            visitChildren(n.methods);
+            _class = oldclass;
+        }
     }
 
     void ByteCodeCompiler::visit(FuncDecl& n) {

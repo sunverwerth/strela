@@ -3,6 +3,7 @@
 
 #include "Node.h"
 #include "../ITypeExprVisitor.h"
+#include "InvalidType.h"
 
 #define STRELA_IMPL_TYPE_EXPR_VISITOR void accept(Strela::ITypeExprVisitor& v) override { v.visit(*this); }
 
@@ -16,7 +17,7 @@ namespace Strela {
         virtual void accept(ITypeExprVisitor&) = 0;
 
     public:
-        TypeDecl* type = nullptr;
+        TypeDecl* type = &InvalidType::instance;
     };
 }
 

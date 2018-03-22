@@ -11,7 +11,7 @@
 namespace Strela {
     class Parser {
     public:
-        Parser(const SourceFile& source): source(source), tokens(source.tokens), token(tokens.begin()) {}
+        Parser(const SourceFile& source, int starttoken = 0): source(source), tokens(source.tokens), token(&tokens[starttoken]) {}
 
         ModDecl* parseModule();
         IdExpr* parseIdentifierExpression();
@@ -40,6 +40,8 @@ namespace Strela {
         ArrayLitExpr* parseArrayLitExpr();
         SubscriptExpr* parseSubscriptExpr(Expr* callTarget);
 
+        GenericReificationExpr* parseGenericReificationExpr(TypeExpr* target);
+
         bool match(TokenType type);
         bool matchExpr();
         bool matchSecondary();
@@ -66,6 +68,7 @@ namespace Strela {
             node->line = tok.line;
             node->column = tok.column;
             node->source = &source;
+            node->firstToken = tok.index;
             return node;
         }
 

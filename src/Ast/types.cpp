@@ -25,7 +25,7 @@ namespace Strela {
 
     InvalidType InvalidType::instance;
 
-    ClassDecl ClassDecl::String("String", {}, {});
+    ClassDecl ClassDecl::String("String", {}, {}, {});
 
     std::map<TypeDecl*, ArrayType*> ArrayType::arrayTypes;
     std::vector<FuncType*> FuncType::funcTypes;

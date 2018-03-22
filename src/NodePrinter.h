@@ -45,6 +45,8 @@ namespace Strela {
         void visit(ArrayLitExpr&) override;
         void visit(SubscriptExpr&) override;
         void visit(NullableTypeExpr&) override;
+        void visit(GenericParam&) override;
+        void visit(GenericReificationExpr&) override;
 
         void push();
         void pop();

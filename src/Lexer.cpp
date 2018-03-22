@@ -153,7 +153,7 @@ namespace Strela {
                 int startColumn = column;
 
                 if (eof()) {
-                    tokens.push_back(Token(TokenType::Eof, "", startLine, startColumn));
+                    tokens.push_back(Token(TokenType::Eof, "", startLine, startColumn, numtokens++));
                     break;
                 }
                 else if (isdigit(ch)) {
@@ -171,10 +171,10 @@ namespace Strela {
                             sstr << (char)ch;
                             get();
                         }
-                        tokens.push_back(Token(TokenType::Float, sstr.str(), startLine, startColumn));
+                        tokens.push_back(Token(TokenType::Float, sstr.str(), startLine, startColumn, numtokens++));
                     }
                     else {
-                        tokens.push_back(Token(TokenType::Integer, sstr.str(), startLine, startColumn));
+                        tokens.push_back(Token(TokenType::Integer, sstr.str(), startLine, startColumn, numtokens++));
                     }
                 }
                 else if (isalpha(ch) || match('_')) {
@@ -190,7 +190,7 @@ namespace Strela {
                     if (it != keywords.end()) {
                         ttype = it->second;
                     }
-                    tokens.push_back(Token(ttype, sstr.str(), startLine, startColumn));
+                    tokens.push_back(Token(ttype, sstr.str(), startLine, startColumn, numtokens++));
                 }
                 else if (match('"')) {
                     std::stringstream sstr;
@@ -200,7 +200,7 @@ namespace Strela {
                         get();
                     }
                     get();
-                    tokens.push_back(Token(TokenType::String, unescape(sstr.str()), startLine, startColumn));
+                    tokens.push_back(Token(TokenType::String, unescape(sstr.str()), startLine, startColumn, numtokens++));
                 }
                 else {
                     int ch2 = ch;
@@ -210,23 +210,23 @@ namespace Strela {
 
                     auto it2 = twoCharTokens.find(two);
                     if (it2 != twoCharTokens.end()) {
-                        tokens.push_back(Token(it2->second, two, startLine, startColumn));
+                        tokens.push_back(Token(it2->second, two, startLine, startColumn, numtokens++));
                         get();
                     }
                     else {
                         auto it = singleCharTokens.find((char)ch2);
                         if (it != singleCharTokens.end()) {
-                            tokens.push_back(Token(it->second, std::string(1, (char)ch2), startLine, startColumn));
+                            tokens.push_back(Token(it->second, std::string(1, (char)ch2), startLine, startColumn, numtokens++));
                         }
                         else {
-                            tokens.push_back(Token(TokenType::Invalid, std::string(1, (char)ch2), startLine, startColumn));
+                            tokens.push_back(Token(TokenType::Invalid, std::string(1, (char)ch2), startLine, startColumn, numtokens++));
                         }
                     }
                 }
             }
         }
         else {
-            tokens.push_back(Token(TokenType::Eof, "", 0, 0));
+            tokens.push_back(Token(TokenType::Eof, "", 0, 0, numtokens++));
         }
 
         return tokens;
