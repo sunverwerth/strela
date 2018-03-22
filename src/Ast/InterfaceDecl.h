@@ -23,7 +23,7 @@ namespace Strela {
         STRELA_IMPL_STMT_VISITOR;
 
         Node* getMember(const std::string& name);
-        std::vector<InterfaceMethodDecl*> getMethods(const std::string& name);
+        std::vector<Node*> getMethods(const std::string& name);
 
     public:
         bool isExported = false;

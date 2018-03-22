@@ -15,6 +15,7 @@ namespace Strela {
         X(Param, 1, integer) \
         X(StoreParam, 1, integer) \
         X(Field, 1, integer) \
+        X(FieldInd, 1, integer) \
         X(StoreField, 1, integer) \
         X(Element, 0, null) \
         X(StoreElement, 0, null) \

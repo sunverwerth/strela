@@ -11,8 +11,8 @@ namespace Strela {
         return nullptr;
     }
 
-    std::vector<InterfaceMethodDecl*> InterfaceDecl::getMethods(const std::string& name) {
-        std::vector<InterfaceMethodDecl*> result;
+    std::vector<Node*> InterfaceDecl::getMethods(const std::string& name) {
+        std::vector<Node*> result;
         for (auto&& method: methods) {
             if (method->name == name) {
                 result.push_back(method);

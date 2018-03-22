@@ -17,8 +17,8 @@ namespace Strela {
         return nullptr;
     }
 
-    std::vector<FuncDecl*> ClassDecl::getMethods(const std::string& name) {
-        std::vector<FuncDecl*> met;
+    std::vector<Node*> ClassDecl::getMethods(const std::string& name) {
+        std::vector<Node*> met;
         for (auto&& method: methods) {
             if (method->name == name) {
                 met.push_back(method);

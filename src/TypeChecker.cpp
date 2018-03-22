@@ -8,6 +8,16 @@
 
 namespace Strela {
 
+    template<typename T> std::vector<T*> extract(const std::vector<Node*>& nodes) {
+        std::vector<T*> result;
+        for (auto&& node: nodes) {
+            if (auto t = node->as<T>()) {
+                result.push_back(t);
+            }
+        }
+        return result;
+    }
+
     std::string operator+(const std::string& left, const std::vector<TypeDecl*>& types) {
         std::string result(left);
         for (auto&& type: types) {
@@ -246,7 +256,7 @@ namespace Strela {
             }
         }
         else {
-            auto candidates = n.callTarget->type->getMethods("[]");
+            auto candidates = extract<FuncDecl>(n.callTarget->type->getMethods("[]"));
             auto funs = findOverload(candidates, n.arguments);
             if (funs.empty()) {
                 error(n, "Type '" + n.callTarget->type->name + "' has no subscript operator with arguments (" + getTypes(n.arguments) + ").");
@@ -256,8 +266,8 @@ namespace Strela {
             }
             else {
                 auto fun = funs.front();
-                n.node = fun;
                 n.type = fun->type->returnType;
+                n.subscriptFunction = fun;
             }
         }
     }
@@ -556,7 +566,7 @@ namespace Strela {
         if (auto cls = n.typeExpr->type->as<ClassDecl>()) {
             n.type = cls;
 
-            auto inits = cls->getMethods("init");
+            auto inits = extract<FuncDecl>(cls->getMethods("init"));
             if (inits.empty()) {
                 if (!n.arguments.empty()) {
                     error(n, "'" + cls->name + "' has no matching constructor.");

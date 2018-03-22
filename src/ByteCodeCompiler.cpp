@@ -255,11 +255,35 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(ArrayLitExpr& n) {
-        visitChildren(n.elements);
+        chunk.addOp(Opcode::New, 1 + n.elements.size());
+        chunk.addOp(Opcode::Repeat);
+        chunk.addOp(Opcode::INT, n.elements.size());
+        chunk.addOp(Opcode::Swap);
+        chunk.addOp(Opcode::StoreField, 0);
+        size_t i = 0;
+        for (auto&& el: n.elements) {
+            chunk.addOp(Opcode::Repeat);
+            visitChild(el);
+            chunk.addOp(Opcode::Swap);
+            chunk.addOp(Opcode::StoreField, ++i);
+        }
+
     }
 
     void ByteCodeCompiler::visit(SubscriptExpr& n) {
-        visitChildren(n.arguments);
+        for (int i = n.arguments.size() - 1; i >= 0; --i) {
+            visitChild(n.arguments[i]);
+        }
+        visitChild(n.callTarget);
+
+        if (n.subscriptFunction) {
+            auto index = chunk.addOp(Opcode::Const, 255);
+            functionFixups[index] = n.subscriptFunction;
+            chunk.addOp(Opcode::Call);
+        }
+        else {
+            chunk.addOp(Opcode::FieldInd, 1);
+        }
     }
 
     void ByteCodeCompiler::visit(IfStmt& n) {

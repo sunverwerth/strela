@@ -237,6 +237,12 @@ namespace Strela {
                 push(obj.value.object->getField(arg.value.integer));
                 break;
             }
+            case Opcode::FieldInd: {
+                auto obj = pop();
+                auto off = pop();
+                push(obj.value.object->getField(off.value.integer + arg.value.integer));
+                break;
+            }
             case Opcode::StoreField: {
                 auto obj = pop();
                 auto val = pop();

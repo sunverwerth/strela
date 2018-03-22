@@ -16,6 +16,7 @@ namespace Strela {
     public:
         Expr* callTarget;
         std::vector<Expr*> arguments;
+        FuncDecl* subscriptFunction = nullptr;
     };
 }
 
