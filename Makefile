@@ -19,7 +19,7 @@ _OBJ=$(SRC:.cpp=.o)
 OBJ=$(patsubst $(SRCDIR)/%,$(OBJDIR)/%,$(_OBJ))
 DEPS = ${OBJ:.o=.d}
 
-.PHONY: clean install install-home
+.PHONY: clean install install-home test
 
 strelac: $(EXECUTABLE)
 
