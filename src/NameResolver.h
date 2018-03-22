@@ -48,6 +48,7 @@ namespace Strela {
         void visit(UnionTypeExpr&) override;
         void visit(ArrayLitExpr&) override;
         void visit(SubscriptExpr&) override;
+        void visit(NullableTypeExpr&) override;
 
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {

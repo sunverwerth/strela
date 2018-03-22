@@ -32,6 +32,7 @@
 #include "VarDecl.h"
 #include "ArrayLitExpr.h"
 #include "SubscriptExpr.h"
+#include "NullableTypeExpr.h"
 #include "WhileStmt.h"
 #include "InterfaceDecl.h"
 #include "UnionTypeExpr.h"

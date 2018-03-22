@@ -295,6 +295,10 @@ namespace Strela {
                 auto st = eat();
                 expression = addPosition(new UnionTypeExpr(expression, parseTypeExpr()), st);
             }
+            else if (match(TokenType::QuestionMark)) {
+                auto st = eat();
+                expression = addPosition(new NullableTypeExpr(expression), st);
+            }
             else {
                 expected("secondary type expression.");
             }
@@ -638,7 +642,8 @@ namespace Strela {
     bool Parser::matchTypeSecondary() {
         return
             match(TokenType::BracketOpen) ||
-            match(TokenType::Pipe)
+            match(TokenType::Pipe) ||
+            match(TokenType::QuestionMark)
             ;
     }
 

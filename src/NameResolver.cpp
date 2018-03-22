@@ -314,6 +314,11 @@ namespace Strela {
         _interface = oldinterface;
     }
 
+    void NameResolver::visit(NullableTypeExpr& n) {
+        visitChild(n.base);
+        n.type = UnionType::get(n.base->type, &NullType::instance);
+    }
+
     void NameResolver::visit(InterfaceMethodDecl& n) {
         visitChild(n.returnTypeExpr);
         visitChildren(n.params);

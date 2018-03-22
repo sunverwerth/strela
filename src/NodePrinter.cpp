@@ -278,6 +278,11 @@ namespace Strela {
         std::cout << "]";
     }
 
+    void NodePrinter::visit(NullableTypeExpr& n) {
+        visitChild(n.base);
+        std::cout << "?";
+    }
+
     void NodePrinter::push() {
         ++indentation;
         indent = std::string(indentation * 4, ' ');
