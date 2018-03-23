@@ -48,6 +48,14 @@ namespace Strela {
         auto cls = parser.parseClassDecl();
         // set type arguments
         cls->genericArguments = typeArgs;
+        cls->name += "<";
+        for (auto&& t: typeArgs) {
+            cls->name += t->name;
+            if (&t != &typeArgs.back()) {
+                cls->name += ",";
+            }
+        }
+        cls->name += ">";
         reifiedClasses.push_back(cls);
         isnew = true;
         return cls;

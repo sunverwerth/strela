@@ -82,6 +82,8 @@ namespace Strela {
         bool returns = false;
         bool _hasErrors = false;
 
+        std::vector<ClassDecl*> genericStack;
+
         std::map<Node*, std::vector<Refinement>> refinements;
     };
 }

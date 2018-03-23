@@ -222,12 +222,16 @@ namespace Strela {
             visitChildren(n.reifiedClasses);
         }
         else {
+            if (n.genericArguments.size()) genericStack.push_back(&n);
+
             auto oldclass = _class;
             _class = &n;
             
             visitChildren(n.methods);
 
             _class = oldclass;
+
+            if (n.genericArguments.size()) genericStack.pop_back();
         }
     }
 
@@ -736,6 +740,10 @@ namespace Strela {
         //std::cerr << msg << "\n";
         //throw TypeException(node.source->filename + ":" + std::to_string(node.line) + ":" + std::to_string(node.column) + " Error: " + msg);
         std::cerr << "\033[1;31m" << node.source->filename << ":" << node.line << ":" << node.column << " Error: " << msg << "\033[0m\n";
+        for (auto& gs: genericStack) {
+            std::cerr << "Info: During reification of " << gs->name << "\n";
+        }
+
         _hasErrors = true;
     }
 

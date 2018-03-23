@@ -48,8 +48,8 @@ module Std.Collections {
             return this.keyIndex(key) >= 0;
         }
 
-        function keyIndex(key: K): i64 {
-            var i: u64 = 0;
+        function keyIndex(key: K): int {
+            var i: int = 0;
             while (i < this.keys.length) {
                 if (this.keys[i] == key) return i;
                 i += 1;
@@ -58,18 +58,23 @@ module Std.Collections {
         }
 
         function set(key: K, val: V) {
-            var idx = this.keyIndex(k);
+            var idx = this.keyIndex(key);
             if (idx >= 0) {
-                this.values[idx] = v;
+                this.values[idx] = val;
             }
             else {
-                this.keys.append(k);
-                this.values.append(v);
+                this.keys.append(key);
+                this.values.append(val);
             }
         }
 
         function [](key: K): V {
-            return this.values(this.keyIndex(kex));
+            return this.values[this.keyIndex(key)];
         }
+    }
+
+    function main(args: String[]): int {
+        var a = new Map<int, int>;
+        return 0;
     }
 }
