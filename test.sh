@@ -14,7 +14,7 @@ fi
 if [ $DIR ]; then
     ok=0;
     err=0;
-    for fn in `find $DIR -type f -name *.strela`; do
+    for fn in `find $DIR -type f -name '*.strela'`; do
         TESTDIR=`dirname $fn`
         if [ "$CURDIR" != "$TESTDIR" ]; then
             echo -e "\n>>> $TESTDIR"
