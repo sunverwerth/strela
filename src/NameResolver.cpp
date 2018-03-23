@@ -97,12 +97,12 @@ namespace Strela {
             scope->add(n.genericParams[i]->name, n.genericArguments[i]);
         }
 
-        for (auto&& field: n.fields) {
+        /*for (auto&& field: n.fields) {
             scope->add(field->name, field);
         }
         for (auto&& method: n.methods) {
             scope->add(method->name, method);
-        }
+        }*/
 
         visitChildren(n.fields);
         visitChildren(n.methods);

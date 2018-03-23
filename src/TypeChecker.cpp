@@ -665,7 +665,7 @@ namespace Strela {
             }
         }
         else {
-            error(n, "Only class types are instantiable.");
+            error(n, "Only class types are instantiable, type is '" + n.typeExpr->type->name + "'");
         }
     }
 
