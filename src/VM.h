@@ -12,6 +12,7 @@
 
 namespace Strela {
     class ByteCodeChunk;
+    class VMFrame;
     
     class VM {
     public:
@@ -27,14 +28,18 @@ namespace Strela {
         VMValue pop();
         void pop(size_t num);
 
+        VMFrame* getFrame();
+        void recycleFrame(VMFrame*);
+
+        std::vector<VMFrame*> framePool;
+
     public:
         const ByteCodeChunk& chunk;
         char op;
         VMValue arg;
-        int64_t ip;
-		int64_t sp;
-        std::vector<VMValue> stack;
         GC gc;
+
+        VMFrame* frame = nullptr;
     };
 }
 

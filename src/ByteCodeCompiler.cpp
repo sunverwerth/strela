@@ -145,7 +145,7 @@ namespace Strela {
         }
         else {
             visitChild(n.callTarget);
-            chunk.addOp(Opcode::Call);
+            chunk.addOp(Opcode::Call, n.callTarget->type->as<FuncType>()->paramTypes.size() + (n.callTarget->context ? 1 : 0));
         }
     }
 
@@ -340,7 +340,7 @@ namespace Strela {
         if (n.subscriptFunction) {
             auto index = chunk.addOp(Opcode::Const, 255);
             addFixup(index, n.subscriptFunction);
-            chunk.addOp(Opcode::Call);
+            chunk.addOp(Opcode::Call, n.subscriptFunction->params.size() + 1);
         }
         else {
             chunk.addOp(Opcode::FieldInd, 1);
@@ -377,7 +377,7 @@ namespace Strela {
             }
             auto index = chunk.addOp(Opcode::Const, 255);
             addFixup(index, n.initMethod);
-            chunk.addOp(Opcode::Call);
+            chunk.addOp(Opcode::Call, n.initMethod->params.size() + 1);
         }
     }
 

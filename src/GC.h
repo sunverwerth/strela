@@ -11,13 +11,15 @@
 #include <list>
 
 namespace Strela {
+    class VMFrame;
+
     /**
      * Naive mark-and-sweep collector
      */
     class GC {
     public:
         VMObject* allocObject(size_t numFields);
-        void collect(const std::vector<VMValue>& stack);
+        void collect(VMFrame* frame);
     
     private:
         void mark(VMObject* object);

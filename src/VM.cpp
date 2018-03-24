@@ -8,6 +8,7 @@
 #include "VMObject.h"
 #include "Ast/InterfaceDecl.h"
 #include "Ast/FuncDecl.h"
+#include "VMFrame.h"
 
 #include <cstring>
 #include <chrono>
@@ -21,11 +22,14 @@ namespace Strela {
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
-    VM::VM(const ByteCodeChunk& chunk): chunk(chunk), ip(chunk.main), sp(0) {
+    VM::VM(const ByteCodeChunk& chunk): chunk(chunk) {
 		for (auto& ff: chunk.foreignFunctions) {
 			double(*ptr)(double) = &sqrt;
 			ff.ptr = reinterpret_cast<char*>(ptr);
 		}
+
+        frame = getFrame();
+        frame->ip = chunk.main;
     }
 
     VMValue VM::run() {
@@ -41,7 +45,7 @@ namespace Strela {
             }
             
             ++opcounter;
-			op = chunk.opcodes[ip++];
+			op = chunk.opcodes[frame->ip++];
             if (op > numOpcodes) {
                 throw std::runtime_error("Invalid opcode. (" + std::to_string(op) + ")");
             }
@@ -50,10 +54,10 @@ namespace Strela {
 
             if (info.argWidth > 0) {
                 memset(&arg, 0, sizeof(arg));
-                memcpy(&arg.value, &chunk.opcodes[ip], info.argWidth);
+                memcpy(&arg.value, &chunk.opcodes[frame->ip], info.argWidth);
                 arg.type = info.argType;
              
-                ip += info.argWidth;
+                frame->ip += info.argWidth;
             }
 
             switch ((Opcode)op) {
@@ -71,30 +75,40 @@ namespace Strela {
 				break;
 			}
 			case Opcode::Param: {
-				push(stack[sp - arg.value.integer - 2]);
+				push(frame->arguments[arg.value.integer]);
 				break;
 			}
 			case Opcode::StoreParam: {
-				stack[sp - arg.value.integer - 2] = pop();
+				frame->arguments[arg.value.integer] = pop();
 				break;
 			}
 			case Opcode::Var: {
-				push(stack[sp + arg.value.integer]);
+                if (frame->variables.size() < arg.value.integer + 1) {
+                    frame->variables.resize(arg.value.integer + 1);
+                }
+				push(frame->variables[arg.value.integer]);
 				break;
 			}
 			case Opcode::StoreVar: {
-				stack[sp + arg.value.integer] = pop();
+                if (frame->variables.size() < arg.value.integer + 1) {
+                    frame->variables.resize(arg.value.integer + 1);
+                }
+				frame->variables[arg.value.integer] = pop();
 				break;
 			}
 			case Opcode::GrowStack: {
-				stack.resize(stack.size() + arg.value.integer);
+				frame->stack.resize(frame->stack.size() + arg.value.integer);
 				break;
 			}
 			case Opcode::Call: {
 				auto newip = pop().value.integer;
-				push(VMValue(ip));
-				sp = push(VMValue(sp));
-				ip = newip;
+                auto newframe = getFrame();
+                newframe->parent = frame;
+                newframe->ip = newip;
+                for (int i = 0; i < arg.value.integer; ++i) {
+                    newframe->arguments.push_back(pop());
+                }
+                frame = newframe;
 				break;
 			}
 			case Opcode::F2I: {
@@ -115,30 +129,24 @@ namespace Strela {
 				break;
 			}
 			case Opcode::Return: {
-				if (sp == 0) {
-                    halt = true;
+                auto oldframe = frame;
+                frame = frame->parent;
+				if (!frame) {
+                    return oldframe->stack.back();
                 }
                 else {
-                    auto val = pop();
-
-                    stack.resize(sp + 1);
-                    sp = pop().value.integer;
-                    ip = pop().value.integer;
-                    pop(arg.value.integer);
-                    push(val);
+                    push(oldframe->stack.back());
                 }
+                recycleFrame(oldframe);
 				break;
 			}
 			case Opcode::ReturnVoid: {
-				if (sp == 0) {
-                    halt = true;
+                auto oldframe = frame;
+                frame = frame->parent;
+				if (!frame) {
+                    return VMValue();
                 }
-                else {
-                    stack.resize(sp + 1);
-                    sp = pop().value.integer;
-                    ip = pop().value.integer;
-                    pop(arg.value.integer);
-                }
+                recycleFrame(oldframe);
 				break;
 			}
 			case Opcode::Add: {
@@ -229,14 +237,14 @@ namespace Strela {
                 break;
             }
 			case Opcode::Jmp: {
-    			ip = pop().value.integer;
+    			frame->ip = pop().value.integer;
 				break;
 			}
 			case Opcode::JmpIf: {
 				auto newip = pop();
 				auto cond = pop();
 				if (cond) {
-					ip = newip.value.integer;
+					frame->ip = newip.value.integer;
 				}
 				break;
 			}
@@ -244,14 +252,14 @@ namespace Strela {
 				auto newip = pop();
 				auto cond = pop();
 				if (!cond) {
-					ip = newip.value.integer;
+					frame->ip = newip.value.integer;
 				}
 				break;
 			}
             case Opcode::New: {
                 numallocs++;
                 if ((numallocs % 100) == 0) {
-                    gc.collect(stack);
+                    gc.collect(frame);
                 }
                 auto obj = gc.allocObject(arg.value.integer);
                 push(VMValue(obj));
@@ -275,7 +283,7 @@ namespace Strela {
                 break;
             }
             case Opcode::Repeat: {
-                push(stack.back());
+                push(frame->stack.back());
                 break;
             }
             case Opcode::Pop: {
@@ -297,34 +305,33 @@ namespace Strela {
         //uint64_t time = millis() - start + 1;
         //std::cerr << (opcounter/time) << " kOP/s\n";
 
-        return stack.size() ? stack.back() : VMValue();
+        return VMValue();
     }
 	
     size_t VM::push(VMValue val) {
-        stack.push_back(val);
-        return stack.size() - 1;
+        frame->stack.push_back(val);
+        return frame->stack.size() - 1;
     }
 
     VMValue VM::pop() {
-        auto val = stack.back();
-        stack.pop_back();
+        auto val = frame->stack.back();
+        frame->stack.pop_back();
         return val;
     }
 
     void VM::pop(size_t num) {
         if (num == 0) return;
-        stack.resize(stack.size() - num);
+        frame->stack.resize(frame->stack.size() - num);
     }
 
     void VM::printCallStack() {
-        auto cur = sp;
-        auto fun = ip;
-        while (cur > 0) {
+        auto cur = frame;
+        while (cur) {
             std::string name("???");
 
             size_t largest = 0;
             for (auto&& it: chunk.functions) {
-                if (it.first >= largest && it.first <= fun) {
+                if (it.first >= largest && it.first <= cur->ip) {
                     name = it.second;
                     largest = it.first;
                 }
@@ -332,8 +339,27 @@ namespace Strela {
 
             std::cout << name << "\n";
 
-            cur = stack[cur].value.integer;
-            fun = stack[cur - 1].value.integer;
+            cur = frame->parent;
         }
+    }
+
+    VMFrame* VM::getFrame() {
+        if (framePool.empty()) {
+            return new VMFrame();
+        }
+        else {
+            auto fr = framePool.back();
+            framePool.pop_back();
+            fr->ip = 0;
+            fr->parent = nullptr;
+            fr->arguments.clear();
+            fr->stack.clear();
+            fr->variables.clear();
+            return fr;
+        }
+    }
+
+    void VM::recycleFrame(VMFrame* fr) {
+        framePool.push_back(fr);
     }
 }

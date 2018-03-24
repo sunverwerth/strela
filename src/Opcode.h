@@ -23,7 +23,7 @@ namespace Strela {
         X(Element, 0, null) \
         X(StoreElement, 0, null) \
         X(GrowStack, 1, integer) \
-        X(Call, 0, null) \
+        X(Call, 1, integer) \
         X(NativeCall, 0, null) \
         X(Jmp, 0, null) \
         X(JmpIf, 0, null) \
