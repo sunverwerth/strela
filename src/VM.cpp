@@ -23,7 +23,8 @@ namespace Strela {
 
     VM::VM(const ByteCodeChunk& chunk): chunk(chunk), ip(chunk.main), sp(0) {
 		for (auto& ff: chunk.foreignFunctions) {
-			ff.ptr = reinterpret_cast<char*>(&sqrt);
+			double(*ptr)(double) = &sqrt;
+			ff.ptr = reinterpret_cast<char*>(ptr);
 		}
     }
 

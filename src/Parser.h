@@ -14,7 +14,7 @@
 namespace Strela {
     class Parser {
     public:
-        Parser(const SourceFile& source, int starttoken = 0): source(source), tokens(source.tokens), token(&tokens[starttoken]) {}
+        Parser(const SourceFile& source, int starttoken = 0): source(source), tokens(source.tokens), token(tokens.begin() + starttoken) {}
 
         ModDecl* parseModule();
         IdExpr* parseIdentifierExpression();
