@@ -41,6 +41,10 @@ namespace Strela {
         }
     }
 
+    bool UnionType::containsType(TypeDecl* t) {
+        return containedTypes.find(t) != containedTypes.end();
+    }
+
     UnionType::UnionType(const std::set<TypeDecl*>& containedTypes): containedTypes(containedTypes), TypeDecl(getUnionName(containedTypes)) {        
     }
     

@@ -90,7 +90,11 @@ namespace Strela {
         if (to->as<FloatType>() && (from->as<FloatType>() || from->as<IntType>())) return true;
         if (to->as<BoolType>() && from->as<BoolType>()) return true;
         if (to->as<EnumDecl>() && from == to) return true;
-        if (to->as<UnionType>() && from == to) return true;
+        if (auto tounion = to->as<UnionType>()) {
+            if (from == to) return true;
+            if (tounion->containsType(from)) return true;
+            return false;
+        }
         if (auto arrTo = to->as<ArrayType>()) {
             if (to == from) return true;
             auto arrFrom = from->as<ArrayType>();
@@ -547,8 +551,9 @@ namespace Strela {
 
     void TypeChecker::visit(ScopeExpr& n) {
         visitChild(n.scopeTarget);
+        auto type = getType(n.scopeTarget);
 
-        if (n.scopeTarget->type->as<TypeType>()) {
+        if (type->as<TypeType>()) {
             if (auto mod = n.scopeTarget->node->as<ModDecl>()) {
                 n.node = mod->getMember(n.name);
                 if (n.node) {
@@ -579,7 +584,7 @@ namespace Strela {
                 error(n, "Direct member acces only for modules and enums.");
             }
         }
-        else if (auto type = n.scopeTarget->type->as<TypeDecl>()) {
+        else if (type) {
             n.node = type->getMember(n.name);
             n.context = n.scopeTarget;
             if (n.node) {

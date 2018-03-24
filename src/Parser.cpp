@@ -302,7 +302,7 @@ namespace Strela {
 
     TypeExpr* Parser::parseTypeExpr() {
         TypeExpr* expression = nullptr;
-        if (match(TokenType::Identifier)) {
+        if (match(TokenType::Identifier) || match(TokenType::Null)) {
             auto start = eat();
             expression = addPosition(new IdTypeExpr(start.value), start);
         }

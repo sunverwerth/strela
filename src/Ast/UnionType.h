@@ -18,6 +18,7 @@ namespace Strela {
         static UnionType* get(TypeDecl* left, TypeDecl* right);
         TypeDecl* getComplementaryType(TypeDecl* t);
         int getTypeTag(TypeDecl* t);
+        bool containsType(TypeDecl* t);
 
     public:
         std::set<TypeDecl*> containedTypes;

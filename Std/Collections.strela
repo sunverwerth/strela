@@ -75,9 +75,4 @@ module Std.Collections {
             return this.values[this.keyIndex(key)];
         }
     }
-
-    function main(args: String[]): int {
-        var a = new Map<int, int>;
-        return 0;
-    }
 }
