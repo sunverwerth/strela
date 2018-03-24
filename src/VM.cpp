@@ -96,6 +96,10 @@ namespace Strela {
 				frame->variables[arg.value.integer] = pop();
 				break;
 			}
+			case Opcode::Peek: {
+				push(frame->stack[frame->stack.size() - 1 - arg.value.integer]);
+				break;
+			}
 			case Opcode::GrowStack: {
 				frame->stack.resize(frame->stack.size() + arg.value.integer);
 				break;
@@ -261,7 +265,8 @@ namespace Strela {
                 if ((numallocs % 100) == 0) {
                     gc.collect(frame);
                 }
-                auto obj = gc.allocObject(arg.value.integer);
+                auto numfields = pop();
+                auto obj = gc.allocObject(numfields.value.integer);
                 push(VMValue(obj));
                 break;
             }
@@ -280,6 +285,13 @@ namespace Strela {
                 auto obj = pop();
                 auto val = pop();
                 obj.value.object->setField(arg.value.integer, val);
+                break;
+            }
+            case Opcode::StoreFieldInd: {
+                auto obj = pop();
+                auto off = pop();
+                auto val = pop();
+                obj.value.object->setField(off.value.integer + arg.value.integer, val);
                 break;
             }
             case Opcode::Repeat: {

@@ -37,6 +37,7 @@ namespace Strela {
     public:
         TypeDecl* type = &InvalidType::instance;
         Node* node = nullptr;
+        Expr* arrayIndex = nullptr;
         Expr* context = nullptr;
         std::vector<FuncDecl*> candidates;
         std::vector<Refinement*> refinements;

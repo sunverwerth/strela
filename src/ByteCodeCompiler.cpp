@@ -68,8 +68,8 @@ namespace Strela {
         function = &n;
         n.opcodeStart = chunk.opcodes.size();
         std::stringstream sstr;
-        if (_class) {
-            sstr << _class->name << ".";
+        if (n._class) {
+            sstr << n._class->name << ".";
         }
         sstr << n.name << n.type->name;
         chunk.addFunction(n.opcodeStart, sstr.str());
@@ -198,7 +198,8 @@ namespace Strela {
         auto fromunion = fromtype->as<UnionType>();
 
         if (fromclass && toiface && n.implementation) {
-            chunk.addOp(Opcode::New, toiface->methods.size() + 1);
+            chunk.addOp(Opcode::INT, toiface->methods.size() + 1);
+            chunk.addOp(Opcode::New);
             chunk.addOp(Opcode::Repeat);
             visitChild(n.sourceExpr);
             chunk.addOp(Opcode::Swap);
@@ -213,7 +214,8 @@ namespace Strela {
         }
         else if (tounion) {
             auto tag = tounion->getTypeTag(fromtype);
-            chunk.addOp(Opcode::New, 2);
+            chunk.addOp(Opcode::INT, 2);
+            chunk.addOp(Opcode::New);
             
             chunk.addOp(Opcode::Repeat);
             chunk.addOp(Opcode::INT, tag);
@@ -316,7 +318,8 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(ArrayLitExpr& n) {
-        chunk.addOp(Opcode::New, 1 + n.elements.size());
+        chunk.addOp(Opcode::INT, 1 + n.elements.size());
+        chunk.addOp(Opcode::New);
         chunk.addOp(Opcode::Repeat);
         chunk.addOp(Opcode::INT, n.elements.size());
         chunk.addOp(Opcode::Swap);
@@ -368,16 +371,29 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(NewExpr& n) {
-        chunk.addOp(Opcode::New, n.type->as<ClassDecl>()->fields.size());
-        if (n.initMethod) {
-            chunk.addOp(Opcode::Repeat);
-            for (int i = n.arguments.size() - 1; i >= 0; --i) {
-                n.arguments[i]->accept(*this);
-                chunk.addOp(Opcode::Swap);
+        if (auto clstype = n.type->as<ClassDecl>()) {
+            chunk.addOp(Opcode::INT, clstype->fields.size());
+            chunk.addOp(Opcode::New);
+            if (n.initMethod) {
+                chunk.addOp(Opcode::Repeat);
+                for (int i = n.arguments.size() - 1; i >= 0; --i) {
+                    n.arguments[i]->accept(*this);
+                    chunk.addOp(Opcode::Swap);
+                }
+                auto index = chunk.addOp(Opcode::Const, 255);
+                addFixup(index, n.initMethod);
+                chunk.addOp(Opcode::Call, n.initMethod->params.size() + 1);
             }
-            auto index = chunk.addOp(Opcode::Const, 255);
-            addFixup(index, n.initMethod);
-            chunk.addOp(Opcode::Call, n.initMethod->params.size() + 1);
+        }
+        else if (auto arrtype = n.type->as<ArrayType>()) {
+            visitChild(n.arguments.front());
+            chunk.addOp(Opcode::Repeat);
+            chunk.addOp(Opcode::INT, 1);
+            chunk.addOp(Opcode::Add);
+            chunk.addOp(Opcode::New);
+            chunk.addOp(Opcode::Swap);
+            chunk.addOp(Opcode::Peek, 1);
+            chunk.addOp(Opcode::StoreField, 0);
         }
     }
 
@@ -385,7 +401,12 @@ namespace Strela {
         visitChild(n.right);
         chunk.addOp(Opcode::Repeat);
 
-        if (auto var = n.left->node->as<VarDecl>()) {
+        if (n.left->arrayIndex) {
+            visitChild(n.left->arrayIndex);
+            visitChild(n.left->context);
+            chunk.addOp(Opcode::StoreFieldInd, 1);
+        }
+        else if (auto var = n.left->node->as<VarDecl>()) {
             chunk.addOp(Opcode::StoreVar, var->index);
         }
         else if (auto par = n.left->node->as<Param>()) {

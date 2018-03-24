@@ -1,0 +1,14 @@
+module Tests.Collections.List {
+    import Std.IO.println;
+    import Std.Collections.List;
+
+    function main(args: String[]): int {
+        var list = new List<int>;
+        list.append(1);
+        list.append(2);
+        println(list.length);
+        println(list[0]);
+        println(list[1]);
+        return 0;
+    }
+}

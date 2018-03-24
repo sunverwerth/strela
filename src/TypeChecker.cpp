@@ -288,6 +288,8 @@ namespace Strela {
             if (n.arguments.size() == 1) {
                 if (n.arguments.front()->type == &IntType::instance) {
                     n.type = arr->baseType;
+                    n.context = n.callTarget;
+                    n.arrayIndex = n.arguments.front();
                 }
                 else {
                     error(n, "Array subscript operator argument must be integer.");
@@ -517,22 +519,25 @@ namespace Strela {
         }
         visitChild(n.right);
 
-        if (!n.left->node) {
-            error(n, "Assignment target must be storage node.");
-            return;
+        if (n.left->node) {
+            if (auto var = n.left->node->as<VarDecl>()) {
+                n.type = var->type;
+            }
+            else if (auto param = n.left->node->as<Param>()) {
+                n.type = param->typeExpr->type;
+            }
+            else if (auto field = n.left->node->as<FieldDecl>()) {
+                n.type = field->typeExpr->type;
+            }
+            else {
+                error(n, "Assignment target must be storage node.");
+            }
         }
-        else if (auto var = n.left->node->as<VarDecl>()) {
-            n.type = var->type;
-        }
-        else if (auto param = n.left->node->as<Param>()) {
-            n.type = param->typeExpr->type;
-        }
-        else if (auto field = n.left->node->as<FieldDecl>()) {
-            n.type = field->typeExpr->type;
+        else if (n.left->arrayIndex) {
+            n.type = n.left->type;
         }
         else {
             error(n, std::string("Can not assign to ") + n.left->getTypeInfo()->getName());
-            return;
         }
 
         n.right = addCast(n.right, n.left->type);
@@ -676,8 +681,21 @@ namespace Strela {
                 }
             }
         }
+        else if (auto arr = n.typeExpr->type->as<ArrayType>()) {
+            if (n.arguments.size() == 1) {
+                if (n.arguments.front()->type == &IntType::instance) {
+                    n.type = arr;
+                }
+                else {
+                    error(n, "Array constructor argument must have type 'int'.");
+                }
+            }
+            else {
+                error(n, "Array constructor requires exactly one argument of type 'int'.");
+            }
+        }
         else {
-            error(n, "Only class types are instantiable, type is '" + n.typeExpr->type->name + "'");
+            error(n, "Only class and array types are instantiable, type is '" + n.typeExpr->type->name + "'");
         }
     }
 

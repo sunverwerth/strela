@@ -20,6 +20,7 @@ namespace Strela {
         X(Field, 1, integer) \
         X(FieldInd, 1, integer) \
         X(StoreField, 1, integer) \
+        X(StoreFieldInd, 1, integer) \
         X(Element, 0, null) \
         X(StoreElement, 0, null) \
         X(GrowStack, 1, integer) \
@@ -39,7 +40,7 @@ namespace Strela {
         X(Sub, 0, null) \
         X(Mul, 0, null) \
         X(Div, 0, null) \
-        X(New, 1, integer) \
+        X(New, 0, null) \
         X(Null, 0, null) \
         X(Repeat, 0, null) \
         X(Pop, 0, null) \
@@ -49,6 +50,7 @@ namespace Strela {
         X(Swap, 0, null) \
         X(I2F, 0, null) \
         X(F2I, 0, null) \
+        X(Peek, 1, integer) \
     
     #define AS_ENUM(X, A, T) X,
     enum class Opcode {

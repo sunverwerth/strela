@@ -120,6 +120,9 @@ namespace Strela {
         auto oldscope = scope;
         scope = new Scope(scope);
 
+        n._class = _class;
+        n._interface = _interface;
+
         visitChild(n.returnTypeExpr);
         visitChildren(n.params);
         visitChildren(n.stmts);
