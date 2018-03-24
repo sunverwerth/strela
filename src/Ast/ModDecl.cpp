@@ -1,3 +1,6 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
 #include "ModDecl.h"
 #include "FuncDecl.h"
 #include "ClassDecl.h"

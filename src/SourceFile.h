@@ -1,3 +1,6 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
 #ifndef Strela_SourceFile_h
 #define Strela_SourceFile_h
 

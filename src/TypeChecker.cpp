@@ -1,3 +1,6 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
 #include "TypeChecker.h"
 #include "Ast/nodes.h"
 #include "exceptions.h"
