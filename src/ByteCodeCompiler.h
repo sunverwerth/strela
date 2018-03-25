@@ -42,14 +42,14 @@ namespace Strela {
         void visit(UnaryExpr&) override;
         void visit(EnumDecl&) override;
         void visit(EnumElement&) override;
-        void visit(InterfaceDecl&) {}
-        void visit(InterfaceMethodDecl&) {}
+        void visit(InterfaceDecl&) override {}
+        void visit(InterfaceMethodDecl&) override {}
         void visit(ThisExpr&) override;
         void visit(CastExpr&) override;
         void visit(IsExpr&) override;
         void visit(ArrayLitExpr&) override;
         void visit(SubscriptExpr&) override;
-        void visit(GenericParam&) {}
+        void visit(GenericParam&) override {}
 
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {

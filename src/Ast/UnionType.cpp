@@ -39,6 +39,7 @@ namespace Strela {
             if (type == t) return tag;
             ++tag;
         }
+        return -1; // TODO: error handling
     }
 
     bool UnionType::containsType(TypeDecl* t) {
@@ -53,6 +54,7 @@ namespace Strela {
         for (auto& ct: containedTypes) {
             if (ct != t) return ct;
         }
+        return nullptr; // TODO: error handling
     }
 
     UnionType* UnionType::get(TypeDecl* left, TypeDecl* right) {

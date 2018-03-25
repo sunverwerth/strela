@@ -256,6 +256,7 @@ namespace Strela {
         }
         else {
             expected("statement");
+            return nullptr; // TODO: return null object
         }
     }
 

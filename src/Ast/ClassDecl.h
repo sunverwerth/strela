@@ -20,7 +20,7 @@ namespace Strela {
         STRELA_GET_TYPE(Strela::ClassDecl, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 
-        Node* getMember(const std::string& name);
+        Node* getMember(const std::string& name) override;
         std::vector<Node*> getMethods(const std::string& name) override;
 
         ClassDecl* getReifiedClass(const std::vector<TypeDecl*>& typeArgs);

@@ -127,7 +127,7 @@ namespace Strela {
 
     std::string VMValue::dump() const {
         switch (type) {
-            case Type::boolean: return "bool: " + value.boolean ? "true" : "false";
+            case Type::boolean: return std::string("bool: ") + (value.boolean ? "true" : "false");
             case Type::integer: return "int: " + std::to_string(value.integer);
             case Type::floating: return "float: " + std::to_string(value.floating);
             case Type::null: return "null";

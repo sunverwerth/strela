@@ -25,8 +25,8 @@ namespace Strela {
         STRELA_GET_TYPE(Strela::InterfaceDecl, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 
-        Node* getMember(const std::string& name);
-        std::vector<Node*> getMethods(const std::string& name);
+        Node* getMember(const std::string& name) override;
+        std::vector<Node*> getMethods(const std::string& name) override;
 
     public:
         bool isExported = false;

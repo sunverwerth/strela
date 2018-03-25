@@ -740,8 +740,10 @@ namespace Strela {
             }
             error(n, "Unary operator '!' is only applicable to boolean values.");
             break;
+
+            default:
+            error(n, "Unhandled unary prefix operator '" + getTokenName(n.op) + "'.");
         }
-        error(n, "Unhandled unary prefix operator '" + getTokenName(n.op) + "'.");
     }
 
     void TypeChecker::visit(InterfaceDecl&) {

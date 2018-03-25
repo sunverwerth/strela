@@ -447,8 +447,10 @@ namespace Strela {
             chunk.addOp(Opcode::Not);
             return;
             break;
+    
+            default:
+            error(n, "Unhandled unary prefix operator '" + getTokenName(n.op) + "'.");
         }
-        error(n, "Unhandled unary prefix operator '" + getTokenName(n.op) + "'.");
     }
 
     void ByteCodeCompiler::visit(EnumDecl& n) {

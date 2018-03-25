@@ -70,7 +70,7 @@ namespace Strela {
             }
 
             if (op == Opcode::Call || op == Opcode::Jmp || op == Opcode::JmpIf || op == Opcode::JmpIfNot) {
-                auto cpos = i - width - opcodeInfo[(int)Opcode::Const].argWidth;
+                int cpos = i - width - opcodeInfo[(int)Opcode::Const].argWidth;
                 if (cpos >= 0 && (Opcode)chunk.opcodes[cpos] == Opcode::Const) {
                     auto constIndex = getArg(cpos);
                     auto address = chunk.constants[constIndex].value.integer;
