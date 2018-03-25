@@ -54,7 +54,7 @@ namespace Strela {
 
             if (info.argWidth > 0) {
                 memset(&arg, 0, sizeof(arg));
-                memcpy(&arg.value, &chunk.opcodes[frame->ip], info.argWidth);
+                memcpy(&arg.value.integer, &chunk.opcodes[frame->ip], info.argWidth);
                 arg.type = info.argType;
              
                 frame->ip += info.argWidth;
@@ -349,9 +349,9 @@ namespace Strela {
                 }
             }
 
-            std::cout << name << "\n";
+            std::cout << name << " @" << cur->ip << "\n";
 
-            cur = frame->parent;
+            cur = cur->parent;
         }
     }
 

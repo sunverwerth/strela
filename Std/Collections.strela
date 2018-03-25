@@ -63,7 +63,7 @@ module Std.Collections {
         function set(key: K, val: V) {
             var idx = this.keyIndex(key);
             if (idx >= 0) {
-                this.values[idx] = val;
+                this.values.set(idx, val);
             }
             else {
                 this.keys.append(key);

@@ -55,6 +55,8 @@ namespace Strela {
         void visit(GenericParam&) override;
         void visit(GenericReificationExpr&) override;
 
+        int resolveGenerics(ModDecl&);
+
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {
                 child->accept(*this);

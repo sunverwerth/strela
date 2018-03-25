@@ -36,6 +36,7 @@ namespace Strela {
 		operator bool() const;
 
         bool equals(const VMValue& other) const;
+        std::string dump() const;
 
         enum class Type {
             null,

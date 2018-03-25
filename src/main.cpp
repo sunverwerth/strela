@@ -236,6 +236,16 @@ int main(int argc, char** argv) {
                 it.second->accept(resolver);
             }
 
+            //std::cout << "Resolving generics...\n";
+            int numGenerics = 0;
+            do {
+                numGenerics = 0;
+                for (auto&& it: modules) {
+                    NameResolver resolver(globals);
+                    numGenerics += resolver.resolveGenerics(*it.second);
+                }
+            } while (numGenerics > 0);
+
             //std::cout << "Running type checker...\n";
             bool errors = false;
             for (auto&& it: modules) {

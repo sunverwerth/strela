@@ -1,0 +1,20 @@
+module Tests.Collections.Map {
+    import Std.IO.print;
+    import Std.IO.println;
+    import Std.Collections.Map;
+
+    function main(args: String[]): int {
+        var map = new Map<String, int>;
+        map.set("twenty one", 21);
+        map.set("fourty two", 42);
+        map.set("thirteen", 13);
+
+        print("twenty one = ");
+        println(map["twenty one"]);
+        print("fourty two = ");
+        println(map["fourty two"]);
+        print("thirteen = ");
+        println(map["thirteen"]);
+        return 0;
+    }
+}

@@ -75,7 +75,7 @@ namespace Strela {
         chunk.addFunction(n.opcodeStart, sstr.str());
 
         for (size_t i = 0; i < n.params.size(); ++i) {
-            n.params[i]->index = _class ? i + 1 : i;
+            n.params[i]->index = n._class ? i + 1 : i;
         }
 
         visitChildren(n.params);
@@ -438,7 +438,7 @@ namespace Strela {
         visitChild(n.target);
         switch (n.op) {
             case TokenType::Minus:
-            chunk.addOp(Opcode::INT, pack(-1));
+            chunk.addOp(Opcode::INT, pack(int64_t(-1)));
             chunk.addOp(Opcode::Mul);
             return;
             break;

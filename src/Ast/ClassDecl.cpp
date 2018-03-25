@@ -31,7 +31,7 @@ namespace Strela {
         return met;
     }
 
-    ClassDecl* ClassDecl::getReifiedClass(const std::vector<TypeDecl*>& typeArgs, bool& isnew) {
+    ClassDecl* ClassDecl::getReifiedClass(const std::vector<TypeDecl*>& typeArgs) {
         for (auto& rc: reifiedClasses) {
             bool found = true;
             for (int i = 0; i < typeArgs.size(); ++i) {
@@ -41,7 +41,6 @@ namespace Strela {
                 }
             }
             if (found)  {
-                isnew = false;
                 return rc;
             }
         }
@@ -60,7 +59,6 @@ namespace Strela {
         }
         cls->name += ">";
         reifiedClasses.push_back(cls);
-        isnew = true;
         return cls;
     }
 }

@@ -11,6 +11,91 @@ namespace Strela {
     NameResolver::NameResolver(Scope* globals): scope(globals) {
     }
 
+    int NameResolver::resolveGenerics(ModDecl& n) {
+        int numGenerics = 0;
+
+        auto oldscope = scope;
+        scope = new Scope(scope);
+
+        scope->add(n.name, &n);
+
+        for (auto&& imp: n.imports) {
+            if (imp->all) {
+                for (auto&& fun: imp->module->functions) {
+                    if (fun->isExported) {
+                        scope->add(fun->name, fun);
+                    }
+                }
+                for (auto&& cls: imp->module->classes) {
+                    if (cls->isExported) {
+                        scope->add(cls->name, cls);
+                    }
+                }
+                for (auto&& iface: imp->module->interfaces) {
+                    if (iface->isExported) {
+                        scope->add(iface->name, iface);
+                    }
+                }
+                for (auto&& en: imp->module->enums) {
+                    if (en->isExported) {
+                        scope->add(en->name, en);
+                    }
+                }
+            }
+            else if (imp->importModule) {
+                scope->add(imp->parts.back(), imp->module);
+            }
+            else {
+                auto cls = imp->module->getClass(imp->parts.back());
+                if (cls) {
+                    if (cls->isExported) {
+                        scope->add(cls->name, cls);
+                        continue;
+                    }
+                    else {
+                        throw Exception(cls->name + " is not exported.");
+                    }
+                }
+
+                auto funs = imp->module->getFunctions(imp->parts.back());
+                if (!funs.empty()) {
+                    for (auto&& fun: funs) {
+                        if (fun->isExported) {
+                            scope->add(fun->name, fun);
+                        }
+                    }
+                }
+            }
+        }
+
+        for (auto&& fun: n.functions) {
+            scope->add(fun->name, fun);
+        }
+        for (auto&& cls: n.classes) {
+            scope->add(cls->name, cls);
+        }
+        for (auto&& iface: n.interfaces) {
+            scope->add(iface->name, iface);
+        }
+        for (auto&& en: n.enums) {
+            scope->add(en->name, en);
+        }
+
+        for (auto& cls: n.classes) {
+            for (auto& gen: cls->reifiedClasses) {
+                if (!gen->isResolved) {
+                    gen->accept(*this);
+                    numGenerics++;
+                }
+            }
+        }
+
+        delete scope;
+        scope = oldscope;
+        
+        return numGenerics;
+    }
+
     void NameResolver::visit(ModDecl& n) {
         auto oldscope = scope;
         scope = new Scope(scope);
@@ -88,7 +173,14 @@ namespace Strela {
     }
 
     void NameResolver::visit(ClassDecl& n) {
+        // is generic
         if (n.genericParams.size() > 0 && n.genericArguments.empty()) return;
+
+        // is reified generic
+        if (n.genericParams.size() > 0 && n.genericArguments.size() > 0) {
+            if (n.isResolved) return;
+            n.isResolved = true;
+        }
 
         auto oldscope = scope;
         scope = new Scope(scope);
@@ -341,12 +433,7 @@ namespace Strela {
                     for (auto&& tex: n.genericArguments) {
                         types.push_back(tex->type);
                     }
-                    bool isnew;
-                    n.type = cls->getReifiedClass(types, isnew);
-
-                    if (isnew) {
-                        n.type->accept(*this);
-                    }
+                    n.type = cls->getReifiedClass(types);
                 }
                 else {
                     error(n, "Expected " + std::to_string(cls->genericParams.size()) + " type arguments, " + std::to_string(n.genericArguments.size()) + " given.");

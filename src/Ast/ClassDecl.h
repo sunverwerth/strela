@@ -23,9 +23,10 @@ namespace Strela {
         Node* getMember(const std::string& name);
         std::vector<Node*> getMethods(const std::string& name) override;
 
-        ClassDecl* getReifiedClass(const std::vector<TypeDecl*>& typeArgs, bool& isnew);
+        ClassDecl* getReifiedClass(const std::vector<TypeDecl*>& typeArgs);
 
     public:
+        bool isResolved = false;
         bool isExported = false;
         std::vector<GenericParam*> genericParams;
         std::vector<TypeDecl*> genericArguments;

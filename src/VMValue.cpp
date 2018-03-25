@@ -4,6 +4,7 @@
 #include "VMValue.h"
 
 #include <cstring>
+#include <string>
 
 namespace Strela {
     #define VMVALUE_OP(OP) \
@@ -120,6 +121,19 @@ namespace Strela {
         else if (type == Type::string) return value.string == other.value.string;
         else if (type == Type::object) return value.object == other.value.object;
 		else return false;
+    }
+
+    std::string escape(const std::string&);
+
+    std::string VMValue::dump() const {
+        switch (type) {
+            case Type::boolean: return "bool: " + value.boolean ? "true" : "false";
+            case Type::integer: return "int: " + std::to_string(value.integer);
+            case Type::floating: return "float: " + std::to_string(value.floating);
+            case Type::null: return "null";
+            case Type::object: return "[object]";
+            case Type::string: return "\"" + escape(value.string) + "\"";
+        }
     }
 
     std::ostream& operator<<(std::ostream& str, const VMValue& v) {
