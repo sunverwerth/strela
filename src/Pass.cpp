@@ -1,3 +1,6 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
 #include "Pass.h"
 #include "Ast/Node.h"
 #include "Ast/Token.h"
