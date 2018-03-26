@@ -458,13 +458,4 @@ namespace Strela {
         }
         n.type = FuncType::get(n.returnTypeExpr->type, paramTypes);
     }
-
-    void NameResolver::error(const Node& n, const std::string& msg) {
-        if (n.source) {
-            throw Exception(n.source->filename + ":" + std::to_string(n.line) + ":" + std::to_string(n.column) + " Error: " + msg);
-        }
-        else {
-            throw Exception("Error: " + msg);
-        }
-    }
 }

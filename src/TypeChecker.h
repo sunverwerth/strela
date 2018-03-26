@@ -6,6 +6,7 @@
 
 #include "IStmtVisitor.h"
 #include "IExprVisitor.h"
+#include "Pass.h"
 
 #include <string>
 #include <vector>
@@ -18,7 +19,7 @@ namespace Strela {
     class Stmt;
     class Expr;
 
-    class TypeChecker: public IStmtVisitor, public IExprVisitor {
+    class TypeChecker: public Pass, public IStmtVisitor, public IExprVisitor {
     public:
         TypeChecker();
 
@@ -65,7 +66,6 @@ namespace Strela {
             child->accept(*this);
         }
 
-        bool hasErrors() { return _hasErrors; }
         void negateRefinements();
         
         std::vector<TypeDecl*> getTypes(const std::vector<Expr*>& arguments);
@@ -75,15 +75,12 @@ namespace Strela {
 		std::vector<FuncDecl*> findOverload(Expr* target, const std::vector<TypeDecl*>& argtypes);
 		std::vector<FuncDecl*> findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<Expr*>& args);
 		std::vector<FuncDecl*> findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<TypeDecl*>& argTypes);
-        void error(Node& node, const std::string& msg);
-        void warning(Node& node, const std::string& msg);
 
         FuncDecl* function = nullptr;
         BlockStmt* block = nullptr;
         ClassDecl* _class = nullptr;
 
         bool returns = false;
-        bool _hasErrors = false;
 
         std::vector<ClassDecl*> genericStack;
 

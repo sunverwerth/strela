@@ -761,21 +761,4 @@ namespace Strela {
             error(n, "'this' expression outside of class.");
         }
     }
-
-
-
-    void TypeChecker::error(Node& node, const std::string& msg) {
-        //std::cerr << msg << "\n";
-        //throw TypeException(node.source->filename + ":" + std::to_string(node.line) + ":" + std::to_string(node.column) + " Error: " + msg);
-        std::cerr << "\033[1;31m" << node.source->filename << ":" << node.line << ":" << node.column << " Error: " << msg << "\033[0m\n";
-        for (auto& gs: genericStack) {
-            std::cerr << "Info: During reification of " << gs->name << "\n";
-        }
-
-        _hasErrors = true;
-    }
-
-    void TypeChecker::warning(Node& node, const std::string& msg) {
-        std::cerr << node.source->filename << ":" << node.line << ":" << node.column << " " << msg << "\n";
-    }
 }

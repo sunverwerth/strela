@@ -386,7 +386,7 @@ namespace Strela {
         while (matchSecondary()) {
             auto it = precedenceMap.find(token->type);
             if (it == precedenceMap.end()) {
-                error(*token, "No precedence for operator '" + token->value + "'");
+                error(source, *token, "No precedence for operator '" + token->value + "'");
             }
             if (it->second < precedence) {
                 break;
@@ -737,17 +737,10 @@ namespace Strela {
     }
 
     void Parser::expected(TokenType expectedType) {
-        std::string msg = "Unexpected '" + getTokenName(token->type) + "', expected '" + getTokenName(expectedType) + "'.";
-        throw UnexpectedTokenException(source.filename + ":" + std::to_string(token->line) + ":" + std::to_string(token->column) + " Error: " + msg);
+        error(source, *token, "Unexpected '" + getTokenName(token->type) + "', expected " + getTokenName(expectedType) + ".");
     }
 
     void Parser::expected(const std::string& expected) {
-        std::string msg = "Unexpected '" + getTokenName(token->type) + "', expected " + expected + ".";
-        throw UnexpectedTokenException(source.filename + ":" + std::to_string(token->line) + ":" + std::to_string(token->column) + " Error: " + msg);
+        error(source, *token, "Unexpected '" + getTokenName(token->type) + "', expected " + expected + ".");
     }
-
-    void Parser::error(const Token& t, const std::string& msg) {
-        throw ParseException(source.filename + ":" + std::to_string(t.line) + ":" + std::to_string(t.column) + " Error: " + msg);
-    }
-
 }

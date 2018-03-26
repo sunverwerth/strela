@@ -69,12 +69,12 @@ std::string getImportFile(const std::string& baseFilename, ImportStmt* import) {
     // import Foo.Bar;
     // 1) ~/MyProj/Foo/Bar.strela
     // 2) ~/MyProj/Foo.strela (import member Bar)
-    // 3) <homepath>/.strela/Foo/Bar.strela
-    // 4) <homepath>/.strela/Foo.strela (import member Bar)
-    // 5) /usr/local/lib/strela/Foo/Bar.strela
-    // 6) /usr/local/lib/strela/Foo.strela (import member Bar)
-    // 7) <searchpath>/Foo/Bar.strela
-    // 8) <searchpath>/Foo.strela (import member Bar)
+    // 3) <searchpath>/Foo/Bar.strela
+    // 4) <searchpath>/Foo.strela (import member Bar)
+    // 5) <homepath>/.strela/Foo/Bar.strela
+    // 6) <homepath>/.strela/Foo.strela (import member Bar)
+    // 7) /usr/local/lib/strela/Foo/Bar.strela
+    // 8) /usr/local/lib/strela/Foo.strela (import member Bar)
     
     std::ifstream file;
 
@@ -90,6 +90,12 @@ std::string getImportFile(const std::string& baseFilename, ImportStmt* import) {
     tries.push_back({relativeBase + import->getFullName("/") + ".strela", true});
     if (!import->all) tries.push_back({relativeBase + import->getBaseName("/") + ".strela", false});
 
+    // additional
+    if (g_searchPath.size()) {
+        tries.push_back({g_searchPath + import->getFullName("/") + ".strela", true});
+        if (!import->all) tries.push_back({g_searchPath + import->getBaseName("/") + ".strela", false});
+    }
+
     // home
     tries.push_back({Strela::g_homePath + "/.strela/lib/" + import->getFullName("/") + ".strela", true});
     if (!import->all) tries.push_back({ Strela::g_homePath + "/.strela/lib/" + import->getBaseName("/") + ".strela", false});
@@ -98,12 +104,6 @@ std::string getImportFile(const std::string& baseFilename, ImportStmt* import) {
     tries.push_back({"/usr/local/lib/strela/" + import->getFullName("/") + ".strela", true});
     if (!import->all) tries.push_back({"/usr/local/lib/strela/" + import->getBaseName("/") + ".strela", false});
     
-    // additional
-    if (g_searchPath.size()) {
-        tries.push_back({g_searchPath + import->getFullName("/") + ".strela", true});
-        if (!import->all) tries.push_back({g_searchPath + import->getBaseName("/") + ".strela", false});
-    }
-
     for (auto&& it: tries) {
         file.open(it.first, std::ios::binary);
         if (file.good()) {
@@ -113,6 +113,11 @@ std::string getImportFile(const std::string& baseFilename, ImportStmt* import) {
     }
 
     return "";
+}
+
+void bail() {
+    std::cerr << "Aborting due to previous errors.\n";
+    exit(1);
 }
 
 int main(int argc, char** argv) {
@@ -157,6 +162,7 @@ int main(int argc, char** argv) {
     }
 
     try {
+        bool errors = false;
         std::ifstream file(fileName, std::ios::binary);
         if (!file.good()) {
             error("File not found: " + fileName);
@@ -172,10 +178,12 @@ int main(int argc, char** argv) {
             //std::cout << "Lexing...\n";
             Lexer lexer(file);
             auto source = new SourceFile(fileName, lexer.tokenize());
+            if (lexer.hadErrors()) bail();
 
             //std::cout << "Parsing...\n";
             Parser parser(*source);
             auto module = parser.parseModule();
+            if (parser.hadErrors()) bail();
             module->filename = fileName;
 
             if (pretty) {
@@ -216,6 +224,7 @@ int main(int argc, char** argv) {
                         
                         Parser parser(*source);
                         auto importedModule = parser.parseModule();
+                        if (parser.hadErrors()) bail();
                         importedModule->filename = importFilename;
 
                         modules.insert(std::make_pair(importFilename, importedModule));
@@ -234,7 +243,10 @@ int main(int argc, char** argv) {
             for (auto&& it: modules) {
                 NameResolver resolver(globals);
                 it.second->accept(resolver);
+                errors |= resolver.hadErrors();
             }
+
+            if (errors) bail();
 
             //std::cout << "Resolving generics...\n";
             int numGenerics = 0;
@@ -243,23 +255,25 @@ int main(int argc, char** argv) {
                 for (auto&& it: modules) {
                     NameResolver resolver(globals);
                     numGenerics += resolver.resolveGenerics(*it.second);
+                    errors |= resolver.hadErrors();
                 }
             } while (numGenerics > 0);
 
+            if (errors) bail();
+
             //std::cout << "Running type checker...\n";
-            bool errors = false;
             for (auto&& it: modules) {
                 TypeChecker typeChecker;
                 it.second->accept(typeChecker);
-                errors |= typeChecker.hasErrors();
+                errors |= typeChecker.hadErrors();
             }
-            if (errors) {
-                return 1;
-            }
+            
+            if (errors) bail();
 
             //std::cout << "Compiling bytecode...\n";
             ByteCodeCompiler compiler(chunk);
             module->accept(compiler);
+            if (compiler.hadErrors()) bail();
 
             if (!byteCodePath.empty()) {
                 std::ofstream outbin(byteCodePath, std::ios::binary);

@@ -7,6 +7,7 @@
 #include "IStmtVisitor.h"
 #include "IExprVisitor.h"
 #include "ITypeExprVisitor.h"
+#include "Pass.h"
 
 #include <string>
 
@@ -14,7 +15,7 @@ namespace Strela {
     class Scope;
     class Node;
 
-    class NameResolver: public IStmtVisitor, public IExprVisitor, public ITypeExprVisitor {
+    class NameResolver: public Pass, public IStmtVisitor, public IExprVisitor, public ITypeExprVisitor {
     public:
         NameResolver(Scope* globals);
 
@@ -66,9 +67,7 @@ namespace Strela {
         template<typename T> void visitChild(T& child) {
             child->accept(*this);
         }
-
-        void error(const Node& n, const std::string& msg);
-
+        
     private:
         ClassDecl* _class = nullptr;
         InterfaceDecl* _interface = nullptr;

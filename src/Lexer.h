@@ -5,6 +5,7 @@
 #define Strela_Lexer_h
 
 #include "Ast/Token.h"
+#include "Pass.h"
 
 #include <iostream>
 #include <vector>
@@ -13,7 +14,7 @@ namespace Strela {
     /**
      * Lexer for the strela language
      */
-    class Lexer {
+    class Lexer: public Pass {
     public:
         Lexer(std::istream& in): in(in), line(1), column(1) {}
         std::vector<Token> tokenize();

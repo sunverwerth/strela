@@ -6,6 +6,7 @@
 
 #include "IStmtVisitor.h"
 #include "IExprVisitor.h"
+#include "Pass.h"
 
 #include <string>
 #include <map>
@@ -15,7 +16,7 @@ namespace Strela {
     class Expr;
     class Node;
 
-    class ByteCodeCompiler: public IStmtVisitor, public IExprVisitor {
+    class ByteCodeCompiler: public Pass, public IStmtVisitor, public IExprVisitor {
     public:
         ByteCodeCompiler(ByteCodeChunk&);
 
@@ -62,7 +63,6 @@ namespace Strela {
         }
 
     private:
-        void error(Node& node, const std::string& msg);
         void addFixup(int address, FuncDecl* function);
 
     private:

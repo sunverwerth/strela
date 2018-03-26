@@ -7,12 +7,13 @@
 #include "Ast/nodes.h"
 #include "Ast/Token.h"
 #include "SourceFile.h"
+#include "Pass.h"
 
 #include <vector>
 #include <memory>
 
 namespace Strela {
-    class Parser {
+    class Parser: public Pass {
     public:
         Parser(const SourceFile& source, int starttoken = 0): source(source), tokens(source.tokens), token(tokens.begin() + starttoken) {}
 
@@ -57,8 +58,6 @@ namespace Strela {
         bool eof();
         void expected(TokenType expectedType);
         void expected(const std::string& expected);
-
-        void error(const Token& t, const std::string& msg);
 
     private:
         const std::vector<Token>& tokens;
