@@ -100,10 +100,6 @@ namespace Strela {
 				push(frame->stack[frame->stack.size() - 1 - arg.value.integer]);
 				break;
 			}
-			case Opcode::GrowStack: {
-				frame->stack.resize(frame->stack.size() + arg.value.integer);
-				break;
-			}
 			case Opcode::Call: {
 				auto newip = pop().value.integer;
                 auto newframe = getFrame();

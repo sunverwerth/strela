@@ -21,7 +21,7 @@ namespace Strela {
 
         void visit(ModDecl&) override;
         void visit(FuncDecl&) override;
-        void visit(Param&) override;
+        void visit(Param&) override {}
         void visit(VarDecl&) override;
         void visit(IdExpr&) override;
         void visit(RetStmt&) override;
@@ -33,7 +33,7 @@ namespace Strela {
         void visit(ClassDecl&) override;
         void visit(ScopeExpr&) override;
         void visit(IfStmt&) override;
-        void visit(FieldDecl&) override;
+        void visit(FieldDecl&) override {}
         void visit(NewExpr&) override;
         void visit(AssignExpr&) override;
         void visit(WhileStmt&) override;
@@ -41,7 +41,7 @@ namespace Strela {
         void visit(ImportStmt&) override {}
         void visit(UnaryExpr&) override;
         void visit(EnumDecl&) override;
-        void visit(EnumElement&) override;
+        void visit(EnumElement&) override {}
         void visit(InterfaceDecl&) override {}
         void visit(InterfaceMethodDecl&) override {}
         void visit(ThisExpr&) override;

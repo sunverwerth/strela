@@ -23,7 +23,6 @@ namespace Strela {
         X(StoreFieldInd, 1, integer) \
         X(Element, 0, null) \
         X(StoreElement, 0, null) \
-        X(GrowStack, 1, integer) \
         X(Call, 1, integer) \
         X(NativeCall, 0, null) \
         X(Jmp, 0, null) \

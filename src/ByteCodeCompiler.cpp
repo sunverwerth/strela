@@ -79,9 +79,6 @@ namespace Strela {
         }
 
         visitChildren(n.params);
-        if (n.numVariables > 0) {
-            chunk.addOp(Opcode::GrowStack, n.numVariables);
-        }
         visitChildren(n.stmts);
 
         if (n.isExternal) {
@@ -103,9 +100,6 @@ namespace Strela {
         }
 
         function = oldfunc;
-    }
-
-    void ByteCodeCompiler::visit(Param&) {
     }
 
     void ByteCodeCompiler::visit(VarDecl& n) {
@@ -367,9 +361,6 @@ namespace Strela {
         chunk.writeArgument(pos2, index2);
     }
 
-    void ByteCodeCompiler::visit(FieldDecl& n) {
-    }
-
     void ByteCodeCompiler::visit(NewExpr& n) {
         if (auto clstype = n.type->as<ClassDecl>()) {
             chunk.addOp(Opcode::INT, clstype->fields.size());
@@ -455,9 +446,6 @@ namespace Strela {
 
     void ByteCodeCompiler::visit(EnumDecl& n) {
         visitChildren(n.elements);
-    }
-
-    void ByteCodeCompiler::visit(EnumElement& n) {
     }
 
     void ByteCodeCompiler::visit(ThisExpr& n) {
