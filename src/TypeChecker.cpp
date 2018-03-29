@@ -32,10 +32,10 @@ namespace Strela {
         return result;
     }
 
-    std::vector<TypeDecl*> unique(const std::vector<TypeDecl*>& types) {
-        std::set<TypeDecl*> set;
-        set.insert(types.begin(), types.end());
-        std::vector<TypeDecl*> result;
+    template<typename T> std::vector<T> unique(const std::vector<T>& values) {
+        std::set<T> set;
+        set.insert(values.begin(), values.end());
+        std::vector<T> result;
         result.assign(set.begin(), set.end());
         return result;
     }

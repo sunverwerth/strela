@@ -17,12 +17,12 @@ namespace Strela {
     public:
         Parser(const SourceFile& source, int starttoken = 0): source(source), tokens(source.tokens), token(tokens.begin() + starttoken) {}
 
-        ModDecl* parseModule();
-        IdExpr* parseIdentifierExpression();
-        FuncDecl* parseFunction(bool external = false);
-        Param* parseParameter();
+        ModDecl* parseModDecl();
+        IdExpr* parseIdExpr();
+        FuncDecl* parseFuncDecl(bool external = false);
+        Param* parseParam();
         VarDecl* parseVarDecl();
-        BlockStmt* parseBlockStatement();
+        BlockStmt* parseBlockStmt();
         ClassDecl* parseClassDecl();
         FieldDecl* parseFieldDecl();
         EnumDecl* parseEnumDecl();
@@ -30,20 +30,20 @@ namespace Strela {
         InterfaceDecl* parseInterfaceDecl();
         InterfaceMethodDecl* parseInterfaceMethodDecl();
 
-        Stmt* parseStatement();
-        RetStmt* parseReturnStatement();
+        Stmt* parseStmt();
+        RetStmt* parseRetStmt();
         ExprStmt* parseExprStmt();
         IfStmt* parseIfStmt();
         WhileStmt* parseWhileStmt();
 
-        Expr* parseExpression(int precedence = 0);
-        TypeExpr* parseTypeExpr();
+        Expr* parseExpr(int precedence = 0);
         NewExpr* parseNewExpr();
-        LitExpr* parseLiteralExpression();
+        LitExpr* parseLitExpr();
         CallExpr* parseCallExpr(Expr* callTarget);
         ArrayLitExpr* parseArrayLitExpr();
         SubscriptExpr* parseSubscriptExpr(Expr* callTarget);
 
+        TypeExpr* parseTypeExpr();
         GenericReificationExpr* parseGenericReificationExpr(TypeExpr* target);
 
         bool match(TokenType type);

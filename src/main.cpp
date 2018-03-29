@@ -182,7 +182,7 @@ int main(int argc, char** argv) {
 
             //std::cout << "Parsing...\n";
             Parser parser(*source);
-            auto module = parser.parseModule();
+            auto module = parser.parseModDecl();
             if (parser.hadErrors()) bail();
             module->filename = fileName;
 
@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
                         auto source = new SourceFile(importFilename, lexer.tokenize());
                         
                         Parser parser(*source);
-                        auto importedModule = parser.parseModule();
+                        auto importedModule = parser.parseModDecl();
                         if (parser.hadErrors()) bail();
                         importedModule->filename = importFilename;
 
