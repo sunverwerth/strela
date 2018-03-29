@@ -130,14 +130,11 @@ int main(int argc, char** argv) {
 
     std::string fileName;
     std::string byteCodePath;
+    std::vector<std::string> arguments;
     
     bool dump = false;
     bool pretty = false;
     for (int i = 1; i < argc; ++i) {
-        if (i == argc - 1) {
-            fileName = argv[i];
-            break;
-        }
         if (!strcmp(argv[i], "--dump")) dump = true;
         else if (!strcmp(argv[i], "--pretty")) pretty = true;
         else if (!strcmp(argv[i], "--timeout")) {
@@ -150,8 +147,11 @@ int main(int argc, char** argv) {
             byteCodePath = argv[++i];
         }
         else {
-            help();
-            exit(1);
+            fileName = argv[i++];
+            for (int j = i; j < argc; ++j) {
+                arguments.push_back(argv[j]);
+            }
+            break;
         }
     }
     
@@ -296,7 +296,7 @@ int main(int argc, char** argv) {
         }
 
         //std::cout << "Running bytecode...\n";
-        VM vm(chunk);
+        VM vm(chunk, arguments);
         return vm.run().value.integer;
     }
     catch (const Exception& e) {

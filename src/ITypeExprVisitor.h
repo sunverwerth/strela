@@ -5,19 +5,13 @@
 #define Strela_ITypeExprVisitor_h
 
 namespace Strela {
-    class IdTypeExpr;
-    class ArrayTypeExpr;
-    class UnionTypeExpr;
-    class NullableTypeExpr;
-    class GenericReificationExpr;
-
     class ITypeExprVisitor {
     public:
-        virtual void visit(IdTypeExpr&) = 0;
-        virtual void visit(ArrayTypeExpr&) = 0;
-        virtual void visit(UnionTypeExpr&) = 0;
-        virtual void visit(NullableTypeExpr&) = 0;
-        virtual void visit(GenericReificationExpr&) = 0;
+        virtual void visit(class IdTypeExpr&) = 0;
+        virtual void visit(class ArrayTypeExpr&) = 0;
+        virtual void visit(class UnionTypeExpr&) = 0;
+        virtual void visit(class NullableTypeExpr&) = 0;
+        virtual void visit(class GenericReificationExpr&) = 0;
     };
 }
 

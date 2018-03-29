@@ -22,7 +22,7 @@ namespace Strela {
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
-    VM::VM(const ByteCodeChunk& chunk): chunk(chunk) {
+    VM::VM(const ByteCodeChunk& chunk, const std::vector<std::string>& arguments): chunk(chunk) {
 		for (auto& ff: chunk.foreignFunctions) {
 			double(*ptr)(double) = &sqrt;
 			ff.ptr = reinterpret_cast<char*>(ptr);
@@ -30,6 +30,12 @@ namespace Strela {
 
         frame = getFrame();
         frame->ip = chunk.main;
+		auto arr = gc.allocObject(arguments.size() + 1);
+		arr->setField(0, VMValue((int64_t)arguments.size()));
+		for (int i = 0; i < arguments.size(); ++i) {
+			arr->setField(i + 1, VMValue(arguments[i].c_str()));
+		}
+		frame->arguments.push_back(VMValue(arr));
     }
 
     VMValue VM::run() {
@@ -61,8 +67,8 @@ namespace Strela {
             }
 
             switch ((Opcode)op) {
-            case Opcode::INT:
-            case Opcode::FLOAT:
+            case Opcode::I64:
+            case Opcode::F64:
                 push(arg);
                 break;
 

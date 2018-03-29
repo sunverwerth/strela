@@ -6,11 +6,16 @@ module Export {
 
     export class Baz {
         function frob(a: Bumm) {
+            print("Export.Baz.frob(Bumm) called: ");
+            println(a.num);
         }
     }
 
     class Bumm {
-        function frob(a: Baz) {
+        var num: int;
+
+        function init(num: int) {
+            this.num = num;
         }
     }
 
@@ -20,6 +25,10 @@ module Export {
 
     export function bar() {
         println("Export.bar called");
+    }
+
+    export function makeBumm(num: int): Bumm {
+        return new Bumm(num);
     }
 
     function main(args: String[]): int {

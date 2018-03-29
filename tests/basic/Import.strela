@@ -4,12 +4,15 @@
 module Import {
     import Std.IO.*;
 
-    import Export.foo;
-    import Export.bar;
+    import Export.*;
 
     function main(args: String[]): int {
         foo();
         bar();
+
+        var baz = new Baz;
+        baz.frob(makeBumm(13));
+
         return 0;
     }
 }

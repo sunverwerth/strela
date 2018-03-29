@@ -15,13 +15,16 @@ module Std.Collections {
         }
 
         function append(value: T) {
-            var newArray = new T[](this.array.length + 1);
-            var i = 0;
-            while(i < this.array.length) {
-                newArray[i] = this.array[i];
-                i = i + 1;
+            if (this.array.length < this.length + 1) {
+                var newArray = new T[](this.array.length * 2);
+                var i = 0;
+                while(i < this.array.length) {
+                    newArray[i] = this.array[i];
+                    i = i + 1;
+                }
+                this.array = newArray;
             }
-            this.array = newArray;
+            
             this.array[this.length] = value;
             this.length = this.length + 1;
         }

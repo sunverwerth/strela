@@ -11,8 +11,8 @@ namespace Strela {
         X(ReturnVoid, 1, integer) \
         X(Return, 1, integer) \
         X(Const, 1, integer) \
-        X(INT, 8, integer) \
-        X(FLOAT, 8, floating) \
+        X(I64, 8, integer) \
+        X(F64, 8, floating) \
         X(Var, 1, integer) \
         X(StoreVar, 1, integer) \
         X(Param, 1, integer) \
@@ -21,8 +21,6 @@ namespace Strela {
         X(FieldInd, 1, integer) \
         X(StoreField, 1, integer) \
         X(StoreFieldInd, 1, integer) \
-        X(Element, 0, null) \
-        X(StoreElement, 0, null) \
         X(Call, 1, integer) \
         X(NativeCall, 0, null) \
         X(Jmp, 0, null) \

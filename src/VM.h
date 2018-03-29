@@ -9,6 +9,7 @@
 #include "GC.h"
 
 #include <vector>
+#include <string>
 
 namespace Strela {
     class ByteCodeChunk;
@@ -16,7 +17,7 @@ namespace Strela {
     
     class VM {
     public:
-        VM(const ByteCodeChunk& chunk);
+        VM(const ByteCodeChunk& chunk, const std::vector<std::string>& arguments);
         VMValue run();
 
         void printCallStack();

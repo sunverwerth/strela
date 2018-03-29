@@ -54,6 +54,7 @@ namespace Strela {
         bool matchBinary();
         void expect(TokenType type);
         Token eat(TokenType type);
+        bool eatOptional(TokenType type);
         Token eat();
         bool eof();
         void expected(TokenType expectedType);

@@ -86,7 +86,7 @@ namespace Strela {
                 chunk.addOp(Opcode::Param, i);
             }
             auto index = chunk.addForeignFunction(n.name);
-            chunk.addOp(Opcode::INT, index);
+            chunk.addOp(Opcode::I64, index);
             chunk.addOp(Opcode::NativeCall);
             if (n.type->returnType != &VoidType::instance) {
                 chunk.addOp(Opcode::Return, n.params.size() + (_class ? 1 : 0));
@@ -156,13 +156,13 @@ namespace Strela {
     void ByteCodeCompiler::visit(LitExpr& n) {
         int index = 0;
         if (n.type == &IntType::instance) {
-            chunk.addOp(Opcode::INT, pack(n.token.intVal()));
+            chunk.addOp(Opcode::I64, pack(n.token.intVal()));
         }
         else if (n.type == &FloatType::instance) {
-            chunk.addOp(Opcode::FLOAT, pack(n.token.floatVal()));
+            chunk.addOp(Opcode::F64, pack(n.token.floatVal()));
         }
         else if (n.type == &BoolType::instance) {
-            chunk.addOp(Opcode::INT, n.token.boolVal() ? 1 : 0);
+            chunk.addOp(Opcode::I64, n.token.boolVal() ? 1 : 0);
         }
         else if (n.type == &ClassDecl::String) {
             index = chunk.addConstant(VMValue(n.token.value.c_str()));
@@ -177,7 +177,7 @@ namespace Strela {
     void ByteCodeCompiler::visit(IsExpr& n) {
         visitChild(n.target);
         chunk.addOp(Opcode::Field, 0);
-        chunk.addOp(Opcode::INT, n.typeTag);
+        chunk.addOp(Opcode::I64, n.typeTag);
         chunk.addOp(Opcode::CmpEQ);
     }
 
@@ -192,7 +192,7 @@ namespace Strela {
         auto fromunion = fromtype->as<UnionType>();
 
         if (fromclass && toiface && n.implementation) {
-            chunk.addOp(Opcode::INT, toiface->methods.size() + 1);
+            chunk.addOp(Opcode::I64, toiface->methods.size() + 1);
             chunk.addOp(Opcode::New);
             chunk.addOp(Opcode::Repeat);
             visitChild(n.sourceExpr);
@@ -208,11 +208,11 @@ namespace Strela {
         }
         else if (tounion) {
             auto tag = tounion->getTypeTag(fromtype);
-            chunk.addOp(Opcode::INT, 2);
+            chunk.addOp(Opcode::I64, 2);
             chunk.addOp(Opcode::New);
             
             chunk.addOp(Opcode::Repeat);
-            chunk.addOp(Opcode::INT, tag);
+            chunk.addOp(Opcode::I64, tag);
             chunk.addOp(Opcode::Swap);
             chunk.addOp(Opcode::StoreField, 0);
 
@@ -304,7 +304,7 @@ namespace Strela {
             chunk.addOp(Opcode::Field, field->index);
         }
         else if (auto ee = n.node->as<EnumElement>()) {
-            chunk.addOp(Opcode::INT, ee->index);
+            chunk.addOp(Opcode::I64, ee->index);
         }
         else {
             error(n, "Invalid scope expr");
@@ -312,10 +312,10 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(ArrayLitExpr& n) {
-        chunk.addOp(Opcode::INT, 1 + n.elements.size());
+        chunk.addOp(Opcode::I64, 1 + n.elements.size());
         chunk.addOp(Opcode::New);
         chunk.addOp(Opcode::Repeat);
-        chunk.addOp(Opcode::INT, n.elements.size());
+        chunk.addOp(Opcode::I64, n.elements.size());
         chunk.addOp(Opcode::Swap);
         chunk.addOp(Opcode::StoreField, 0);
         size_t i = 0;
@@ -363,7 +363,7 @@ namespace Strela {
 
     void ByteCodeCompiler::visit(NewExpr& n) {
         if (auto clstype = n.type->as<ClassDecl>()) {
-            chunk.addOp(Opcode::INT, clstype->fields.size());
+            chunk.addOp(Opcode::I64, clstype->fields.size());
             chunk.addOp(Opcode::New);
             if (n.initMethod) {
                 chunk.addOp(Opcode::Repeat);
@@ -379,7 +379,7 @@ namespace Strela {
         else if (auto arrtype = n.type->as<ArrayType>()) {
             visitChild(n.arguments.front());
             chunk.addOp(Opcode::Repeat);
-            chunk.addOp(Opcode::INT, 1);
+            chunk.addOp(Opcode::I64, 1);
             chunk.addOp(Opcode::Add);
             chunk.addOp(Opcode::New);
             chunk.addOp(Opcode::Swap);
@@ -429,7 +429,7 @@ namespace Strela {
         visitChild(n.target);
         switch (n.op) {
             case TokenType::Minus:
-            chunk.addOp(Opcode::INT, pack(int64_t(-1)));
+            chunk.addOp(Opcode::I64, pack(int64_t(-1)));
             chunk.addOp(Opcode::Mul);
             return;
             break;
