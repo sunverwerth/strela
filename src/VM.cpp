@@ -16,6 +16,7 @@
 #include <chrono>
 #include <cmath>
 #include <ffi.h>
+#include <dlfcn.h>
 
 namespace Strela {
 
@@ -36,7 +37,8 @@ namespace Strela {
                 ff.ffi_argTypes[i] = &ffi_type_double;
             }
             ffi_prep_cif(&ff.cif, FFI_DEFAULT_ABI, numArgs, rtype, ff.ffi_argTypes);
-			ff.ptr = ForeignFunction::callback(::sqrt);
+            
+			ff.ptr = ForeignFunction::callback(dlsym(RTLD_DEFAULT, ff.name.c_str()));
 		}
 
         frame = getFrame();

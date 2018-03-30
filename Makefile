@@ -1,5 +1,5 @@
 CC=g++
-LNFLAGS=-lffi
+LNFLAGS=-lffi -ldl
 SRCDIR=src
 SRCDIRS=$(shell find $(SRCDIR) -type d)
 SRC=$(foreach dir, $(SRCDIRS), $(wildcard $(dir)/*.cpp))
