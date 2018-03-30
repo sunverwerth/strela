@@ -10,12 +10,25 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include <ffi.h>
 
 namespace Strela {
+    class TypeDecl;
+    class FuncDecl;
+
     class ForeignFunction {
     public:
+        ForeignFunction(const std::string& name, TypeDecl* returnType, const std::vector<TypeDecl*>& argTypes): name(name), returnType(returnType), argTypes(argTypes) {}
+
         std::string name;
-        mutable char* ptr;
+        TypeDecl* returnType;
+        std::vector<TypeDecl*> argTypes;
+
+        typedef void(*callback)(void);
+
+        mutable ffi_type** ffi_argTypes = nullptr;
+        mutable ffi_cif cif;
+        mutable callback ptr = nullptr;
     };
 
     class ByteCodeChunk {
@@ -28,7 +41,7 @@ namespace Strela {
 
         void addFunction(size_t address, const std::string& name);
         int addConstant(VMValue c);
-        int addForeignFunction(const std::string& name);
+        int addForeignFunction(FuncDecl& n);
         int addOp(Opcode code);
         int addOp(Opcode code, uint64_t arg);
         void writeArgument(size_t pos, uint64_t arg);

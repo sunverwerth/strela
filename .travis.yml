@@ -1,2 +1,6 @@
+addons:
+  apt:
+    packages:
+    - libffi-dev
 language: cpp
 script: make test

@@ -3,6 +3,8 @@
 
 #include "ByteCodeChunk.h"
 #include "exceptions.h"
+#include "Ast/FuncDecl.h"
+#include "Ast/FuncType.h"
 
 #include <string.h>
 
@@ -17,13 +19,13 @@ namespace Strela {
         return constants.size() - 1;
     }
 
-    int ByteCodeChunk::addForeignFunction(const std::string& name) {
+    int ByteCodeChunk::addForeignFunction(FuncDecl& n) {
         for (int i = 0; i < foreignFunctions.size(); ++i) {
-            if (foreignFunctions[i].name == name) {
+            if (foreignFunctions[i].name == n.name) {
                 return i;
             }
         }
-        foreignFunctions.push_back({name, nullptr});
+        foreignFunctions.push_back(ForeignFunction(n.name, n.type->returnType, n.type->paramTypes));
         return foreignFunctions.size() - 1;
     }
 

@@ -85,7 +85,7 @@ namespace Strela {
             for (int i = n.params.size() - 1; i >= 0; --i) {
                 chunk.addOp(Opcode::Param, i);
             }
-            auto index = chunk.addForeignFunction(n.name);
+            auto index = chunk.addForeignFunction(n);
             chunk.addOp(Opcode::I64, index);
             chunk.addOp(Opcode::NativeCall);
             if (n.type->returnType != &VoidType::instance) {

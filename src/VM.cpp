@@ -9,10 +9,13 @@
 #include "Ast/InterfaceDecl.h"
 #include "Ast/FuncDecl.h"
 #include "VMFrame.h"
+#include "Ast/FloatType.h"
+
 
 #include <cstring>
 #include <chrono>
 #include <cmath>
+#include <ffi.h>
 
 namespace Strela {
 
@@ -24,8 +27,16 @@ namespace Strela {
 
     VM::VM(const ByteCodeChunk& chunk, const std::vector<std::string>& arguments): chunk(chunk) {
 		for (auto& ff: chunk.foreignFunctions) {
-			double(*ptr)(double) = &sqrt;
-			ff.ptr = reinterpret_cast<char*>(ptr);
+            ffi_type* rtype;
+            rtype = &ffi_type_double;
+
+            auto numArgs = ff.argTypes.size();
+            ff.ffi_argTypes = new ffi_type*[numArgs];
+            for (size_t i = 0; i < numArgs; ++i) {
+                ff.ffi_argTypes[i] = &ffi_type_double;
+            }
+            ffi_prep_cif(&ff.cif, FFI_DEFAULT_ABI, numArgs, rtype, ff.ffi_argTypes);
+			ff.ptr = ForeignFunction::callback(::sqrt);
 		}
 
         frame = getFrame();
@@ -127,11 +138,22 @@ namespace Strela {
 			}
 			case Opcode::NativeCall: {
 				auto funcindex = pop();
-				auto func = chunk.foreignFunctions[funcindex.value.integer].ptr;
-				auto par = pop();
-				typedef double(*mathfunc)(double);
-				auto sqr = (mathfunc)func;
-				push(VMValue(sqr(par.value.floating)));
+				auto& ff = chunk.foreignFunctions[funcindex.value.integer];
+				
+                auto par = pop();
+
+                VMValue retVal;
+                std::vector<VMValue> args;
+                std::vector<void*> argPtrs;
+
+                args.push_back(par);
+                argPtrs.push_back(&args[0].value.floating);
+
+                ffi_call(&ff.cif, ff.ptr, &retVal.value.floating, &argPtrs[0]);
+
+                retVal.type = VMValue::Type::floating;
+
+				push(retVal);
 				break;
 			}
 			case Opcode::Return: {
