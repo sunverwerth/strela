@@ -21,10 +21,9 @@ namespace Strela {
         X(U64, 8, integer) \
         X(F32, 4, floating) \
         X(F64, 8, floating) \
+        X(Grow, 1, integer) \
         X(Var, 1, integer) \
         X(StoreVar, 1, integer) \
-        X(Param, 1, integer) \
-        X(StoreParam, 1, integer) \
         X(Field, 1, integer) \
         X(FieldInd, 1, integer) \
         X(StoreField, 1, integer) \

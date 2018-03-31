@@ -22,20 +22,6 @@ namespace Strela {
                 }
             }
 
-            // arguments
-            for (auto&& val: frame->arguments) {
-                if (val.type == VMValue::Type::object && val.value.object && !(val.value.object->flags & 1)) {
-                    mark(val.value.object);
-                }
-            }
-
-            // locals
-            for (auto&& val: frame->variables) {
-                if (val.type == VMValue::Type::object && val.value.object && !(val.value.object->flags & 1)) {
-                    mark(val.value.object);
-                }
-            }
-
             frame = frame->parent;
         }
         

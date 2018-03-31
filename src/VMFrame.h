@@ -9,8 +9,6 @@ namespace Strela {
     class VMFrame {
     public:
         VMFrame* parent = nullptr;
-        std::vector<VMValue> arguments;
-        std::vector<VMValue> variables;
         std::vector<VMValue> stack;
         size_t ip;
     };

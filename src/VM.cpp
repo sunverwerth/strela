@@ -48,7 +48,7 @@ namespace Strela {
 		for (int i = 0; i < arguments.size(); ++i) {
 			arr->setField(i + 1, VMValue(arguments[i].c_str()));
 		}
-		frame->arguments.push_back(VMValue(arr));
+		frame->stack.push_back(VMValue(arr));
     }
 
     template<typename T> T VM::read() {
@@ -114,28 +114,16 @@ namespace Strela {
 				push(chunk.constants[read<uint8_t>()]);
 				break;
 			}
-			case Opcode::Param: {
-				push(frame->arguments[read<uint8_t>()]);
-				break;
-			}
-			case Opcode::StoreParam: {
-				frame->arguments[read<uint8_t>()] = pop();
-				break;
-			}
+            case Opcode::Grow: {
+                frame->stack.resize(frame->stack.size() + read<uint8_t>());
+                break;
+            }
 			case Opcode::Var: {
-                auto arg = read<uint8_t>();
-                if (frame->variables.size() < arg + 1) {
-                    frame->variables.resize(arg + 1);
-                }
-				push(frame->variables[arg]);
+				push(frame->stack[read<uint8_t>()]);
 				break;
 			}
 			case Opcode::StoreVar: {
-                auto arg = read<uint8_t>();
-                if (frame->variables.size() < arg + 1) {
-                    frame->variables.resize(arg + 1);
-                }
-				frame->variables[arg] = pop();
+				frame->stack[read<uint8_t>()] = pop();
 				break;
 			}
 			case Opcode::Peek: {
@@ -149,7 +137,7 @@ namespace Strela {
                 newframe->parent = frame;
                 newframe->ip = newip;
                 for (int i = 0; i < numargs; ++i) {
-                    newframe->arguments.push_back(pop());
+                    newframe->stack.push_back(pop());
                 }
                 frame = newframe;
 				break;
@@ -416,9 +404,7 @@ namespace Strela {
             framePool.pop_back();
             fr->ip = 0;
             fr->parent = nullptr;
-            fr->arguments.clear();
             fr->stack.clear();
-            fr->variables.clear();
             return fr;
         }
     }
