@@ -17,7 +17,14 @@ namespace Strela {
         bool isSigned;
         int bytes;
         
-        static IntType instance;
+        static IntType u8;
+        static IntType u16;
+        static IntType u32;
+        static IntType u64;
+        static IntType i8;
+        static IntType i16;
+        static IntType i32;
+        static IntType i64;
     };
 }
 

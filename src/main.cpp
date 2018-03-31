@@ -41,10 +41,20 @@ void help() {
 Scope* makeGlobalScope() {
     auto globals = new Scope(nullptr);
 
-    globals->add("int", &IntType::instance);
+    globals->add("int", &IntType::i64);
+    globals->add("u8", &IntType::u8);
+    globals->add("u16", &IntType::u16);
+    globals->add("u32", &IntType::u32);
+    globals->add("u64", &IntType::u64);
+    globals->add("i8", &IntType::i8);
+    globals->add("i16", &IntType::i16);
+    globals->add("i32", &IntType::i32);
+    globals->add("i64", &IntType::i64);
     globals->add("bool", &BoolType::instance);
     globals->add("void", &VoidType::instance);
-    globals->add("float", &FloatType::instance);
+    globals->add("float", &FloatType::f64);
+    globals->add("f32", &FloatType::f32);
+    globals->add("f64", &FloatType::f64);
     globals->add("null", &NullType::instance);
     globals->add("String", &ClassDecl::String);
 

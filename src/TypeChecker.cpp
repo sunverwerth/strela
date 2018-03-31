@@ -286,10 +286,10 @@ namespace Strela {
 
         if (auto arr = n.callTarget->type->as<ArrayType>()) {
             if (n.arguments.size() == 1) {
-                if (n.arguments.front()->type == &IntType::instance) {
+                if (isAssignableFrom(&IntType::u64, getType(n.arguments.front()))) {
                     n.type = arr->baseType;
                     n.context = n.callTarget;
-                    n.arrayIndex = n.arguments.front();
+                    n.arrayIndex = addCast(n.arguments.front(), &IntType::u64);
                 }
                 else {
                     error(n, "Array subscript operator argument must be integer.");
@@ -391,12 +391,12 @@ namespace Strela {
     void TypeChecker::visit(LitExpr& n) {
         switch (n.token.type) {
             case TokenType::Integer: {
-                n.type = &IntType::instance;
+                n.type = &IntType::i64;
                 break;
             }
 
             case TokenType::Float: {
-                n.type = &FloatType::instance;
+                n.type = &FloatType::f64;
                 break;
             }
 
@@ -470,7 +470,7 @@ namespace Strela {
             }
             else {
                 if (lint && rint) {
-                    n.type = &IntType::instance;
+                    n.type = &IntType::i64;
                 }
                 else if (lfloat && rfloat) {
                     n.type = lfloat;
@@ -683,15 +683,15 @@ namespace Strela {
         }
         else if (auto arr = n.typeExpr->type->as<ArrayType>()) {
             if (n.arguments.size() == 1) {
-                if (n.arguments.front()->type == &IntType::instance) {
+                if (isAssignableFrom(&IntType::u64, getType(n.arguments.front()))) {
                     n.type = arr;
                 }
                 else {
-                    error(n, "Array constructor argument must have type 'int'.");
+                    error(n, "Array constructor argument must have unsigned int type.");
                 }
             }
             else {
-                error(n, "Array constructor requires exactly one argument of type 'int'.");
+                error(n, "Array constructor requires exactly one argument of type unsigned int.");
             }
         }
         else {

@@ -25,19 +25,20 @@ namespace Strela {
     private:
         bool execute();
 
-        size_t push(VMValue val);
+        size_t push(const VMValue& val);
         VMValue pop();
         void pop(size_t num);
 
         VMFrame* getFrame();
         void recycleFrame(VMFrame*);
 
+        template<typename T> T read();
+
         std::vector<VMFrame*> framePool;
 
     public:
         const ByteCodeChunk& chunk;
         char op;
-        VMValue arg;
         GC gc;
 
         VMFrame* frame = nullptr;

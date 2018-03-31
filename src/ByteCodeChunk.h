@@ -43,7 +43,11 @@ namespace Strela {
         int addConstant(VMValue c);
         int addForeignFunction(FuncDecl& n);
         int addOp(Opcode code);
-        int addOp(Opcode code, uint64_t arg);
+        int addOp(Opcode code, size_t argSize, const void* arg);
+        template <typename T> struct identity { using type = T; };
+        template <typename T> int addOp(Opcode code, const typename identity<T>::type& arg) {
+            return addOp(code, sizeof(T), &arg);
+        }
         void writeArgument(size_t pos, uint64_t arg);
     };
 

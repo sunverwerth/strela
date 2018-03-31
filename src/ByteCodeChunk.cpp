@@ -35,13 +35,16 @@ namespace Strela {
         return opcodes.size() - 1;
     }
 
-    int ByteCodeChunk::addOp(Opcode code, uint64_t arg) {
-        int numargs = opcodeInfo[(int)code].argWidth;
-        if (numargs == 0) throw Exception(std::string("Opcode ") + opcodeInfo[(int)code].name + " has no arguments.");
+    int ByteCodeChunk::addOp(Opcode code, size_t argSize, const void* arg) {
+        auto opwidth = opcodeInfo[(int)code].argWidth;
+        if (opwidth != argSize) throw Exception(std::string("Opcode ") + opcodeInfo[(int)code].name + " has mismatching argument size. "
+        + std::to_string(opwidth) + " instead of " + std::to_string(argSize)
+        );
+        auto opAddr = opcodes.size();
         opcodes.push_back((char)code);
-        opcodes.resize(opcodes.size() + numargs);
-        memcpy(&opcodes[opcodes.size() - numargs], &arg, numargs);
-        return opcodes.size() - 1 - numargs;
+        opcodes.resize(opcodes.size() + argSize);
+        memcpy(&opcodes[opAddr + 1], arg, argSize);
+        return opAddr;
     }
 
     void ByteCodeChunk::addFunction(size_t address, const std::string& name) {

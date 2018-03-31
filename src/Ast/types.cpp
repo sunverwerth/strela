@@ -22,9 +22,17 @@ namespace Strela {
     TypeType TypeType::instance;
     OverloadedFuncType OverloadedFuncType::instance;
 
-    IntType IntType::instance("int", false, 8);
+    IntType IntType::u8("u8", false, 1);
+    IntType IntType::u16("u16", false, 2);
+    IntType IntType::u32("u32", false, 4);
+    IntType IntType::u64("u64", false, 8);
+    IntType IntType::i8("i8", true, 1);
+    IntType IntType::i16("i16", true, 2);
+    IntType IntType::i32("i32", true, 4);
+    IntType IntType::i64("i64", true, 8);
 
-    FloatType FloatType::instance("float", 8);
+    FloatType FloatType::f32("f32", 4);
+    FloatType FloatType::f64("f64", 8);
 
     InvalidType InvalidType::instance;
 

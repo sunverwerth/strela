@@ -11,7 +11,15 @@ namespace Strela {
         X(ReturnVoid, 1, integer) \
         X(Return, 1, integer) \
         X(Const, 1, integer) \
+        X(I8, 1, integer) \
+        X(I16, 2, integer) \
+        X(I32, 4, integer) \
         X(I64, 8, integer) \
+        X(U8, 1, integer) \
+        X(U16, 2, integer) \
+        X(U32, 4, integer) \
+        X(U64, 8, integer) \
+        X(F32, 4, floating) \
         X(F64, 8, floating) \
         X(Var, 1, integer) \
         X(StoreVar, 1, integer) \
@@ -45,8 +53,8 @@ namespace Strela {
         X(AndL, 0, null) \
         X(OrL, 0, null) \
         X(Swap, 0, null) \
-        X(I2F, 0, null) \
-        X(F2I, 0, null) \
+        X(I64tF64, 0, null) \
+        X(F64tI64, 0, null) \
         X(Peek, 1, integer) \
     
     #define AS_ENUM(X, A, T) X,
