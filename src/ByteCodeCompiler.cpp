@@ -89,14 +89,14 @@ namespace Strela {
             chunk.addOp<uint64_t>(Opcode::I64, index);
             chunk.addOp(Opcode::NativeCall);
             if (n.type->returnType != &VoidType::instance) {
-                chunk.addOp<uint8_t>(Opcode::Return, n.params.size() + (_class ? 1 : 0));
+                chunk.addOp(Opcode::Return);
             }
             else {
-                chunk.addOp<uint8_t>(Opcode::ReturnVoid, n.params.size() + (_class ? 1 : 0));
+                chunk.addOp(Opcode::ReturnVoid);
             }
         }
         else if (!n.returns) {
-            chunk.addOp<uint8_t>(Opcode::ReturnVoid, n.params.size() + (_class ? 1 : 0));
+            chunk.addOp(Opcode::ReturnVoid);
         }
 
         function = oldfunc;
@@ -146,10 +146,10 @@ namespace Strela {
     void ByteCodeCompiler::visit(RetStmt& n) {
         if (n.expression) {
             visitChild(n.expression);
-            chunk.addOp<uint8_t>(Opcode::Return, function->params.size() + (_class ? 1 : 0));
+            chunk.addOp(Opcode::Return);
         }
         else {
-            chunk.addOp<uint8_t>(Opcode::ReturnVoid, function->params.size() + (_class ? 1 : 0));
+            chunk.addOp(Opcode::ReturnVoid);
         }
     }
 

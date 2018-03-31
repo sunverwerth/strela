@@ -8,8 +8,8 @@
 
 namespace Strela {
     #define OPCODES(X) \
-        X(ReturnVoid, 1, integer) \
-        X(Return, 1, integer) \
+        X(ReturnVoid, 0, null) \
+        X(Return, 0, null) \
         X(Const, 1, integer) \
         X(I8, 1, integer) \
         X(I16, 2, integer) \
