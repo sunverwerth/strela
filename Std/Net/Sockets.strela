@@ -2,6 +2,8 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 module Std.Net.Sockets {
+    export external function socket(domain: i32, type: i32, protocol: i32): i32;
+
     export class Socket {
     }
 }

@@ -10,6 +10,7 @@
 #include "Ast/FuncDecl.h"
 #include "VMFrame.h"
 #include "Ast/FloatType.h"
+#include "Ast/IntType.h"
 
 
 #include <cstring>
@@ -26,15 +27,40 @@ namespace Strela {
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
+    ffi_type* ffitype(const TypeDecl* t) {
+        if (t == &IntType::u8)
+            return &ffi_type_uint8;
+        if (t == &IntType::u16)
+            return &ffi_type_uint16;
+        if (t == &IntType::u32)
+            return &ffi_type_uint32;
+        if (t == &IntType::u64)
+            return &ffi_type_uint64;
+        if (t == &IntType::i8)
+            return &ffi_type_sint8;
+        if (t == &IntType::i16)
+            return &ffi_type_sint16;
+        if (t == &IntType::i32)
+            return &ffi_type_sint32;
+        if (t == &IntType::i64)
+            return &ffi_type_sint64;
+        if (t == &FloatType::f32)
+            return &ffi_type_float;
+        if (t == &FloatType::f64)
+            return &ffi_type_double;
+
+        return &ffi_type_pointer;
+    }
+
     VM::VM(const ByteCodeChunk& chunk, const std::vector<std::string>& arguments): chunk(chunk) {
 		for (auto& ff: chunk.foreignFunctions) {
             ffi_type* rtype;
-            rtype = &ffi_type_double;
+            rtype = ffitype(ff.returnType);
 
             auto numArgs = ff.argTypes.size();
             ff.ffi_argTypes = new ffi_type*[numArgs];
             for (size_t i = 0; i < numArgs; ++i) {
-                ff.ffi_argTypes[i] = &ffi_type_double;
+                ff.ffi_argTypes[i] = ffitype(ff.argTypes[i]);
             }
             ffi_prep_cif(&ff.cif, FFI_DEFAULT_ABI, numArgs, rtype, ff.ffi_argTypes);
             
@@ -154,18 +180,21 @@ namespace Strela {
 				auto funcindex = pop();
 				auto& ff = chunk.foreignFunctions[funcindex.value.integer];
 				
-                auto par = pop();
+                VMValue retVal((int64_t)0);
+                if (ff.returnType->as<IntType>()) retVal.type = VMValue::Type::integer;
+                else if (ff.returnType->as<FloatType>()) retVal.type = VMValue::Type::floating;
 
-                VMValue retVal;
                 std::vector<VMValue> args;
+                for (size_t i = 0; i < ff.argTypes.size(); ++i) {
+                    args.push_back(pop());
+                }
+
                 std::vector<void*> argPtrs;
+                for (size_t i = 0; i < ff.argTypes.size(); ++i) {
+                    argPtrs.push_back(&args[i]);
+                }
 
-                args.push_back(par);
-                argPtrs.push_back(&args[0].value.floating);
-
-                ffi_call(&ff.cif, ff.ptr, &retVal.value.floating, &argPtrs[0]);
-
-                retVal.type = VMValue::Type::floating;
+                ffi_call(&ff.cif, ff.ptr, &retVal, &argPtrs[0]);
 
 				push(retVal);
 				break;

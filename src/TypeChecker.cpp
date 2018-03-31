@@ -156,6 +156,10 @@ namespace Strela {
 
     TypeDecl* getSignedType(TypeDecl* t) {
         if (auto intt = t->as<IntType>()) {
+            if (intt = &IntType::u8) return &IntType::i8;
+            if (intt = &IntType::u16) return &IntType::i16;
+            if (intt = &IntType::u32) return &IntType::i32;
+            if (intt = &IntType::u64) return &IntType::i64;
             return intt;
         }
         else if (auto floatt = t->as<FloatType>()) {

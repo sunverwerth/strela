@@ -38,6 +38,14 @@ namespace Strela {
         bool equals(const VMValue& other) const;
         std::string dump() const;
 
+        union {
+            int64_t integer;
+            double floating;
+            bool boolean;
+            const char* string;
+            VMObject* object;
+        } value;
+
         enum class Type {
             null,
             integer,
@@ -46,14 +54,6 @@ namespace Strela {
             string,
             object
         } type;
-
-        union {
-            int64_t integer;
-            double floating;
-            bool boolean;
-            const char* string;
-            VMObject* object;
-        } value;
     };
 
     std::ostream& operator<<(std::ostream& str, const VMValue&);
