@@ -28,7 +28,7 @@ namespace Strela {
 				it->second = symbol;
 			}
 			else {
-				throw DuplicateSymbolException(name);
+				throw DuplicateSymbolException("Duplicate symbol " + name);
 			}
         }
         
