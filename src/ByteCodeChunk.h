@@ -10,7 +10,7 @@
 #include <map>
 #include <vector>
 #include <iostream>
-#include <ffi.h>
+#include <ffi/ffi.h>
 
 namespace Strela {
     class TypeDecl;

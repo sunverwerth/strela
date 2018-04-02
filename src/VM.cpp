@@ -16,7 +16,7 @@
 #include <cstring>
 #include <chrono>
 #include <cmath>
-#include <ffi.h>
+#include <ffi/ffi.h>
 #include <dlfcn.h>
 
 namespace Strela {
