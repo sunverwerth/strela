@@ -31,12 +31,12 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CC) $< $(CXXFLAGS) -c -o $@
 
 install: strelac
-	install -D release/strelac /usr/local/bin/strelac
+	install release/strelac /usr/local/bin/strelac
 	install -d /usr/local/lib/strela
 	cp -r Std /usr/local/lib/strela
 
 install-home: strelac
-	install -D release/strelac ~/bin/strelac
+	install release/strelac ~/bin/strelac
 	install -d ~/.strela/lib/
 	cp -r Std ~/.strela/lib
 

@@ -2,7 +2,22 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 module Std.Net.Sockets {
+    export class sockaddr {
+        var size: u8;
+        var family: u8;
+        var addr: i32;
+    }
+
     export external function socket(domain: i32, type: i32, protocol: i32): i32;
+    export external function connect(sock: i32, addr: sockaddr, len: i32): i32;
+    export external function bind(sock: i32, addr: sockaddr, len: i32): i32;
+    export external function listen(sock: i32, backlog: i32): i32;
+    export external function accept(sock: i32, addr: sockaddr, len: i32): i32;
+    external function __error(): i32;
+
+    export function errno(): i32 {
+        return __error();
+    }
 
     export class Socket {
     }
