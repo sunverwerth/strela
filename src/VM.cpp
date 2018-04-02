@@ -16,7 +16,11 @@
 #include <cstring>
 #include <chrono>
 #include <cmath>
-#include <ffi/ffi.h>
+#ifdef __APPLE__
+    #include <ffi/ffi.h>
+#else
+    #include <ffi.h>
+#endif
 #include <dlfcn.h>
 
 namespace Strela {
