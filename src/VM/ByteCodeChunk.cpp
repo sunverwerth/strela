@@ -2,9 +2,9 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 #include "ByteCodeChunk.h"
-#include "exceptions.h"
-#include "Ast/FuncDecl.h"
-#include "Ast/FuncType.h"
+#include "../exceptions.h"
+#include "../Ast/FuncDecl.h"
+#include "../Ast/FuncType.h"
 
 #include <string.h>
 
@@ -21,7 +21,11 @@ namespace Strela {
 
     int ByteCodeChunk::addForeignFunction(FuncDecl& n) {
         for (int i = 0; i < foreignFunctions.size(); ++i) {
-            if (foreignFunctions[i].name == n.name) {
+            if (
+                foreignFunctions[i].name == n.name &&
+                foreignFunctions[i].returnType == n.type->returnType &&
+                foreignFunctions[i].argTypes == n.type->paramTypes
+            ) {
                 return i;
             }
         }

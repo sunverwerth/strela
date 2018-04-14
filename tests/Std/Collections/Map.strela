@@ -7,7 +7,7 @@ module Tests.Collections.Map {
     import Std.Collections.Map;
 
     function main(args: String[]): int {
-        var map = new Map<String, int>;
+        var map = new Map<String, u8>;
         map.set("twenty one", 21);
         map.set("fourty two", 42);
         map.set("thirteen", 13);

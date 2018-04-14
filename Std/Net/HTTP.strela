@@ -2,9 +2,111 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 module Std.Net.HTTP {
-    export class Client {        
+    import Std.Net.Sockets.*;
+    import Std.Collections.Map;
+    import Std.IO.*;
+
+    export class Client {
+        var socket: Socket;
+        
+        function init() {
+            this.socket = new Socket;
+        }
+
+        function connect(ip: u32, port: u16) {
+            this.socket.connect(ip, port);
+        }
+
+        function connect(ip: IPAddr, port: u16) {
+            this.socket.connect(ip.getInt(), port);
+        }
+
+        function request(request: Request): Response {
+            this.socket.write("GET " + request.path + " HTTP/1.1\r\n");
+            this.socket.write("Host: " + request.host + "\r\n");
+            this.socket.write("User-Agent: strela language test client\r\n");
+            this.socket.write("Accept: text/html,*/*\r\n");
+            this.socket.write("Accept-Charset: utf-8;q=0.9,iso-8859-1;q=0.5\r\n");
+            this.socket.write("Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7\r\n");
+            this.socket.write("Connection: close\r\n");
+            this.socket.write("\r\n");
+
+            var response = new Response();
+            var line = this.socket.readLine();
+            while (line != "\r\n") {
+                line = this.socket.readLine();
+            }
+
+            line = this.socket.readLine();
+            while (line != "") {
+                response.body = response.body + line;
+                line = this.socket.readLine();
+            }
+            return response;
+        }
     }
 
-    export class Server {        
+    export class Server {
+        var socket: Socket;
+        
+        function init(address: i32, port: u16) {
+            this.socket = new Socket(address, port);
+            this.socket.listen();
+        }
+
+        function accept(): Request {
+            var sock = this.socket.accept();
+            var request = new Request;
+            request.socket = sock;
+            
+            var line = sock.readLine();
+            while (line != "\r\n") {
+                line = sock.readLine();
+            }
+
+            return request;
+        }
+
+        function close() {
+            this.socket.shutdown();
+            this.socket.close();
+        }
+    }
+
+    export class Request {
+        var socket: Socket;
+        var path: String;
+        var host: String;
+        var headers: Map<String, String>;
+        var body: String;
+
+        function init() {
+            this.path = "";
+            this.host = "";
+            this.body = "";
+        }
+
+        function respond(response: Response) {
+            this.socket.write("HTTP/1.1 200 " + response.statusMessage + "\r\n");
+            this.socket.write("Content-type: text/html\r\n");
+            this.socket.write("\r\n");
+            this.socket.write("");
+            this.socket.write("");
+            this.socket.write(response.body);
+            this.socket.shutdown();
+            this.socket.close();
+        }
+    }
+
+    export class Response {
+        var statusCode: u16;
+        var statusMessage: String;
+        var headers: Map<String, String>;
+        var body: String;
+
+        function init() {
+            this.statusMessage = "";
+            this.body = "";
+        }
     }
 }

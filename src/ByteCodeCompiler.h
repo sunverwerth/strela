@@ -15,6 +15,8 @@ namespace Strela {
     class ByteCodeChunk;
     class Expr;
     class Node;
+    class VMType;
+    class TypeDecl;
 
     class ByteCodeCompiler: public Pass, public IStmtVisitor, public IExprVisitor {
     public:
@@ -22,7 +24,7 @@ namespace Strela {
 
         void visit(ModDecl&) override;
         void visit(FuncDecl&) override;
-        void visit(Param&) override {}
+        void visit(Param&) override;
         void visit(VarDecl&) override;
         void visit(IdExpr&) override;
         void visit(RetStmt&) override;
@@ -34,7 +36,7 @@ namespace Strela {
         void visit(ClassDecl&) override;
         void visit(ScopeExpr&) override;
         void visit(IfStmt&) override;
-        void visit(FieldDecl&) override {}
+        void visit(FieldDecl&) override;
         void visit(NewExpr&) override;
         void visit(AssignExpr&) override;
         void visit(WhileStmt&) override;
@@ -64,10 +66,12 @@ namespace Strela {
 
     private:
         void addFixup(int address, FuncDecl* function);
+        int mapType(TypeDecl* type);
 
     private:
         std::map<int, FuncDecl*> functionFixups;
         FuncDecl* function = nullptr;
+        std::map<TypeDecl*, int> typeMap;
 
     public:
         ByteCodeChunk& chunk;

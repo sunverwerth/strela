@@ -1,0 +1,29 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
+module Examples.Server {
+    import Std.Net.HTTP.*;
+    import Std.Net.Sockets.*;
+    import Std.IO.*;
+
+    function main(args: String[]): int {
+        var server = new Server(0, 8080);
+        var i: u8 = 64;
+        while (true) {
+            var request = server.accept();
+            println("Request!");
+            var response = new Response;
+            response.statusCode = 200;
+            response.statusMessage = "OK";
+            //response.headers.set("Content-type", "text/html");
+            response.body = "<!DOCTYPE html><html><head><style>body {font-family: Sans-serif;}</style></head><body><h1>Hello, world!";
+            response.body = response.body + i;
+            response.body = response.body + "</h1></body></html>";
+            request.respond(response);
+            i = i + 1;
+        }
+        server.close();
+
+        return 0;
+    }
+}

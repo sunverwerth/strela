@@ -13,6 +13,11 @@ namespace Strela {
     else if (type == Type::boolean) return VMValue(bool(value.boolean OP other.value.boolean)); \
     else return VMValue();
 
+    #define VMVALUE_OP_LOG(OP) \
+    if (type == Type::integer) return VMValue(bool(value.integer OP other.value.integer)); \
+    else if (type == Type::floating) return VMValue(bool(value.floating OP other.value.floating)); \
+    else if (type == Type::boolean) return VMValue(bool(value.boolean OP other.value.boolean)); \
+    else return VMValue();
 
     VMValue::VMValue(): type(Type::null) {}
 	VMValue::VMValue(int64_t val) : type(Type::integer) { value.integer = val; }
@@ -25,50 +30,50 @@ namespace Strela {
         if (type == Type::string && other.type == Type::string) {
             return VMValue(strcmp(value.string, other.value.string) == 0);
         }
-        VMVALUE_OP(==);
+        VMVALUE_OP_LOG(==);
     }
 
     VMValue VMValue::operator!=(const VMValue& other) const {
         if (type == Type::string && other.type == Type::string) {
             return VMValue(strcmp(value.string, other.value.string) != 0);
         }
-        VMVALUE_OP(!=);
+        VMVALUE_OP_LOG(!=);
     }
 
     VMValue VMValue::operator<(const VMValue& other) const {
         if (type == Type::string && other.type == Type::string) {
             return VMValue(strcmp(value.string, other.value.string) < 0);
         }
-        VMVALUE_OP(<);
+        VMVALUE_OP_LOG(<);
     }
 
     VMValue VMValue::operator>(const VMValue& other) const {
         if (type == Type::string && other.type == Type::string) {
             return VMValue(strcmp(value.string, other.value.string) > 0);
         }
-        VMVALUE_OP(>);
+        VMVALUE_OP_LOG(>);
     }
 
     VMValue VMValue::operator<=(const VMValue& other) const {
         if (type == Type::string && other.type == Type::string) {
             return VMValue(strcmp(value.string, other.value.string) <= 0);
         }
-        VMVALUE_OP(<=);
+        VMVALUE_OP_LOG(<=);
     }
 
     VMValue VMValue::operator>=(const VMValue& other) const {
         if (type == Type::string && other.type == Type::string) {
             return VMValue(strcmp(value.string, other.value.string) >= 0);
         }
-        VMVALUE_OP(>=);
+        VMVALUE_OP_LOG(>=);
     }
 
     VMValue VMValue::operator&&(const VMValue& other) const {
-        VMVALUE_OP(&&);
+        VMVALUE_OP_LOG(&&);
     }
 
     VMValue VMValue::operator||(const VMValue& other) const {
-        VMVALUE_OP(||);
+        VMVALUE_OP_LOG(||);
     }
 
     
@@ -80,6 +85,14 @@ namespace Strela {
             str[len1 + len2] = 0;
             memcpy(&str[0], value.string, len1);
             memcpy(&str[len1], other.value.string, len2);
+            return VMValue(str);
+        }
+        if (type == Type::string && other.type == Type::integer) {
+            auto len1 = strlen(value.string);
+            auto str = new char[len1 + 1 + 1];
+            str[len1 + 1] = 0;
+            memcpy(&str[0], value.string, len1);
+            str[len1] = other.value.integer;
             return VMValue(str);
         }
         VMVALUE_OP(+);

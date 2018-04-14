@@ -465,7 +465,13 @@ namespace Strela {
             op == TokenType::GreaterThanEquals
         ) {
             
-            if (!((leftScalar && rightScalar) || (op == TokenType::Plus && ltype == &ClassDecl::String && rtype == &ClassDecl::String))) {
+            if (
+                !(
+                    (leftScalar && rightScalar) ||
+                    (op == TokenType::Plus && ltype == &ClassDecl::String && rtype == &ClassDecl::String) ||
+                    (op == TokenType::Plus && ltype == &ClassDecl::String && rtype->as<IntType>())
+                )
+            ) {
                 error(n, "Binary operator '" + getTokenName(op) + "' is only applicable to scalar values. Types are '" + ltype->name + "' and '" + rtype->name + "'.");
             }
 
@@ -594,24 +600,40 @@ namespace Strela {
             }
         }
         else if (type) {
-            n.node = type->getMember(n.name);
             n.context = n.scopeTarget;
-            if (n.node) {
-                if (auto field = n.node->as<FieldDecl>()) {
-                    n.type = field->type;
-                }
-                else if (auto fun = n.node->as<FuncDecl>()) {
-                    n.type = fun->type;
-                }
-                else if (auto met = n.node->as<InterfaceMethodDecl>()) {
-                    n.type = met->type;
+            auto methods = type->getMethods(n.name);
+            if (methods.size() == 1) {
+                n.node = methods.front();
+                if (auto iface = methods.front()->as<InterfaceMethodDecl>()) {
+                    n.type = iface->type;
                 }
                 else {
-                    error(n, "unhandled member kind");
+                    n.type = methods.front()->as<FuncDecl>()->type;
                 }
             }
+            else if (methods.size() > 1) {
+                n.candidates = extract<FuncDecl>(methods);
+                n.type = &OverloadedFuncType::instance;
+            }
             else {
-                error(n, "Type '" + type->name + "' has no member named '" + n.name + "'");
+                n.node = type->getMember(n.name);
+                if (n.node) {
+                    if (auto field = n.node->as<FieldDecl>()) {
+                        n.type = field->type;
+                    }
+                    else if (auto fun = n.node->as<FuncDecl>()) {
+                        n.type = fun->type;
+                    }
+                    else if (auto met = n.node->as<InterfaceMethodDecl>()) {
+                        n.type = met->type;
+                    }
+                    else {
+                        error(n, "unhandled member kind");
+                    }
+                }
+                else {
+                    error(n, "Type '" + type->name + "' has no member named '" + n.name + "'");
+                }
             }
         }        
         else {

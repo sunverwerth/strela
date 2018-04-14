@@ -4,7 +4,7 @@
 #include "VMObject.h"
 
 namespace Strela {
-    VMObject::VMObject(size_t numfields): fields(numfields) {
+    /*VMObject::VMObject(size_t numfields): fields(numfields) {
     }
 
     VMValue VMObject::getField(size_t index) {
@@ -13,5 +13,5 @@ namespace Strela {
 
     void VMObject::setField(size_t index, const VMValue& val) {
         fields[index] = val;
-    }
+    }*/
 }

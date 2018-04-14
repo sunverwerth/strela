@@ -1,11 +1,12 @@
 // Copyright (c) 2018 Stephan Unverwerth
 // This code is licensed under MIT license (See LICENSE for details)
 
-#ifndef Strela_ByteCodeChunk_h
-#define Strela_ByteCodeChunk_h
+#ifndef Strela_VM_ByteCodeChunk_h
+#define Strela_VM_ByteCodeChunk_h
 
 #include "Opcode.h"
 #include "VMValue.h"
+#include "VMType.h"
 
 #include <map>
 #include <vector>
@@ -42,6 +43,7 @@ namespace Strela {
         std::vector<char> opcodes;
         std::map<size_t, std::string> functions;
         std::vector<ForeignFunction> foreignFunctions;
+        std::vector<VMType*> types;
         size_t main;
 
         void addFunction(size_t address, const std::string& name);

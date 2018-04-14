@@ -1,8 +1,8 @@
 // Copyright (c) 2018 Stephan Unverwerth
 // This code is licensed under MIT license (See LICENSE for details)
 
-#ifndef Strela_VMValue_h
-#define Strela_VMValue_h
+#ifndef Strela_VM_VMValue_h
+#define Strela_VM_VMValue_h
 
 #include <cstdint>
 #include <iostream>

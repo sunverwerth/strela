@@ -83,7 +83,7 @@ namespace Strela {
                     char c = str[++i];
                     switch (c) {
                         case '0': unescaped += '0'; break;
-                        case 'r': unescaped += '\t'; break;
+                        case 'r': unescaped += '\r'; break;
                         case 'n': unescaped += '\n'; break;
                         case 't': unescaped += '\t'; break;
                         case '\\': unescaped += '\\'; break;
@@ -104,7 +104,7 @@ namespace Strela {
         for (size_t i = 0; i < str.size(); ++i) {
             switch (str[i]) {
                 case '\0': escaped += "\\0"; break;
-                case '\r': escaped += "\\t"; break;
+                case '\r': escaped += "\\r"; break;
                 case '\n': escaped += "\\n"; break;
                 case '\t': escaped += "\\t"; break;
                 case '\\': escaped += "\\\\"; break;

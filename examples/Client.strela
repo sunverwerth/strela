@@ -1,0 +1,21 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
+module Examples.Client {
+    import Std.Net.HTTP.*;
+    import Std.Net.Sockets.*;
+    import Std.IO.*;
+
+    function main(args: String[]): int {
+
+        var client = new Client;
+        client.connect(new IPAddr(216, 58, 208, 35), 80); // google
+        var request = new Request;
+        request.host = "www.google.de";
+        request.path = "/search?q=test";
+        var response = client.request(request);
+        println(response.body);
+
+        return 0;
+    }
+}

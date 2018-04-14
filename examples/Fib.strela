@@ -9,7 +9,7 @@ module Fib {
         return fibonacci(i-1) + fibonacci(i-2);
     }
 
-    function main(): int {
+    function main(args: String[]): int {
         println("Hello, world!");
         println("Calculating fibonacci(40).");
         println("This may take a while...");

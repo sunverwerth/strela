@@ -10,8 +10,8 @@
 #include "TypeChecker.h"
 #include "ByteCodeCompiler.h"
 #include "Scope.h"
-#include "VM.h"
-#include "ByteCodeChunk.h"
+#include "VM/VM.h"
+#include "VM/ByteCodeChunk.h"
 #include "Decompiler.h"
 #include "SourceFile.h"
 

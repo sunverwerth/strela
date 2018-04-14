@@ -1,8 +1,8 @@
 // Copyright (c) 2018 Stephan Unverwerth
 // This code is licensed under MIT license (See LICENSE for details)
 
-#ifndef Strela_VM_h
-#define Strela_VM_h
+#ifndef Strela_VM_VM_h
+#define Strela_VM_VM_h
 
 #include "Opcode.h"
 #include "VMValue.h"

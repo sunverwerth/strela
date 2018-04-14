@@ -2,7 +2,7 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 #include "Decompiler.h"
-#include "ByteCodeChunk.h"
+#include "VM/ByteCodeChunk.h"
 
 #include <iostream>
 #include <iomanip>

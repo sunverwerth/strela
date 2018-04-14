@@ -262,6 +262,7 @@ namespace Strela {
         auto symbol = scope->find(n.name);
         if (!symbol) {
             error(n, "Unresolved symbol '" + n.name + "'.");
+            return;
         }
 
         if (auto td = symbol->node->as<TypeDecl>()) {

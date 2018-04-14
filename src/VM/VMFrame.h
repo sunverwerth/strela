@@ -1,5 +1,5 @@
-#ifndef Strela_VMFrame_h
-#define Strela_VMFrame_h
+#ifndef Strela_VM_VMFrame_h
+#define Strela_VM_VMFrame_h
 
 #include "VMValue.h"
 
