@@ -87,6 +87,7 @@ namespace Strela {
                         case 'n': unescaped += '\n'; break;
                         case 't': unescaped += '\t'; break;
                         case '\\': unescaped += '\\'; break;
+                        case '"': unescaped += '"'; break;
                         default:
                         unescaped += '\\';
                         unescaped += c;
@@ -108,6 +109,7 @@ namespace Strela {
                 case '\n': escaped += "\\n"; break;
                 case '\t': escaped += "\\t"; break;
                 case '\\': escaped += "\\\\"; break;
+                case '"': escaped += "\\\""; break;
                 default:
                 escaped += str[i];
             }
@@ -199,6 +201,10 @@ namespace Strela {
                     std::stringstream sstr;
                     get();
                     while (!eof() && !match('"')) {
+                        if (ch == '\\') {
+                            sstr << (char)ch;
+                            get();
+                        }
                         sstr << (char)ch;
                         get();
                     }
