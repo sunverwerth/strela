@@ -4,6 +4,7 @@
 module Examples.Ray {
     import Std.IO.*;
     import Std.Collections.List;
+    import Std.Math.Lina.*;
 
     class TGA {
         var file: File;
@@ -48,49 +49,32 @@ module Examples.Ray {
     }
 
     external function sqrt(f: f64): f64;
+    external function rand(): i32;
+    external function sin(r: f64): f64;
+    external function cos(r: f64): f64;
 
-    class Vec {
-        var x: f64;
-        var y: f64;
-        var z: f64;
+    function frand(): f64 {
+        return (rand():f64 / 2147483647:f64) - 0.5;
+        //return (rand():f64 / 65535:f64) - 0.5;
+    }
 
-        function init() {}
+    function clamp(f: f64): f64 {
+        if (f > 1.0) return 1.0;
+        if (f < 0.0) return 0.0;
+        return f;
+    }
 
-        function init(x: f64, y: f64, z: f64) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
+    function lerp(a: Vec, b: Vec, f: f64): Vec {
+        return a * (1.0 - f) + b * f;
+    }
 
-        function magnitude(): f64 {
-            return sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-        }
+    class Plane {
+        var position: Vec;
+        var normal: Vec;
 
-        function normalize() {
-            var l = this.magnitude();
-            this.x = this.x / l;
-            this.y = this.y / l;
-            this.z = this.z / l;
-        }
-
-        function dot(other: Vec): f64 {
-            return this.x * other.x + this.y * other.y + this.z * other.z;
-        }
-
-        function sub(other: Vec): Vec {
-            return new Vec(this.x - other.x, this.y - other.y, this.z - other.z);
-        }
-
-        function add(other: Vec): Vec {
-            return new Vec(this.x + other.x, this.y + other.y, this.z + other.z);
-        }
-
-        function mul(v: f64): Vec {
-            return new Vec(this.x * v, this.y * v, this.z * v);
-        }
-
-        function neg(): Vec {
-            return new Vec(-this.x, -this.y, -this.z);
+        function init(position: Vec, normal: Vec) {
+            this.position = position;
+            this.normal = normal;
         }
     }
 
@@ -98,78 +82,120 @@ module Examples.Ray {
         var center: Vec;
         var radius: f64;
         var color: Vec;
+        var reflectivity: f64;
 
-        function init(center: Vec, radius: f64, color: Vec) {
+        function init(center: Vec, radius: f64, color: Vec, reflectivity: f64) {
             this.center = center;
             this.radius = radius;
             this.color = color;
+            this.reflectivity = reflectivity;
         }
+    }
+
+    class Hit {
+        var position: Vec;
+        var normal: Vec;
+        var color: Vec;
+        var reflectivity: f64;
+        var roughness: f64;
     }
 
     class Tracer {
         var spheres: List<Sphere>;
+        var planes: List<Plane>;
         var file: TGA;
         var width: int;
         var height: int;
 
         function init() {
-            this.spheres = new List<Sphere>();
-            this.spheres.append(new Sphere(new Vec(5, 5, 15), 5, new Vec(0, 0, 0)));
-            this.spheres.append(new Sphere(new Vec(5, -5, 15), 5, new Vec(1, 0, 0)));
-            this.spheres.append(new Sphere(new Vec(-5, 5, 15), 5, new Vec(0, 1, 0)));
-            this.spheres.append(new Sphere(new Vec(-5, -5, 15), 5, new Vec(0, 0, 1)));
+            this.planes = new List<Plane>();
+            this.planes.append(new Plane(new Vec(-20, 0, 20), (new Vec(1, 0, -1)).normalized() ));
 
-            this.width = 1920;
-            this.height = 1080;
+            this.spheres = new List<Sphere>();
+            this.spheres.append(new Sphere(new Vec(5, 5, 5), 5, new Vec(0, 0, 0), 0.7));
+            this.spheres.append(new Sphere(new Vec(5, -5, 10), 5, new Vec(1, 0, 0), 0.8));
+            this.spheres.append(new Sphere(new Vec(-5, 5, 15), 5, new Vec(0, 1, 0), 0.5));
+            this.spheres.append(new Sphere(new Vec(-5, -5, 20), 5, new Vec(0, 0, 1), 0.25));
+
+            this.width = 320;
+            this.height = 200;
             this.file = new TGA("out.tga", this.width, this.height);
         }
 
         function trace(origin: Vec, dir: Vec, recurse: int): Vec {
-            var min: f64 = 9999999.0;
-            var p: Vec;
-            var n: Vec;
             var found = false;
-            var s: Sphere;
+            var min: f64 = 999999.0;
+            var hit = new Hit;
 
             var i = 0;
             while (i < this.spheres.length) {
                 var sphere = this.spheres[i];
 
-                var a = dir.dot(origin.sub(sphere.center));
+                var oc = origin - sphere.center;
+
+                var a = dir.dot(oc);
                 a = a * a;
-                var oc = origin.sub(sphere.center);
                 a = a - oc.dot(oc);
                 a = a + (sphere.radius * sphere.radius);
 
                 if (a > 0.0) {
-                    var d = -dir.dot(sphere.center.neg()) - a;
+                    var d = -dir.dot(oc) - sqrt(a);
 
-                    if (d > 0.0 && d < min) {
+                    if (d > 0.0 && (!found || d < min)) {
                         min = d;
-                        s = sphere;
-                        p = origin.add(dir.mul(d));
-                        n = p.sub(sphere.center);
-                        n.normalize();
                         found = true;
+
+                        hit.position = origin + dir * d;
+                        hit.normal = (hit.position - sphere.center).normalized();
+                        hit.color = sphere.color;
+                        hit.reflectivity = sphere.reflectivity;
+                        hit.roughness = 0.125;
                     }
                 }
 
-                i = i + 1;
+                i++;
+            }
+
+            i = 0;
+            while (i < this.planes.length) {
+                var plane = this.planes[i];
+
+                var d = (plane.position - origin).dot(plane.normal) / dir.dot(plane.normal);
+
+                if (d > 0.0 && (!found || d < min)) {
+                    min = d;
+                    found = true;
+
+                    hit.position = origin + dir * d;
+                    hit.normal = plane.normal;
+                    hit.color = new Vec(0,0,0);
+                    hit.reflectivity = 0.5;
+                    hit.roughness = 0.125;
+                }
+
+                i++;
             }
 
             if (found) {
-                return n;
-                var v = n.y;
-                if (recurse < 10) {
-                    return s.color.mul(0.5).add(this.trace(p, n, recurse + 1).mul(0.5));
+                if (recurse < 5) {
+                    var n2 = hit.normal + new Vec(frand()*hit.roughness, frand()*hit.roughness, frand()*hit.roughness);
+                    n2.normalize();
+                    var r = reflect(dir, n2);
+                    return lerp(hit.color * clamp(n2.y), this.trace(hit.position + r * 0.001, r, recurse + 1), hit.reflectivity);
                 }
                 else {
-                    return new Vec(0.8 - v, 0.8 - v, 1.0);
+                    return hit.color * clamp(hit.normal.y);
                 }
             }
 
-            var v = dir.y;
-            return new Vec(0.8 - v, 0.8 - v, 1.0);
+            if (dir.y < 0) {
+                var v = dir.y * 0.4;
+                return new Vec(0.4 + v, 0.3 + v, 0.1);
+            }
+            else {
+                var v = dir.y * 0.6;
+                return new Vec(0.4 + v, 0.4 + v, 1);
+            }
         }
 
         function run() {
@@ -180,16 +206,32 @@ module Examples.Ray {
 
             while (y < this.height) {
                 while (x < this.width) {
-                    dir.x = x:f64 - (this.width:f64 * 0.5);
-                    dir.y = -(y:f64 - (this.height:f64 * 0.5));
-                    dir.z = 500;
-                    dir.normalize();
-                    var color = this.trace(origin, dir, 0);
-                    this.file.pixel(color);
-                    x = x + 1;
+                    var color = new Vec(0, 0, 0);
+                    
+                    var num: i32 = 0;
+
+                    var ix = -3;
+                    var iy = -3;
+                    while (iy < -2) {
+                        while (ix < -2) {
+                            dir.x = (x:f64+ix:f64*0.14):f64 - (this.width:f64 * 0.5);
+                            dir.y = -((y:f64+iy:f64*0.14):f64 - (this.height:f64 * 0.5));
+                            dir.z = this.width:f64 * 0.3;
+                            dir.normalize();
+                            color = color + this.trace(origin, dir, 0);
+                            num++;
+                            ix++;
+                        }
+                        ix = -1;
+                        iy++;
+                    }
+
+                    this.file.pixel(color * (1.0 / num:f64));
+                    x++;
                 }
                 x = 0;
-                y = y + 1;
+                y++;
+                println(y);
             }
 
             println("Fin");

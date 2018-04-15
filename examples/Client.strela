@@ -3,7 +3,7 @@
 
 module Examples.Client {
     import Std.Net.HTTP.*;
-    import Std.Net.Sockets.*;
+    import Std.Net.IPAddr;
     import Std.IO.*;
 
     function main(args: String[]): int {

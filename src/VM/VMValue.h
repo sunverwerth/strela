@@ -8,7 +8,7 @@
 #include <iostream>
 
 namespace Strela {
-    class VMObject;
+    struct VMObject;
     
     struct VMValue {
         VMValue();

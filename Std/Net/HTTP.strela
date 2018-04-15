@@ -2,7 +2,8 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 module Std.Net.HTTP {
-    import Std.Net.Sockets.*;
+    import Std.Net.Socket;
+    import Std.Net.IPAddr;
     import Std.Collections.Map;
     import Std.IO.*;
 

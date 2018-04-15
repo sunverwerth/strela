@@ -171,6 +171,9 @@ namespace Strela {
             eat(TokenType::BracketClose);
             name = "[]";
         }
+        else if (matchBinary()) {
+            name = eat().value;
+        }
         else {
             expected("function name");
         }

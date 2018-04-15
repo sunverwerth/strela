@@ -18,6 +18,114 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Ast\ArrayLitExpr.h" />
+    <ClInclude Include="src\Ast\ArrayType.h" />
+    <ClInclude Include="src\Ast\ArrayTypeExpr.h" />
+    <ClInclude Include="src\Ast\AssignExpr.h" />
+    <ClInclude Include="src\Ast\BinopExpr.h" />
+    <ClInclude Include="src\Ast\BlockStmt.h" />
+    <ClInclude Include="src\Ast\BoolType.h" />
+    <ClInclude Include="src\Ast\CallExpr.h" />
+    <ClInclude Include="src\Ast\CastExpr.h" />
+    <ClInclude Include="src\Ast\ClassDecl.h" />
+    <ClInclude Include="src\Ast\EnumDecl.h" />
+    <ClInclude Include="src\Ast\EnumElement.h" />
+    <ClInclude Include="src\Ast\Expr.h" />
+    <ClInclude Include="src\Ast\ExprStmt.h" />
+    <ClInclude Include="src\Ast\FieldDecl.h" />
+    <ClInclude Include="src\Ast\FloatType.h" />
+    <ClInclude Include="src\Ast\FuncDecl.h" />
+    <ClInclude Include="src\Ast\FuncType.h" />
+    <ClInclude Include="src\Ast\GenericParam.h" />
+    <ClInclude Include="src\Ast\GenericReificationExpr.h" />
+    <ClInclude Include="src\Ast\IdExpr.h" />
+    <ClInclude Include="src\Ast\IdTypeExpr.h" />
+    <ClInclude Include="src\Ast\IfStmt.h" />
+    <ClInclude Include="src\Ast\ImportStmt.h" />
+    <ClInclude Include="src\Ast\InterfaceDecl.h" />
+    <ClInclude Include="src\Ast\InterfaceMethodDecl.h" />
+    <ClInclude Include="src\Ast\IntType.h" />
+    <ClInclude Include="src\Ast\InvalidType.h" />
+    <ClInclude Include="src\Ast\IsExpr.h" />
+    <ClInclude Include="src\Ast\LitExpr.h" />
+    <ClInclude Include="src\Ast\ModDecl.h" />
+    <ClInclude Include="src\Ast\NewExpr.h" />
+    <ClInclude Include="src\Ast\Node.h" />
+    <ClInclude Include="src\Ast\nodes.h" />
+    <ClInclude Include="src\Ast\NullableTypeExpr.h" />
+    <ClInclude Include="src\Ast\NullType.h" />
+    <ClInclude Include="src\Ast\OverloadedFuncType.h" />
+    <ClInclude Include="src\Ast\Param.h" />
+    <ClInclude Include="src\Ast\PointerType.h" />
+    <ClInclude Include="src\Ast\PostfixExpr.h" />
+    <ClInclude Include="src\Ast\RetStmt.h" />
+    <ClInclude Include="src\Ast\ScopeExpr.h" />
+    <ClInclude Include="src\Ast\Stmt.h" />
+    <ClInclude Include="src\Ast\SubscriptExpr.h" />
+    <ClInclude Include="src\Ast\ThisExpr.h" />
+    <ClInclude Include="src\Ast\Token.h" />
+    <ClInclude Include="src\Ast\TypeDecl.h" />
+    <ClInclude Include="src\Ast\TypeExpr.h" />
+    <ClInclude Include="src\Ast\TypeType.h" />
+    <ClInclude Include="src\Ast\UnaryExpr.h" />
+    <ClInclude Include="src\Ast\UnionType.h" />
+    <ClInclude Include="src\Ast\UnionTypeExpr.h" />
+    <ClInclude Include="src\Ast\VarDecl.h" />
+    <ClInclude Include="src\Ast\VoidType.h" />
+    <ClInclude Include="src\Ast\WhileStmt.h" />
+    <ClInclude Include="src\ByteCodeCompiler.h" />
+    <ClInclude Include="src\Decompiler.h" />
+    <ClInclude Include="src\exceptions.h" />
+    <ClInclude Include="src\IExprVisitor.h" />
+    <ClInclude Include="src\IStmtVisitor.h" />
+    <ClInclude Include="src\ITypeExprVisitor.h" />
+    <ClInclude Include="src\Lexer.h" />
+    <ClInclude Include="src\NameResolver.h" />
+    <ClInclude Include="src\NodePrinter.h" />
+    <ClInclude Include="src\Parser.h" />
+    <ClInclude Include="src\Pass.h" />
+    <ClInclude Include="src\Scope.h" />
+    <ClInclude Include="src\SourceFile.h" />
+    <ClInclude Include="src\TypeChecker.h" />
+    <ClInclude Include="src\TypeInfo.h" />
+    <ClInclude Include="src\VM\ByteCodeChunk.h" />
+    <ClInclude Include="src\VM\GC.h" />
+    <ClInclude Include="src\VM\Opcode.h" />
+    <ClInclude Include="src\VM\VM.h" />
+    <ClInclude Include="src\VM\VMFrame.h" />
+    <ClInclude Include="src\VM\VMObject.h" />
+    <ClInclude Include="src\VM\VMType.h" />
+    <ClInclude Include="src\VM\VMValue.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Ast\ArrayType.cpp" />
+    <ClCompile Include="src\Ast\ClassDecl.cpp" />
+    <ClCompile Include="src\Ast\EnumDecl.cpp" />
+    <ClCompile Include="src\Ast\FuncType.cpp" />
+    <ClCompile Include="src\Ast\InterfaceDecl.cpp" />
+    <ClCompile Include="src\Ast\ModDecl.cpp" />
+    <ClCompile Include="src\Ast\Token.cpp" />
+    <ClCompile Include="src\Ast\types.cpp" />
+    <ClCompile Include="src\Ast\UnionType.cpp" />
+    <ClCompile Include="src\ByteCodeCompiler.cpp" />
+    <ClCompile Include="src\Decompiler.cpp" />
+    <ClCompile Include="src\Lexer.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\NameResolver.cpp" />
+    <ClCompile Include="src\NodePrinter.cpp" />
+    <ClCompile Include="src\Parser.cpp" />
+    <ClCompile Include="src\Pass.cpp" />
+    <ClCompile Include="src\Scope.cpp" />
+    <ClCompile Include="src\TypeChecker.cpp" />
+    <ClCompile Include="src\TypeInfo.cpp" />
+    <ClCompile Include="src\VM\ByteCodeChunk.cpp" />
+    <ClCompile Include="src\VM\GC.cpp" />
+    <ClCompile Include="src\VM\Opcode.cpp" />
+    <ClCompile Include="src\VM\VM.cpp" />
+    <ClCompile Include="src\VM\VMObject.cpp" />
+    <ClCompile Include="src\VM\VMValue.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{814F10EC-003D-488E-967B-83EE8276E315}</ProjectGuid>
@@ -69,7 +177,22 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>C:\Users\Mad\Downloads\libffi-3.2.1\build-x86\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Mad\Downloads\libffi-3.2.1\build-x86\.libs;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>C:\Users\Mad\Downloads\libffi-3.2.1\build-x86\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Mad\Downloads\libffi-3.2.1\build-x86\.libs;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>C:\Users\Mad\Downloads\libffi-3.2.1\build-x86\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Mad\Downloads\libffi-3.2.1\build-x86\.libs;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>C:\Users\Mad\Downloads\libffi-3.2.1\build-x86\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Mad\Downloads\libffi-3.2.1\build-x86\.libs;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -79,6 +202,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>libffi_convenience.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -86,7 +210,11 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>libffi_convenience.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -101,6 +229,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>libffi_convenience.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -110,116 +239,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>libffi_convenience.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="src\Ast\ArrayLitExpr.h" />
-    <ClInclude Include="src\Ast\ArrayType.h" />
-    <ClInclude Include="src\Ast\ArrayTypeExpr.h" />
-    <ClInclude Include="src\Ast\AssignExpr.h" />
-    <ClInclude Include="src\Ast\BinopExpr.h" />
-    <ClInclude Include="src\Ast\BlockStmt.h" />
-    <ClInclude Include="src\Ast\BoolType.h" />
-    <ClInclude Include="src\Ast\CallExpr.h" />
-    <ClInclude Include="src\Ast\CastExpr.h" />
-    <ClInclude Include="src\Ast\ClassDecl.h" />
-    <ClInclude Include="src\Ast\EnumDecl.h" />
-    <ClInclude Include="src\Ast\EnumElement.h" />
-    <ClInclude Include="src\Ast\Expr.h" />
-    <ClInclude Include="src\Ast\ExprStmt.h" />
-    <ClInclude Include="src\Ast\FieldDecl.h" />
-    <ClInclude Include="src\Ast\FloatType.h" />
-    <ClInclude Include="src\Ast\FuncDecl.h" />
-    <ClInclude Include="src\Ast\FuncType.h" />
-    <ClInclude Include="src\Ast\GenericParam.h" />
-    <ClInclude Include="src\Ast\GenericReificationExpr.h" />
-    <ClInclude Include="src\Ast\IdExpr.h" />
-    <ClInclude Include="src\Ast\IdTypeExpr.h" />
-    <ClInclude Include="src\Ast\IfStmt.h" />
-    <ClInclude Include="src\Ast\ImportStmt.h" />
-    <ClInclude Include="src\Ast\InterfaceDecl.h" />
-    <ClInclude Include="src\Ast\InterfaceMethodDecl.h" />
-    <ClInclude Include="src\Ast\IntType.h" />
-    <ClInclude Include="src\Ast\InvalidType.h" />
-    <ClInclude Include="src\Ast\IsExpr.h" />
-    <ClInclude Include="src\Ast\LitExpr.h" />
-    <ClInclude Include="src\Ast\ModDecl.h" />
-    <ClInclude Include="src\Ast\NewExpr.h" />
-    <ClInclude Include="src\Ast\Node.h" />
-    <ClInclude Include="src\Ast\NullableTypeExpr.h" />
-    <ClInclude Include="src\Ast\NullType.h" />
-    <ClInclude Include="src\Ast\OverloadedFuncType.h" />
-    <ClInclude Include="src\Ast\Param.h" />
-    <ClInclude Include="src\Ast\PostfixExpr.h" />
-    <ClInclude Include="src\Ast\RetStmt.h" />
-    <ClInclude Include="src\Ast\ScopeExpr.h" />
-    <ClInclude Include="src\Ast\Stmt.h" />
-    <ClInclude Include="src\Ast\SubscriptExpr.h" />
-    <ClInclude Include="src\Ast\ThisExpr.h" />
-    <ClInclude Include="src\Ast\TypeDecl.h" />
-    <ClInclude Include="src\Ast\TypeExpr.h" />
-    <ClInclude Include="src\Ast\TypeType.h" />
-    <ClInclude Include="src\Ast\UnaryExpr.h" />
-    <ClInclude Include="src\Ast\UnionType.h" />
-    <ClInclude Include="src\Ast\UnionTypeExpr.h" />
-    <ClInclude Include="src\Ast\VarDecl.h" />
-    <ClInclude Include="src\Ast\VoidType.h" />
-    <ClInclude Include="src\Ast\WhileStmt.h" />
-    <ClInclude Include="src\Ast\nodes.h" />
-    <ClInclude Include="src\Ast\Token.h" />
-    <ClInclude Include="src\ByteCodeChunk.h" />
-    <ClInclude Include="src\ByteCodeCompiler.h" />
-    <ClInclude Include="src\Decompiler.h" />
-    <ClInclude Include="src\exceptions.h" />
-    <ClInclude Include="src\GC.h" />
-    <ClInclude Include="src\IExprVisitor.h" />
-    <ClInclude Include="src\IStmtVisitor.h" />
-    <ClInclude Include="src\ITypeExprVisitor.h" />
-    <ClInclude Include="src\Lexer.h" />
-    <ClInclude Include="src\NameResolver.h" />
-    <ClInclude Include="src\NodePrinter.h" />
-    <ClInclude Include="src\NodeVisitor.h" />
-    <ClInclude Include="src\Opcode.h" />
-    <ClInclude Include="src\Parser.h" />
-    <ClInclude Include="src\Scope.h" />
-    <ClInclude Include="src\SourceFile.h" />
-    <ClInclude Include="src\TypeChecker.h" />
-    <ClInclude Include="src\TypeInfo.h" />
-    <ClInclude Include="src\VM.h" />
-    <ClInclude Include="src\VMObject.h" />
-    <ClInclude Include="src\VMValue.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="src\Ast\ArrayType.cpp" />
-    <ClCompile Include="src\Ast\ClassDecl.cpp" />
-    <ClCompile Include="src\Ast\EnumDecl.cpp" />
-    <ClCompile Include="src\Ast\FuncType.cpp" />
-    <ClCompile Include="src\Ast\InterfaceDecl.cpp" />
-    <ClCompile Include="src\Ast\ModDecl.cpp" />
-    <ClCompile Include="src\Ast\Token.cpp" />
-    <ClCompile Include="src\Ast\types.cpp" />
-    <ClCompile Include="src\Ast\UnionType.cpp" />
-    <ClCompile Include="src\ByteCodeChunk.cpp" />
-    <ClCompile Include="src\ByteCodeCompiler.cpp" />
-    <ClCompile Include="src\Decompiler.cpp" />
-    <ClCompile Include="src\GC.cpp" />
-    <ClCompile Include="src\Lexer.cpp" />
-    <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\NameResolver.cpp" />
-    <ClCompile Include="src\NodePrinter.cpp" />
-    <ClCompile Include="src\Opcode.cpp" />
-    <ClCompile Include="src\Parser.cpp" />
-    <ClCompile Include="src\Scope.cpp" />
-    <ClCompile Include="src\TypeChecker.cpp" />
-    <ClCompile Include="src\TypeInfo.cpp" />
-    <ClCompile Include="src\VM.cpp" />
-    <ClCompile Include="src\VMObject.cpp" />
-    <ClCompile Include="src\VMValue.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

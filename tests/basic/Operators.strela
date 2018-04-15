@@ -17,6 +17,9 @@ module Operators {
         i = i - 5; println(i);
         i = i / 2; println(i);
         i = i * 3; println(i);
+
+        i++; println(i);
+        i--; println(i);
         return 0;
     }
 }

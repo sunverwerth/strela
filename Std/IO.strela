@@ -30,12 +30,13 @@ module Std.IO {
 
     // File IO
 
-    external function fopen(name: String, mode: String): u64;
-    external function fwrite(buffer: Ptr, size: u64, count: u64, file: u64): u64;
-    external function strlen(str: String): i64;
+    external function fopen(name: String, mode: String): u32;
+    external function fclose(file: u32): i32;
+    external function fwrite(buffer: Ptr, size: u32, count: u32, file: u32): u32;
+    external function strlen(str: String): i32;
 
     export class File {
-        var handle: u64;
+        var handle: u32;
 
         function init(name: String, mode: String) {
             this.handle = fopen(name, mode);
@@ -51,6 +52,10 @@ module Std.IO {
 
         function write(n: u16) {
             fwrite(n, 2, 1, this.handle);
+        }
+
+        function close() {
+            fclose(this.handle);
         }
     }
 }

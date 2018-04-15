@@ -1,0 +1,61 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
+module Std.Math.Lina {
+    
+    external function sqrt(f: f64): f64;
+
+    export class Vec {
+        var x: f64;
+        var y: f64;
+        var z: f64;
+
+        function init() {}
+
+        function init(x: f64, y: f64, z: f64) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        function magnitude(): f64 {
+            return sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+        }
+
+        function normalize() {
+            var ol = 1.0 / this.magnitude();
+            this.x = this.x * ol;
+            this.y = this.y * ol;
+            this.z = this.z * ol;
+        }
+
+        function dot(other: Vec): f64 {
+            return this.x * other.x + this.y * other.y + this.z * other.z;
+        }
+
+        function -(other: Vec): Vec {
+            return new Vec(this.x - other.x, this.y - other.y, this.z - other.z);
+        }
+
+        function +(other: Vec): Vec {
+            return new Vec(this.x + other.x, this.y + other.y, this.z + other.z);
+        }
+
+        function *(v: f64): Vec {
+            return new Vec(this.x * v, this.y * v, this.z * v);
+        }
+
+        function neg(): Vec {
+            return new Vec(-this.x, -this.y, -this.z);
+        }
+
+        function normalized(): Vec {
+            var ol = 1.0 / this.magnitude();
+            return new Vec(this.x * ol, this.y * ol, this.z * ol);
+        }
+    }
+
+    export function reflect(dir: Vec, n: Vec): Vec {
+        return dir - n * dir.dot(n) * 2.0;
+    }
+}

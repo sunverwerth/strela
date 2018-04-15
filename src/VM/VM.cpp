@@ -19,14 +19,19 @@
 #include <cstring>
 #include <chrono>
 #include <cmath>
-#include <arpa/inet.h>
+
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <Windows.h>
+#else
+    #include <dlfcn.h>
+#endif
 
 #ifdef __APPLE__
     #include <ffi/ffi.h>
 #else
     #include <ffi.h>
 #endif
-#include <dlfcn.h>
 
 namespace Strela {
 
@@ -62,6 +67,10 @@ namespace Strela {
     }
 
     VM::VM(const ByteCodeChunk& chunk, const std::vector<std::string>& arguments): chunk(chunk) {
+#ifdef _WIN32
+		auto mod = LoadLibrary("msvcrt.dll");
+#endif
+
 		for (auto& ff: chunk.foreignFunctions) {
             ffi_type* rtype;
             rtype = ffitype(ff.returnType);
@@ -72,8 +81,17 @@ namespace Strela {
                 ff.ffi_argTypes[i] = ffitype(ff.argTypes[i]);
             }
             ffi_prep_cif(&ff.cif, FFI_DEFAULT_ABI, numArgs, rtype, ff.ffi_argTypes);
-            
+
+#ifdef _WIN32
+			ff.ptr = ForeignFunction::callback(GetProcAddress(mod, ff.name.c_str()));
+#else
 			ff.ptr = ForeignFunction::callback(dlsym(RTLD_DEFAULT, ff.name.c_str()));
+#endif
+			
+			if (!ff.ptr) {
+				std::cerr << "Unresolved external symbol \"" << ff.name << "\"\n";
+				exit(1);
+			}
 		}
 
         frame = getFrame();
@@ -240,7 +258,7 @@ namespace Strela {
                 for (size_t i = 0; i < ff.argTypes.size(); ++i) {
                     originalArgs.push_back(pop());
                 }
-
+				
                 std::vector<VMValue> args;
                 args.reserve(ff.argTypes.size());
                 std::vector<void*> argPtrs;
@@ -248,14 +266,14 @@ namespace Strela {
                 for (size_t i = 0; i < ff.argTypes.size(); ++i) {
                     if (originalArgs[i].type == VMValue::Type::object) {
                         void* aptr = &originalArgs[i].value.object->data[0];
-                        VMValue arg;
+						VMValue arg((int64_t)0);
                         memcpy(&arg.value.integer, &aptr, sizeof(void*));
                         args.push_back(arg);
                         argPtrs.push_back(&args.back());
                     }
                     else if (ff.argTypes[i] == &PointerType::instance) {
                         void* aptr = &originalArgs[i].value;
-                        VMValue arg;
+                        VMValue arg((int64_t)0);
                         memcpy(&arg.value.integer, &aptr, sizeof(void*));
                         args.push_back(arg);
                         argPtrs.push_back(&args.back());
@@ -265,7 +283,7 @@ namespace Strela {
                     }
                 }
 
-                ffi_call(&ff.cif, ff.ptr, &retVal, &argPtrs[0]);
+                ffi_call(&ff.cif, ff.ptr, &retVal, ff.argTypes.empty() ? nullptr : &argPtrs[0]);
                 if (errno > 0) {
                     auto err = strerror(errno);
                     std::cerr << ff.name << ": " << err << "\n";
@@ -475,19 +493,19 @@ namespace Strela {
 			case Opcode::AndL: {
 				auto r = pop();
 				auto l = pop();
-				push(l && r);
+				push(VMValue(l.value.boolean && r.value.boolean));
 				break;
 			}
 			case Opcode::OrL: {
 				auto r = pop();
 				auto l = pop();
-				push(l || r);
+				push(VMValue(l.value.boolean || r.value.boolean));
 				break;
 			}
 			case Opcode::Not: {
 				auto v = pop();
 
-				push(!v);
+				push(VMValue(!v.value.boolean));
 				break;
 			}
             case Opcode::PrintI: {

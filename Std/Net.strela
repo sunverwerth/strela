@@ -1,7 +1,7 @@
 // Copyright (c) 2018 Stephan Unverwerth
 // This code is licensed under MIT license (See LICENSE for details)
 
-module Std.Net.Sockets {
+module Std.Net {
     class sockaddr_in {
         var family: u16;
         var port: u16;

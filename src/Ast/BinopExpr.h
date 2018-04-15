@@ -18,6 +18,7 @@ namespace Strela {
         TokenType op;
         Expr* left;
         Expr* right;
+        FuncDecl* function = nullptr;
     };
 }
 

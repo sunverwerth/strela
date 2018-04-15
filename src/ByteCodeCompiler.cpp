@@ -33,9 +33,9 @@ namespace Strela {
         vmtype->isArray = type->as<ArrayType>();
 
         if (vmtype->isArray) {
-            vmtype->objectAlignment = 8;
-            vmtype->size = 8;
-            vmtype->alignment = 8;
+            vmtype->objectAlignment = sizeof(void*);
+            vmtype->size = sizeof(void*);
+            vmtype->alignment = sizeof(void*);
             vmtype->arrayType = mapType(type->as<ArrayType>()->baseType);
             vmtype->fields.push_back({
                 mapType(&IntType::u64),
@@ -44,8 +44,8 @@ namespace Strela {
         }
         else if (vmtype->isObject) {
             if (auto cls = type->as<ClassDecl>()) {
-                vmtype->size = 8;
-                vmtype->alignment = 8;
+                vmtype->size = sizeof(void*);
+                vmtype->alignment = sizeof(void*);
                 size_t offset = 0;
                 size_t alignment = 1;
                 for (auto&& field: cls->fields) {
@@ -67,14 +67,14 @@ namespace Strela {
                 vmtype->objectAlignment = alignment;
             }
             else if (auto iface = type->as<InterfaceDecl>()) {
-                vmtype->size = 8;
-                vmtype->alignment = 8;
-                vmtype->objectSize = 8 + iface->methods.size() * 8;
-                vmtype->objectAlignment = 8;
+                vmtype->size = sizeof(void*);
+                vmtype->alignment = sizeof(void*);
+                vmtype->objectSize = sizeof(void*) + iface->methods.size() * sizeof(void*);
+                vmtype->objectAlignment = sizeof(void*);
             }
             else if (auto un = type->as<UnionType>()) {
-                vmtype->size = 8;
-                vmtype->alignment = 8;
+                vmtype->size = sizeof(void*);
+                vmtype->alignment = sizeof(void*);
                 vmtype->objectSize = 16;
                 vmtype->objectAlignment = 8;
                 vmtype->fields.push_back({mapType(&IntType::u64), 0});
@@ -99,8 +99,12 @@ namespace Strela {
                 vmtype->alignment = 8;
             }
             else if (type == &ClassDecl::String) {
-                vmtype->size = 8;
-                vmtype->alignment = 8;
+                vmtype->size = sizeof(void*);
+                vmtype->alignment = sizeof(void*);
+            }
+            else if (type == &PointerType::instance) {
+                vmtype->size = sizeof(void*);
+                vmtype->alignment = sizeof(void*);
             }
         }
         return vmtype;
@@ -345,6 +349,11 @@ namespace Strela {
         auto totype = n.targetType;
         auto fromtype = n.sourceExpr->type;
 
+        if (fromtype == totype) {
+            visitChild(n.sourceExpr);
+            return;
+        }
+
         auto toiface = totype->as<InterfaceDecl>();
         auto fromclass = fromtype->as<ClassDecl>();
 
@@ -419,6 +428,15 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(BinopExpr& n) {
+        if (n.function) {
+            visitChild(n.right);
+            visitChild(n.left);
+            auto index = chunk.addOp<uint8_t>(Opcode::Const, 255);
+            addFixup(index, n.function);
+            chunk.addOp<uint8_t>(Opcode::Call, 2);
+            return;
+        }
+
         if (n.op == TokenType::AmpAmp) {
             visitChild(n.left);
             auto const1 = chunk.addOp<uint8_t>(Opcode::Const, 0);
@@ -746,7 +764,46 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(PostfixExpr& n) {
-        
+        visitChild(n.target);
+        chunk.addOp(Opcode::Repeat);
+
+        if (n.target->type == &FloatType::f32) {
+            chunk.addOp<float>(Opcode::F32, 1);
+
+            if (n.op == TokenType::PlusPlus) {
+                chunk.addOp(Opcode::AddF32);
+            }
+            else if (n.op == TokenType::MinusMinus) {
+                chunk.addOp(Opcode::SubF32);
+            }
+        }
+        else if (n.target->type == &FloatType::f64) {
+            chunk.addOp<double>(Opcode::F64, 1);
+
+            if (n.op == TokenType::PlusPlus) {
+                chunk.addOp(Opcode::AddF64);
+            }
+            else if (n.op == TokenType::MinusMinus) {
+                chunk.addOp(Opcode::SubF64);
+            }
+        }
+        else {
+            chunk.addOp<uint8_t>(Opcode::U8, 1);
+
+            if (n.op == TokenType::PlusPlus) {
+                chunk.addOp(Opcode::AddI);
+            }
+            else if (n.op == TokenType::MinusMinus) {
+                chunk.addOp(Opcode::SubI);
+            }
+        }
+
+        if (auto var = n.node->as<VarDecl>()) {
+            chunk.addOp<uint8_t>(Opcode::StoreVar, function->params.size() + (_class ? 1 : 0) + var->index);
+        }
+        else if (auto par = n.node->as<Param>()) {
+            chunk.addOp<uint8_t>(Opcode::StoreVar, par->index);
+        }
     }
 
     void ByteCodeCompiler::visit(UnaryExpr& n) {

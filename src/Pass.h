@@ -8,7 +8,7 @@
 
 namespace Strela {
     class Node;
-    class Token;
+    struct Token;
     class SourceFile;
 
     class Pass {

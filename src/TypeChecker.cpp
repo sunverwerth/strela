@@ -455,6 +455,16 @@ namespace Strela {
 
         auto op = n.op;
 
+        auto methods = ltype->getMethods(getTokenVal(op));
+        if (!methods.empty()) {
+            auto ol = findOverload(extract<FuncDecl>(methods), std::vector<TypeDecl*>{rtype});
+            if (ol.size() == 1) {
+                n.function = ol.front();
+                n.type = n.function->type->returnType;
+                return;
+            }
+        }
+
         if (
             op == TokenType::Plus ||
             op == TokenType::Minus ||
