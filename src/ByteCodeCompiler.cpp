@@ -18,14 +18,14 @@ namespace Strela {
         return offset + (offset % alignment);
     }
 
-    int ByteCodeCompiler::mapType(TypeDecl* type) {
+    VMType* ByteCodeCompiler::mapType(TypeDecl* type) {
         auto it = typeMap.find(type);
         if (it != typeMap.end()) return it->second;
         
         auto vmtype = new VMType;
-        auto index = chunk.types.size();
+        vmtype->index = chunk.types.size();
         chunk.types.push_back(vmtype);
-        typeMap.insert(std::make_pair(type, index));
+        typeMap.insert(std::make_pair(type, vmtype));
 
         vmtype->name = type->name;
         
@@ -36,9 +36,9 @@ namespace Strela {
             vmtype->objectAlignment = 8;
             vmtype->size = 8;
             vmtype->alignment = 8;
-            vmtype->arrayType = chunk.types[mapType(type->as<ArrayType>()->baseType)];
+            vmtype->arrayType = mapType(type->as<ArrayType>()->baseType);
             vmtype->fields.push_back({
-                chunk.types[mapType(&IntType::u64)],
+                mapType(&IntType::u64),
                 0
             });
         }
@@ -49,7 +49,7 @@ namespace Strela {
                 size_t offset = 0;
                 size_t alignment = 1;
                 for (auto&& field: cls->fields) {
-                    auto ftype = chunk.types[mapType(field->type)];
+                    auto ftype = mapType(field->type);
                     if (ftype->alignment > alignment) alignment = ftype->alignment;
                     offset = align(offset, alignment);
                     vmtype->fields.push_back({
@@ -77,8 +77,8 @@ namespace Strela {
                 vmtype->alignment = 8;
                 vmtype->objectSize = 16;
                 vmtype->objectAlignment = 8;
-                vmtype->fields.push_back({chunk.types[mapType(&IntType::u64)], 0});
-                vmtype->fields.push_back({chunk.types[mapType(&IntType::u64)], 8});
+                vmtype->fields.push_back({mapType(&IntType::u64), 0});
+                vmtype->fields.push_back({mapType(&IntType::u64), 8});
             }
         }
         else {
@@ -103,7 +103,7 @@ namespace Strela {
                 vmtype->alignment = 8;
             }
         }
-        return index;
+        return vmtype;
     }
 
     ByteCodeCompiler::ByteCodeCompiler(ByteCodeChunk& chunk): chunk(chunk) {
@@ -338,7 +338,7 @@ namespace Strela {
         auto fromunion = fromtype->as<UnionType>();
 
         if (fromclass && toiface && n.implementation) {
-            chunk.addOp<int64_t>(Opcode::I64, mapType(toiface));
+            chunk.addOp<int64_t>(Opcode::I64, mapType(toiface)->index);
             chunk.addOp(Opcode::New);
             chunk.addOp(Opcode::Repeat);
             visitChild(n.sourceExpr);
@@ -354,7 +354,7 @@ namespace Strela {
         }
         else if (tounion) {
             auto tag = tounion->getTypeTag(fromtype);
-            chunk.addOp<int64_t>(Opcode::I64, mapType(tounion));
+            chunk.addOp<int64_t>(Opcode::I64, mapType(tounion)->index);
             chunk.addOp(Opcode::New);
             
             chunk.addOp(Opcode::Repeat);
@@ -490,8 +490,8 @@ namespace Strela {
             chunk.addOp(Opcode::Swap);
         }
         else if (auto field = n.node->as<FieldDecl>()) {
-            auto t = chunk.types[mapType(n.scopeTarget->type)];
-            auto ft = chunk.types[mapType(field->type)];
+            auto t = mapType(n.scopeTarget->type);
+            auto ft = mapType(field->type);
             Opcode op;
             switch (ft->size) {
                 case 1: op = Opcode::Field8; break;
@@ -510,11 +510,11 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(ArrayLitExpr& n) {
-        chunk.addOp<uint64_t>(Opcode::U64, mapType(n.type));
+        chunk.addOp<uint64_t>(Opcode::U64, mapType(n.type)->index);
         chunk.addOp<uint64_t>(Opcode::U64, n.elements.size());
         chunk.addOp(Opcode::Array);
         chunk.addOp(Opcode::Repeat);
-        auto t = chunk.types[mapType(n.type->as<ArrayType>()->baseType)];
+        auto t = mapType(n.type->as<ArrayType>()->baseType);
         Opcode op;
         switch (t->size) {
             case 1: op = Opcode::StoreField8; break;
@@ -543,7 +543,7 @@ namespace Strela {
             chunk.addOp<uint8_t>(Opcode::Call, n.subscriptFunction->params.size() + 1);
         }
         else {
-            auto fieldSize = chunk.types[mapType(n.callTarget->type)]->arrayType->size;
+            auto fieldSize = mapType(n.callTarget->type)->arrayType->size;
             for (int i = n.arguments.size() - 1; i >= 0; --i) {
                 visitChild(n.arguments[i]);
                 if (fieldSize != 1) {
@@ -583,7 +583,7 @@ namespace Strela {
 
     void ByteCodeCompiler::visit(NewExpr& n) {
         if (auto clstype = n.type->as<ClassDecl>()) {
-            chunk.addOp<uint64_t>(Opcode::U64, mapType(clstype));
+            chunk.addOp<uint64_t>(Opcode::U64, mapType(clstype)->index);
             chunk.addOp(Opcode::New);
             if (n.initMethod) {
                 chunk.addOp(Opcode::Repeat);
@@ -597,7 +597,7 @@ namespace Strela {
             }
         }
         else if (auto arrtype = n.type->as<ArrayType>()) {
-            chunk.addOp<uint64_t>(Opcode::U64, mapType(arrtype));
+            chunk.addOp<uint64_t>(Opcode::U64, mapType(arrtype)->index);
             visitChild(n.arguments.front());
             chunk.addOp(Opcode::Array);
         }
@@ -608,7 +608,7 @@ namespace Strela {
         chunk.addOp(Opcode::Repeat);
 
         if (n.left->arrayIndex) {
-            auto fieldSize = chunk.types[mapType(n.left->context->type)]->arrayType->size;
+            auto fieldSize = mapType(n.left->context->type)->arrayType->size;
             visitChild(n.left->arrayIndex);
             if (fieldSize != 1) {
                 chunk.addOp<uint8_t>(Opcode::U8, fieldSize);
@@ -632,8 +632,8 @@ namespace Strela {
         }
         else if (auto field = n.left->node->as<FieldDecl>()) {
             visitChild(n.left->context);
-            auto t = chunk.types[mapType(n.left->context->type)];
-            auto ft = chunk.types[mapType(field->type)];
+            auto t = mapType(n.left->context->type);
+            auto ft = mapType(field->type);
             Opcode op;
             switch (ft->size) {
                 case 1: op = Opcode::StoreField8; break;

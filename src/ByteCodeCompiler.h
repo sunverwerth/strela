@@ -66,12 +66,12 @@ namespace Strela {
 
     private:
         void addFixup(int address, FuncDecl* function);
-        int mapType(TypeDecl* type);
+        VMType* mapType(TypeDecl* type);
 
     private:
         std::map<int, FuncDecl*> functionFixups;
         FuncDecl* function = nullptr;
-        std::map<TypeDecl*, int> typeMap;
+        std::map<TypeDecl*, VMType*> typeMap;
 
     public:
         ByteCodeChunk& chunk;

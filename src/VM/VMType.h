@@ -15,6 +15,7 @@ namespace Strela {
 
     class VMType {
     public:
+        size_t index;
         std::string name;
         bool isObject = false;
         bool isArray = false;
