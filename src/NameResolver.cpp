@@ -330,6 +330,11 @@ namespace Strela {
         visitChild(n.right);
     }
 
+    void NameResolver::visit(CastExpr& n) {
+        visitChild(n.sourceExpr);
+        visitChild(n.targetTypeExpr);
+    }
+
     void NameResolver::visit(ScopeExpr& n) {
         visitChild(n.scopeTarget);
     }

@@ -174,7 +174,7 @@ namespace Strela {
         visitChildren(n.stmts);
 
         if (n.isExternal) {
-            for (int i = n.params.size() - 1; i >= 0; --i) {
+            /*for (int i = n.params.size() - 1; i >= 0; --i) {
                 chunk.addOp<uint8_t>(Opcode::Var, i);
             }
             auto index = chunk.addForeignFunction(n);
@@ -185,7 +185,7 @@ namespace Strela {
             }
             else {
                 chunk.addOp(Opcode::ReturnVoid);
-            }
+            }*/
         }
         else if (!n.returns) {
             chunk.addOp(Opcode::ReturnVoid);
@@ -212,8 +212,14 @@ namespace Strela {
 
     void ByteCodeCompiler::visit(IdExpr& n) {
         if (auto fun = n.node->as<FuncDecl>()) {
-            auto index = chunk.addOp<uint8_t>(Opcode::Const, 255);
-            addFixup(index, fun);
+            if (fun->isExternal) {
+                auto index = chunk.addForeignFunction(*fun);
+                chunk.addOp<uint64_t>(Opcode::I64, index);
+            }
+            else {
+                auto index = chunk.addOp<uint8_t>(Opcode::Const, 255);
+                addFixup(index, fun);
+            }
         }
         else if (auto param = n.node->as<Param>()) {
             chunk.addOp<uint8_t>(Opcode::Var, param->index);
@@ -240,8 +246,11 @@ namespace Strela {
             if (t->as<IntType>()) {
                 chunk.addOp(Opcode::PrintI);
             }
-            else if (t->as<FloatType>()) {
-                chunk.addOp(Opcode::PrintF);
+            else if (t == &FloatType::f32) {
+                chunk.addOp(Opcode::PrintF32);
+            }
+            else if (t == &FloatType::f64) {
+                chunk.addOp(Opcode::PrintF64);
             }
             else if (t == &NullType::instance) {
                 chunk.addOp(Opcode::PrintN);
@@ -261,7 +270,12 @@ namespace Strela {
         }
         else {
             visitChild(n.callTarget);
-            chunk.addOp<uint8_t>(Opcode::Call, n.callTarget->type->as<FuncType>()->paramTypes.size() + (n.callTarget->context ? 1 : 0));
+            if (n.callTarget->node && n.callTarget->node->as<FuncDecl>() && n.callTarget->node->as<FuncDecl>()->isExternal) {
+                chunk.addOp(Opcode::NativeCall);
+            }
+            else {
+                chunk.addOp<uint8_t>(Opcode::Call, n.callTarget->type->as<FuncType>()->paramTypes.size() + (n.callTarget->context ? 1 : 0));
+            }
         }
     }
 
@@ -371,13 +385,29 @@ namespace Strela {
             visitChild(n.sourceExpr);
             chunk.addOp<uint8_t>(Opcode::Field64, 8);
         }
-        else if (totype->as<IntType>() && fromtype->as<FloatType>()) {
+        else if (fromtype == &FloatType::f32 && totype->as<IntType>()) {
+            visitChild(n.sourceExpr);
+            chunk.addOp(Opcode::F32tI64);
+        }
+        else if (fromtype == &FloatType::f64 && totype->as<IntType>()) {
             visitChild(n.sourceExpr);
             chunk.addOp(Opcode::F64tI64);
         }
-        else if (fromtype->as<IntType>() && totype->as<FloatType>()) {
+        else if (fromtype->as<IntType>() && totype == &FloatType::f32) {
+            visitChild(n.sourceExpr);
+            chunk.addOp(Opcode::I64tF32);
+        }
+        else if (fromtype->as<IntType>() && totype == &FloatType::f64) {
             visitChild(n.sourceExpr);
             chunk.addOp(Opcode::I64tF64);
+        }
+        else if (fromtype == &FloatType::f32 && totype == &FloatType::f64) {
+            visitChild(n.sourceExpr);
+            chunk.addOp(Opcode::F32tF64);
+        }
+        else if (fromtype == &FloatType::f64 && totype == &FloatType::f32) {
+            visitChild(n.sourceExpr);
+            chunk.addOp(Opcode::F64tF32);
         }
         else {
             visitChild(n.sourceExpr);
@@ -431,21 +461,57 @@ namespace Strela {
                 else if (n.left->type->as<IntType>()) {
                     chunk.addOp(Opcode::AddI);
                 }
-                else if (n.left->type->as<FloatType>()) {
-                    chunk.addOp(Opcode::AddF);
+                else if (n.left->type == &FloatType::f32) {
+                    chunk.addOp(Opcode::AddF32);
+                }
+                else if (n.left->type == &FloatType::f64) {
+                    chunk.addOp(Opcode::AddF64);
                 }
                 else {
                     error(n, "Invalid op");
                 }
                 break;
                 case TokenType::Minus:
-                chunk.addOp(Opcode::Sub);
+                if (n.left->type->as<IntType>()) {
+                    chunk.addOp(Opcode::SubI);
+                }
+                else if (n.left->type == &FloatType::f32) {
+                    chunk.addOp(Opcode::SubF32);
+                }
+                else if (n.left->type == &FloatType::f64) {
+                    chunk.addOp(Opcode::SubF64);
+                }
+                else {
+                    error(n, "Invalid op");
+                }
                 break;
                 case TokenType::Asterisk:
-                chunk.addOp(Opcode::Mul);
+                if (n.left->type->as<IntType>()) {
+                    chunk.addOp(Opcode::MulI);
+                }
+                else if (n.left->type == &FloatType::f32) {
+                    chunk.addOp(Opcode::MulF32);
+                }
+                else if (n.left->type == &FloatType::f64) {
+                    chunk.addOp(Opcode::MulF64);
+                }
+                else {
+                    error(n, "Invalid op");
+                }
                 break;
                 case TokenType::Slash:
-                chunk.addOp(Opcode::Div);
+                if (n.left->type->as<IntType>()) {
+                    chunk.addOp(Opcode::DivI);
+                }
+                else if (n.left->type == &FloatType::f32) {
+                    chunk.addOp(Opcode::DivF32);
+                }
+                else if (n.left->type == &FloatType::f64) {
+                    chunk.addOp(Opcode::DivF64);
+                }
+                else {
+                    error(n, "Invalid op");
+                }
                 break;
                 case TokenType::EqualsEquals:
                 if (n.left->type == &ClassDecl::String && n.right->type == &ClassDecl::String) {
@@ -459,13 +525,35 @@ namespace Strela {
                 chunk.addOp(Opcode::CmpNE);
                 break;
                 case TokenType::LessThan:
-                chunk.addOp(Opcode::CmpLT);
+                if (n.left->type->as<IntType>()) {
+                    chunk.addOp(Opcode::CmpLTI);
+                }
+                else if (n.left->type == &FloatType::f32) {
+                    chunk.addOp(Opcode::CmpLTF32);
+                }
+                else if (n.left->type == &FloatType::f64) {
+                    chunk.addOp(Opcode::CmpLTF64);
+                }
+                else {
+                    error(n, "Invalid op");
+                }
                 break;
                 case TokenType::LessThanEquals:
                 chunk.addOp(Opcode::CmpLTE);
                 break;
                 case TokenType::GreaterThan:
-                chunk.addOp(Opcode::CmpGT);
+                if (n.left->type->as<IntType>()) {
+                    chunk.addOp(Opcode::CmpGTI);
+                }
+                else if (n.left->type == &FloatType::f32) {
+                    chunk.addOp(Opcode::CmpGTF32);
+                }
+                else if (n.left->type == &FloatType::f64) {
+                    chunk.addOp(Opcode::CmpGTF64);
+                }
+                else {
+                    error(n, "Invalid op");
+                }
                 break;
                 case TokenType::GreaterThanEquals:
                 chunk.addOp(Opcode::CmpGTE);
@@ -548,7 +636,7 @@ namespace Strela {
                 visitChild(n.arguments[i]);
                 if (fieldSize != 1) {
                     chunk.addOp<uint8_t>(Opcode::U8, fieldSize);
-                    chunk.addOp(Opcode::Mul);
+                    chunk.addOp(Opcode::MulI);
                 }
             }
             Opcode op;
@@ -612,7 +700,7 @@ namespace Strela {
             visitChild(n.left->arrayIndex);
             if (fieldSize != 1) {
                 chunk.addOp<uint8_t>(Opcode::U8, fieldSize);
-                chunk.addOp(Opcode::Mul);
+                chunk.addOp(Opcode::MulI);
             }
             Opcode op;
             switch (fieldSize) {
@@ -665,8 +753,21 @@ namespace Strela {
         visitChild(n.target);
         switch (n.op) {
             case TokenType::Minus:
-            chunk.addOp<int64_t>(Opcode::I64, -1);
-            chunk.addOp(Opcode::Mul);
+            if (n.target->type->as<IntType>()) {
+                chunk.addOp<int64_t>(Opcode::I64, -1);
+                chunk.addOp(Opcode::MulI);
+            }
+            else if (n.target->type == &FloatType::f32) {
+                chunk.addOp<float>(Opcode::F32, -1);
+                chunk.addOp(Opcode::MulF32);
+            }
+            else if (n.target->type == &FloatType::f64) {
+                chunk.addOp<double>(Opcode::F64, -1);
+                chunk.addOp(Opcode::MulF64);
+            }
+            else {
+                error(n, "Invalid op");
+            }
             return;
             break;
 

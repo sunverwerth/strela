@@ -64,12 +64,15 @@ namespace Strela {
         {TokenType::ExclamationMark, 12},
         {TokenType::Tilde, 12},
 
+        // cast
+        {TokenType::Colon, 13},
+
         // access
-        {TokenType::Period, 13},
-        {TokenType::BracketOpen, 13},
-        {TokenType::ParenOpen, 13},
-        {TokenType::PlusPlus, 13},
-        {TokenType::MinusMinus, 13},
+        {TokenType::Period, 14},
+        {TokenType::BracketOpen, 14},
+        {TokenType::ParenOpen, 14},
+        {TokenType::PlusPlus, 14},
+        {TokenType::MinusMinus, 14},
     };
 
     ModDecl* Parser::parseModDecl() {
@@ -410,6 +413,10 @@ namespace Strela {
                 auto startToken = eat(TokenType::Is);
                 expression = addPosition(new IsExpr(expression, parseTypeExpr()), startToken);
             }
+            else if (match(TokenType::Colon)) {
+                auto startToken = eat(TokenType::Colon);
+                expression = addPosition(new CastExpr(expression, parseTypeExpr()), startToken);
+            }
             else if (matchBinary()) {
 				auto op = eat();
                 if (
@@ -673,6 +680,7 @@ namespace Strela {
             match(TokenType::PlusPlus) ||
             match(TokenType::Is) ||
             match(TokenType::BracketOpen) ||
+            match(TokenType::Colon) ||
             matchBinary();
     }
 

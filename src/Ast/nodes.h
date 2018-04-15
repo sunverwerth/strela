@@ -57,6 +57,7 @@
 #include "TypeType.h"
 #include "InvalidType.h"
 #include "UnionType.h"
+#include "PointerType.h"
 #include "OverloadedFuncType.h"
 
 

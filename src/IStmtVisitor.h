@@ -37,6 +37,7 @@ namespace Strela {
         virtual void visit(class TypeType&) {}
         virtual void visit(class UnionType&) {}
         virtual void visit(class InvalidType&) {}
+        virtual void visit(class PointerType&) {}
         virtual void visit(class OverloadedFuncType&) {}
     };
 }

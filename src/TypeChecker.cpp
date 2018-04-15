@@ -85,8 +85,9 @@ namespace Strela {
     }
 
     bool isAssignableFrom(TypeDecl* to, TypeDecl* from) {
+        if (to->as<PointerType>() && !(from->as<VoidType>() || from->as<InvalidType>())) return true;
         if (to->as<ClassDecl>() && to == from) return true;
-        if (to->as<IntType>() && from->as<IntType>()) return true;
+        if (to->as<IntType>() && (from->as<IntType>() || from->as<FloatType>())) return true;
         if (to->as<FloatType>() && (from->as<FloatType>() || from->as<IntType>())) return true;
         if (to->as<BoolType>() && from->as<BoolType>()) return true;
         if (to->as<EnumDecl>() && from == to) return true;
@@ -477,6 +478,7 @@ namespace Strela {
 
             if (op == TokenType::LessThan || op == TokenType::GreaterThan || op == TokenType::LessThanEquals || op == TokenType::GreaterThanEquals) {
                 n.type = &BoolType::instance;
+                n.right = addCast(n.right, n.left->type);
             }
             else {
                 if (lint && rint) {
@@ -487,9 +489,11 @@ namespace Strela {
                 }
                 else if (lfloat) {
                     n.type = lfloat;
+                    n.right = addCast(n.right, lfloat);
                 }
                 else if (rfloat) {
                     n.type = rfloat;
+                    n.left = addCast(n.left, rfloat);
                 }
                 else if (ltype == &ClassDecl::String) {
                     n.type = &ClassDecl::String;
@@ -698,6 +702,7 @@ namespace Strela {
                 auto init = findOverload(inits, n.arguments);
                 if (init.size() == 1) {
                     n.initMethod = init.front();
+                    prepareArguments(n.arguments, n.initMethod->type);
                 }
                 else if (init.empty()) {
                     error(n, "No matching constructors found for arguments (" + getTypes(n.arguments) + ").");
@@ -728,6 +733,16 @@ namespace Strela {
     void TypeChecker::visit(WhileStmt& n) {
         visitChild(n.condition);
         visitChild(n.body);
+    }
+
+    void TypeChecker::visit(CastExpr& n) {
+        visitChild(n.sourceExpr);
+        n.targetType = n.targetTypeExpr->type;
+        n.type = n.targetType;
+
+        if (!isAssignableFrom(n.targetType, n.sourceExpr->type)) {
+            error(n, "Can not assign '" + n.sourceExpr->type->name + "' to '" + n.targetType->name + "'.");
+        }
     }
 
     void TypeChecker::visit(PostfixExpr& n) {

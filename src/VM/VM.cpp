@@ -12,6 +12,8 @@
 #include "../Ast/FuncDecl.h"
 #include "../Ast/FloatType.h"
 #include "../Ast/IntType.h"
+#include "../Ast/PointerType.h"
+#include "../Ast/VoidType.h"
 
 
 #include <cstring>
@@ -110,7 +112,7 @@ namespace Strela {
             }
             
             ++opcounter;
-			
+
             op = read<char>();
 
             switch ((Opcode)op) {
@@ -138,9 +140,14 @@ namespace Strela {
             case Opcode::U64:
                 push(VMValue((int64_t)read<uint64_t>()));
                 break;
-            case Opcode::F32:
-                push(VMValue((double)read<float>()));
+            case Opcode::F32: {
+                auto f = read<float>();
+                VMValue val;
+                memcpy(&val, &f, sizeof(float));
+                val.type = VMValue::Type::floating;
+                push(val);
                 break;
+            }
             case Opcode::F64:
                 push(VMValue((double)read<double>()));
                 break;
@@ -181,12 +188,43 @@ namespace Strela {
                 frame = newframe;
 				break;
 			}
+			case Opcode::F32tI64: {
+                float f;
+                auto val = pop();
+                memcpy(&f, &val, sizeof(float));
+				push(VMValue((int64_t)f));
+				break;
+			}
 			case Opcode::F64tI64: {
 				push(VMValue((int64_t)pop().value.floating));
 				break;
 			}
+			case Opcode::I64tF32: {
+                auto val = pop();
+                float f = (float)val.value.integer;
+                val.value.floating = 0;
+                memcpy(&val, &f, sizeof(float));
+				push(val);
+				break;
+			}
 			case Opcode::I64tF64: {
 				push(VMValue((double)pop().value.integer));
+				break;
+			}
+			case Opcode::F64tF32: {
+                auto val = pop();
+                float f = (float)val.value.floating;
+                val.value.floating = 0;
+                memcpy(&val, &f, sizeof(float));
+				push(val);
+				break;
+			}
+			case Opcode::F32tF64: {
+                auto val = pop();
+                float f;
+                memcpy(&f, &val, sizeof(float));
+                val.value.floating = f;
+				push(val);
 				break;
 			}
 			case Opcode::NativeCall: {
@@ -197,21 +235,33 @@ namespace Strela {
                 if (ff.returnType->as<FloatType>()) retVal.type = VMValue::Type::floating;
                 else if (ff.returnType->as<IntType>()) retVal.type = VMValue::Type::integer;
 
+                std::vector<VMValue> originalArgs;
+                originalArgs.reserve(ff.argTypes.size());
+                for (size_t i = 0; i < ff.argTypes.size(); ++i) {
+                    originalArgs.push_back(pop());
+                }
+
                 std::vector<VMValue> args;
                 args.reserve(ff.argTypes.size());
                 std::vector<void*> argPtrs;
                 argPtrs.reserve(ff.argTypes.size());
                 for (size_t i = 0; i < ff.argTypes.size(); ++i) {
-                    auto arg = pop();
-                    if (arg.type == VMValue::Type::object) {
-                        void* aptr = &arg.value.object->data[0];
+                    if (originalArgs[i].type == VMValue::Type::object) {
+                        void* aptr = &originalArgs[i].value.object->data[0];
+                        VMValue arg;
                         memcpy(&arg.value.integer, &aptr, sizeof(void*));
                         args.push_back(arg);
-                        argPtrs.push_back(&args[i].value.integer);
+                        argPtrs.push_back(&args.back());
+                    }
+                    else if (ff.argTypes[i] == &PointerType::instance) {
+                        void* aptr = &originalArgs[i].value;
+                        VMValue arg;
+                        memcpy(&arg.value.integer, &aptr, sizeof(void*));
+                        args.push_back(arg);
+                        argPtrs.push_back(&args.back());
                     }
                     else {
-                        args.push_back(arg);
-                        argPtrs.push_back(&args[i]);
+                        argPtrs.push_back(&originalArgs[i]);
                     }
                 }
 
@@ -222,7 +272,9 @@ namespace Strela {
                     errno = 0;
                 }
 
-				push(retVal);
+                if (ff.returnType != &VoidType::instance) {
+				    push(retVal);
+                }
 				break;
 			}
 			case Opcode::Return: {
@@ -252,28 +304,94 @@ namespace Strela {
 				push(VMValue(int64_t(l.value.integer + r.value.integer)));
 				break;
 			}
-			case Opcode::AddF: {
+			case Opcode::AddF32: {
 				auto r = pop();
 				auto l = pop();
-				push(VMValue(double(l.value.floating + r.value.floating)));
+                float a, b;
+                memcpy(&a, &l, sizeof(float));
+                memcpy(&b, &r, sizeof(float));
+				push(VMValue(double(a + b)));
 				break;
 			}
-			case Opcode::Sub: {
+			case Opcode::AddF64: {
 				auto r = pop();
 				auto l = pop();
-				push(l - r);
+                double a, b;
+                memcpy(&a, &l, sizeof(double));
+                memcpy(&b, &r, sizeof(double));
+				push(VMValue(double(a + b)));
 				break;
 			}
-			case Opcode::Mul: {
+			case Opcode::SubI: {
 				auto r = pop();
 				auto l = pop();
-				push(l * r);
+				push(VMValue(int64_t(l.value.integer - r.value.integer)));
 				break;
 			}
-			case Opcode::Div: {
+            case Opcode::SubF32: {
 				auto r = pop();
 				auto l = pop();
-				push(l / r);
+                float a, b;
+                memcpy(&a, &l, sizeof(float));
+                memcpy(&b, &r, sizeof(float));
+				push(VMValue(double(a - b)));
+				break;
+			}
+			case Opcode::SubF64: {
+				auto r = pop();
+				auto l = pop();
+                double a, b;
+                memcpy(&a, &l, sizeof(double));
+                memcpy(&b, &r, sizeof(double));
+				push(VMValue(double(a - b)));
+				break;
+			}
+			case Opcode::MulI: {
+				auto r = pop();
+				auto l = pop();
+				push(VMValue(int64_t(l.value.integer * r.value.integer)));
+				break;
+			}
+			case Opcode::MulF32: {
+				auto r = pop();
+				auto l = pop();
+                float a, b;
+                memcpy(&a, &l, sizeof(float));
+                memcpy(&b, &r, sizeof(float));
+				push(VMValue(double(a * b)));
+				break;
+			}
+			case Opcode::MulF64: {
+				auto r = pop();
+				auto l = pop();
+                double a, b;
+                memcpy(&a, &l, sizeof(double));
+                memcpy(&b, &r, sizeof(double));
+				push(VMValue(double(a * b)));
+				break;
+			}
+			case Opcode::DivI: {
+				auto r = pop();
+				auto l = pop();
+				push(VMValue(int64_t(l.value.integer / r.value.integer)));
+				break;
+			}
+			case Opcode::DivF32: {
+				auto r = pop();
+				auto l = pop();
+                float a, b;
+                memcpy(&a, &l, sizeof(float));
+                memcpy(&b, &r, sizeof(float));
+				push(VMValue(double(a / b)));
+				break;
+			}
+			case Opcode::DivF64: {
+				auto r = pop();
+				auto l = pop();
+                double a, b;
+                memcpy(&a, &l, sizeof(double));
+                memcpy(&b, &r, sizeof(double));
+				push(VMValue(double(a / b)));
 				break;
 			}
 			case Opcode::CmpEQ: {
@@ -294,16 +412,52 @@ namespace Strela {
 				push(l != r);
 				break;
 			}
-			case Opcode::CmpLT: {
+            case Opcode::CmpLTI: {
 				auto r = pop();
 				auto l = pop();
-				push(l < r);
+				push(VMValue(bool(l.value.integer < r.value.integer)));
 				break;
 			}
-			case Opcode::CmpGT: {
+			case Opcode::CmpLTF32: {
 				auto r = pop();
 				auto l = pop();
-				push(l > r);
+                float a, b;
+                memcpy(&a, &l, sizeof(float));
+                memcpy(&b, &r, sizeof(float));
+				push(VMValue(bool(a < b)));
+				break;
+			}
+			case Opcode::CmpLTF64: {
+				auto r = pop();
+				auto l = pop();
+                double a, b;
+                memcpy(&a, &l, sizeof(double));
+                memcpy(&b, &r, sizeof(double));
+				push(VMValue(bool(a < b)));
+				break;
+			}
+			case Opcode::CmpGTI: {
+				auto r = pop();
+				auto l = pop();
+				push(VMValue(bool(l.value.integer > r.value.integer)));
+				break;
+			}
+			case Opcode::CmpGTF32: {
+				auto r = pop();
+				auto l = pop();
+                float a, b;
+                memcpy(&a, &l, sizeof(float));
+                memcpy(&b, &r, sizeof(float));
+				push(VMValue(bool(a > b)));
+				break;
+			}
+			case Opcode::CmpGTF64: {
+				auto r = pop();
+				auto l = pop();
+                double a, b;
+                memcpy(&a, &l, sizeof(double));
+                memcpy(&b, &r, sizeof(double));
+				push(VMValue(bool(a > b)));
 				break;
 			}
 			case Opcode::CmpLTE: {
@@ -340,7 +494,14 @@ namespace Strela {
                 std::cout << pop().value.integer;
                 break;
             }
-            case Opcode::PrintF: {
+            case Opcode::PrintF32: {
+                float f;
+                auto v = pop();
+                memcpy(&f, &v, sizeof(float));
+                std::cout << f;
+                break;
+            }
+            case Opcode::PrintF64: {
                 std::cout << pop().value.floating;
                 break;
             }
@@ -383,7 +544,7 @@ namespace Strela {
 			}
             case Opcode::New: {
                 numallocs++;
-                if ((numallocs % 100) == 0) {
+                if ((numallocs % 1000) == 0) {
                     gc.collect(frame);
                 }
                 auto type = pop();
@@ -393,7 +554,7 @@ namespace Strela {
             }
             case Opcode::Array: {
                 numallocs++;
-                if ((numallocs % 100) == 0) {
+                if ((numallocs % 1000) == 0) {
                     gc.collect(frame);
                 }
                 auto length = pop();

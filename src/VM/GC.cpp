@@ -37,14 +37,16 @@ namespace Strela {
             frame = frame->parent;
         }
         
-        for (auto it = objects.begin(); it != objects.end(); ++it) {
+        auto it = objects.begin();
+        while (it != objects.end()) {
             auto obj = *it;
-            if (!obj->marked) {
-                free(obj);
-                it = objects.erase(it);
+            if (obj->marked) {
+                obj->marked = false;
+                ++it;
             }
             else {
-                obj->marked = false;
+                free(obj);
+                it = objects.erase(it);
             }
         }
     }
@@ -65,7 +67,7 @@ namespace Strela {
                 memcpy(&length, ptr, 8);
                 ptr += 8;
                 while (length--) {
-                    mark((VMObject*)ptr);
+                    mark(*(VMObject**)ptr);
                     ptr += sizeof(VMObject*);
                 }
             }

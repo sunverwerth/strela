@@ -1,0 +1,205 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
+module Examples.Ray {
+    import Std.IO.*;
+    import Std.Collections.List;
+
+    class TGA {
+        var file: File;
+        
+        function init(name: String, width: int, height: int) {
+            this.file = new File(name, "wb");
+            this.file.write(0: u8); // no id
+            this.file.write(0: u8); // no palette
+            this.file.write(2: u8); // 24 bit rgb
+            this.file.write(0: u16); // palette begin
+            this.file.write(0: u16); // palette length
+            this.file.write(0: u8); // palette entry size
+            this.file.write(0: u16); // x begin
+            this.file.write(0: u16); // y begin
+            this.file.write(width: u16); // width
+            this.file.write(height: u16); // height
+            this.file.write(24: u8); // bpp
+            this.file.write(32: u8); // attrib bits (32 = top to bottom)
+        }
+
+        function pixel(color: Vec) {
+            var r: u8 = 0;
+            var g: u8 = 0;
+            var b: u8 = 0;
+
+            if (color.x > 1) r = 255;
+            else if (color.x < 0) r = 0;
+            else r = color.x * 255;
+
+            if (color.y > 1) g = 255;
+            else if (color.y < 0) g = 0;
+            else g = color.y * 255;
+
+            if (color.z > 1) b = 255;
+            else if (color.z < 0) b = 0;
+            else b = color.z * 255;
+
+            this.file.write(b);
+            this.file.write(g);
+            this.file.write(r);
+        }
+    }
+
+    external function sqrt(f: f64): f64;
+
+    class Vec {
+        var x: f64;
+        var y: f64;
+        var z: f64;
+
+        function init() {}
+
+        function init(x: f64, y: f64, z: f64) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        function magnitude(): f64 {
+            return sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+        }
+
+        function normalize() {
+            var l = this.magnitude();
+            this.x = this.x / l;
+            this.y = this.y / l;
+            this.z = this.z / l;
+        }
+
+        function dot(other: Vec): f64 {
+            return this.x * other.x + this.y * other.y + this.z * other.z;
+        }
+
+        function sub(other: Vec): Vec {
+            return new Vec(this.x - other.x, this.y - other.y, this.z - other.z);
+        }
+
+        function add(other: Vec): Vec {
+            return new Vec(this.x + other.x, this.y + other.y, this.z + other.z);
+        }
+
+        function mul(v: f64): Vec {
+            return new Vec(this.x * v, this.y * v, this.z * v);
+        }
+
+        function neg(): Vec {
+            return new Vec(-this.x, -this.y, -this.z);
+        }
+    }
+
+    class Sphere {
+        var center: Vec;
+        var radius: f64;
+        var color: Vec;
+
+        function init(center: Vec, radius: f64, color: Vec) {
+            this.center = center;
+            this.radius = radius;
+            this.color = color;
+        }
+    }
+
+    class Tracer {
+        var spheres: List<Sphere>;
+        var file: TGA;
+        var width: int;
+        var height: int;
+
+        function init() {
+            this.spheres = new List<Sphere>();
+            this.spheres.append(new Sphere(new Vec(5, 5, 15), 5, new Vec(0, 0, 0)));
+            this.spheres.append(new Sphere(new Vec(5, -5, 15), 5, new Vec(1, 0, 0)));
+            this.spheres.append(new Sphere(new Vec(-5, 5, 15), 5, new Vec(0, 1, 0)));
+            this.spheres.append(new Sphere(new Vec(-5, -5, 15), 5, new Vec(0, 0, 1)));
+
+            this.width = 1920;
+            this.height = 1080;
+            this.file = new TGA("out.tga", this.width, this.height);
+        }
+
+        function trace(origin: Vec, dir: Vec, recurse: int): Vec {
+            var min: f64 = 9999999.0;
+            var p: Vec;
+            var n: Vec;
+            var found = false;
+            var s: Sphere;
+
+            var i = 0;
+            while (i < this.spheres.length) {
+                var sphere = this.spheres[i];
+
+                var a = dir.dot(origin.sub(sphere.center));
+                a = a * a;
+                var oc = origin.sub(sphere.center);
+                a = a - oc.dot(oc);
+                a = a + (sphere.radius * sphere.radius);
+
+                if (a > 0.0) {
+                    var d = -dir.dot(sphere.center.neg()) - a;
+
+                    if (d > 0.0 && d < min) {
+                        min = d;
+                        s = sphere;
+                        p = origin.add(dir.mul(d));
+                        n = p.sub(sphere.center);
+                        n.normalize();
+                        found = true;
+                    }
+                }
+
+                i = i + 1;
+            }
+
+            if (found) {
+                return n;
+                var v = n.y;
+                if (recurse < 10) {
+                    return s.color.mul(0.5).add(this.trace(p, n, recurse + 1).mul(0.5));
+                }
+                else {
+                    return new Vec(0.8 - v, 0.8 - v, 1.0);
+                }
+            }
+
+            var v = dir.y;
+            return new Vec(0.8 - v, 0.8 - v, 1.0);
+        }
+
+        function run() {
+            var x: u32 = 0;
+            var y: u32 = 0;
+            var dir = new Vec;
+            var origin = new Vec(0, 0, 0);
+
+            while (y < this.height) {
+                while (x < this.width) {
+                    dir.x = x:f64 - (this.width:f64 * 0.5);
+                    dir.y = -(y:f64 - (this.height:f64 * 0.5));
+                    dir.z = 500;
+                    dir.normalize();
+                    var color = this.trace(origin, dir, 0);
+                    this.file.pixel(color);
+                    x = x + 1;
+                }
+                x = 0;
+                y = y + 1;
+            }
+
+            println("Fin");
+        }
+    }
+
+    function main(args: String[]): int {
+        var tracer = new Tracer;
+        tracer.run();
+
+        return 0;
+    }
+}

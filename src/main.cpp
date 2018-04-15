@@ -57,6 +57,7 @@ Scope* makeGlobalScope() {
     globals->add("f64", &FloatType::f64);
     globals->add("null", &NullType::instance);
     globals->add("String", &ClassDecl::String);
+    globals->add("Ptr", &PointerType::instance);
 
     return globals;
 }

@@ -27,4 +27,30 @@ module Std.IO {
     export function println(v: f64): void { print(v); print("\n"); }
     export function println(v: String): void { print(v); print("\n"); }
     export function println(v: bool): void { print(v); print("\n"); }
+
+    // File IO
+
+    external function fopen(name: String, mode: String): u64;
+    external function fwrite(buffer: Ptr, size: u64, count: u64, file: u64): u64;
+    external function strlen(str: String): i64;
+
+    export class File {
+        var handle: u64;
+
+        function init(name: String, mode: String) {
+            this.handle = fopen(name, mode);
+        }
+
+        function write(str: String) {
+            fwrite(str, strlen(str), 1, this.handle);
+        }
+
+        function write(n: u8) {
+            fwrite(n, 1, 1, this.handle);
+        }
+
+        function write(n: u16) {
+            fwrite(n, 2, 1, this.handle);
+        }
+    }
 }

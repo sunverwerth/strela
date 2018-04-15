@@ -48,23 +48,35 @@ namespace Strela {
         X(CmpEQ, 0, null) \
         X(CmpEQS, 0, null) \
         X(CmpNE, 0, null) \
-        X(CmpLT, 0, null) \
-        X(CmpGT, 0, null) \
+        X(CmpLTI, 0, null) \
+        X(CmpLTF32, 0, null) \
+        X(CmpLTF64, 0, null) \
+        X(CmpGTI, 0, null) \
+        X(CmpGTF32, 0, null) \
+        X(CmpGTF64, 0, null) \
         X(CmpLTE, 0, null) \
         X(CmpGTE, 0, null) \
         X(Not, 0, null) \
         X(AddI, 0, null) \
-        X(AddF, 0, null) \
-        X(Sub, 0, null) \
-        X(Mul, 0, null) \
-        X(Div, 0, null) \
+        X(AddF32, 0, null) \
+        X(AddF64, 0, null) \
+        X(SubI, 0, null) \
+        X(SubF32, 0, null) \
+        X(SubF64, 0, null) \
+        X(MulI, 0, null) \
+        X(MulF32, 0, null) \
+        X(MulF64, 0, null) \
+        X(DivI, 0, null) \
+        X(DivF32, 0, null) \
+        X(DivF64, 0, null) \
         X(New, 0, null) \
         X(Array, 0, null) \
         X(Null, 0, null) \
         X(Repeat, 0, null) \
         X(Pop, 0, null) \
         X(PrintI, 0, null) \
-        X(PrintF, 0, null) \
+        X(PrintF32, 0, null) \
+        X(PrintF64, 0, null) \
         X(PrintS, 0, null) \
         X(PrintN, 0, null) \
         X(PrintO, 0, null) \
@@ -72,8 +84,12 @@ namespace Strela {
         X(AndL, 0, null) \
         X(OrL, 0, null) \
         X(Swap, 0, null) \
+        X(I64tF32, 0, null) \
         X(I64tF64, 0, null) \
+        X(F32tI64, 0, null) \
         X(F64tI64, 0, null) \
+        X(F64tF32, 0, null) \
+        X(F32tF64, 0, null) \
         X(Peek, 1, integer) \
         X(ConcatSS, 0, null) \
         X(ConcatSI, 0, null) \

@@ -43,7 +43,7 @@ namespace Strela {
         void visit(InterfaceDecl&) override;
         void visit(InterfaceMethodDecl&) override;
         void visit(ThisExpr&) override;
-        void visit(CastExpr&) override {};
+        void visit(CastExpr&) override;
         void visit(GenericParam&) override {}
 
         void visit(IdExpr&) override;

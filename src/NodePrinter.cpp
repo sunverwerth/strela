@@ -262,9 +262,10 @@ namespace Strela {
     }
 
     void NodePrinter::visit(CastExpr& n) {
-        std::cout << "cast<" << n.targetType->name << ">(";
+        std::cout << "(";
         visitChild(n.sourceExpr);
-        std::cout << ")";
+        std::cout << "): ";
+        visitChild(n.targetTypeExpr);
     }
 
     void NodePrinter::visit(UnionTypeExpr& n) {

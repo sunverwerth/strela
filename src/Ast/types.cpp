@@ -13,6 +13,7 @@
 #include "ClassDecl.h"
 #include "InvalidType.h"
 #include "ArrayType.h"
+#include "PointerType.h"
 #include "Token.h"
 
 namespace Strela {
@@ -37,6 +38,8 @@ namespace Strela {
     InvalidType InvalidType::instance;
 
     ClassDecl ClassDecl::String("String", {}, {}, {});
+
+    PointerType PointerType::instance;
 
     std::map<TypeDecl*, ArrayType*> ArrayType::arrayTypes;
     std::vector<FuncType*> FuncType::funcTypes;
