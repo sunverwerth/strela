@@ -3,7 +3,7 @@
 
 module Std.Math.Lina {
     
-    external function sqrt(f: f64): f64;
+    import Std.cstdio.*;
 
     export class Vec {
         var x: f64;
@@ -18,44 +18,76 @@ module Std.Math.Lina {
             this.z = z;
         }
 
+        function set(other: Vec) {
+            x = other.x;
+            y = other.y;
+            z = other.z;
+        }
+
         function magnitude(): f64 {
-            return sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+            return sqrt(x * x + y * y + z * z);
         }
 
         function normalize() {
-            var ol = 1.0 / this.magnitude();
-            this.x = this.x * ol;
-            this.y = this.y * ol;
-            this.z = this.z * ol;
+            var ol = 1.0 / magnitude();
+            x = x * ol;
+            y = y * ol;
+            z = z * ol;
         }
 
         function dot(other: Vec): f64 {
-            return this.x * other.x + this.y * other.y + this.z * other.z;
+            return x * other.x + y * other.y + z * other.z;
         }
 
         function -(other: Vec): Vec {
-            return new Vec(this.x - other.x, this.y - other.y, this.z - other.z);
+            return new Vec(x - other.x, y - other.y, z - other.z);
         }
 
         function +(other: Vec): Vec {
-            return new Vec(this.x + other.x, this.y + other.y, this.z + other.z);
+            return new Vec(x + other.x, y + other.y, z + other.z);
         }
 
         function *(v: f64): Vec {
-            return new Vec(this.x * v, this.y * v, this.z * v);
+            return new Vec(x * v, y * v, z * v);
+        }
+
+        function /(v: f64): Vec {
+            return new Vec(x / v, y / v, z / v);
         }
 
         function neg(): Vec {
-            return new Vec(-this.x, -this.y, -this.z);
+            return new Vec(-x, -y, -z);
         }
 
         function normalized(): Vec {
-            var ol = 1.0 / this.magnitude();
-            return new Vec(this.x * ol, this.y * ol, this.z * ol);
+            var ol = 1.0 / magnitude();
+            return new Vec(x * ol, y * ol, z * ol);
+        }
+
+        function +=(other: Vec) {
+            x = x + other.x;
+            y = y + other.y;
+            z = z + other.z;
+        }
+
+        function -=(other: Vec) {
+            x = x - other.x;
+            y = y - other.y;
+            z = z - other.z;
+        }
+
+        function *=(v: f64) {
+            x = x * v;
+            y = y * v;
+            z = z * v;
         }
     }
 
     export function reflect(dir: Vec, n: Vec): Vec {
         return dir - n * dir.dot(n) * 2.0;
+    }
+
+    export function lerp(a: Vec, b: Vec, f: f64): Vec {
+        return a * (1.0 - f) + b * f;
     }
 }

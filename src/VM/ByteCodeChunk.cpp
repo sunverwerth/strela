@@ -42,12 +42,25 @@ namespace Strela {
     int ByteCodeChunk::addOp(Opcode code, size_t argSize, const void* arg) {
         auto opwidth = opcodeInfo[(int)code].argWidth;
         if (opwidth != argSize) throw Exception(std::string("Opcode ") + opcodeInfo[(int)code].name + " has mismatching argument size. "
-        + std::to_string(opwidth) + " instead of " + std::to_string(argSize)
+        + std::to_string(opwidth) + " expected but got " + std::to_string(argSize)
         );
         auto opAddr = opcodes.size();
         opcodes.push_back((char)code);
         opcodes.resize(opcodes.size() + argSize);
         memcpy(&opcodes[opAddr + 1], arg, argSize);
+        return opAddr;
+    }
+
+    int ByteCodeChunk::addOp(Opcode code, size_t argSize1, const void* arg1, size_t argSize2, const void* arg2) {
+        auto opwidth = opcodeInfo[(int)code].argWidth;
+        if (opwidth != argSize1 + argSize2) throw Exception(std::string("Opcode ") + opcodeInfo[(int)code].name + " has mismatching argument size. "
+        + std::to_string(opwidth) + " expected but got " + std::to_string(argSize1 + argSize2)
+        );
+        auto opAddr = opcodes.size();
+        opcodes.push_back((char)code);
+        opcodes.resize(opcodes.size() + argSize1 + argSize2);
+        memcpy(&opcodes[opAddr + 1], arg1, argSize1);
+        memcpy(&opcodes[opAddr + 1 + argSize1], arg2, argSize2);
         return opAddr;
     }
 
@@ -61,6 +74,10 @@ namespace Strela {
             opcodes.resize(pos + numargs);
         }
         memcpy(&opcodes[pos], &arg, numargs);
+    }
+
+    void ByteCodeChunk::write(size_t pos, void* data, size_t size) {
+        memcpy(&opcodes[pos], data, size);
     }
 
     std::ostream& operator<<(std::ostream& str, const ByteCodeChunk& chunk) {

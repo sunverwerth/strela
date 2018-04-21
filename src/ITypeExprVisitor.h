@@ -8,6 +8,7 @@ namespace Strela {
     class ITypeExprVisitor {
     public:
         virtual void visit(class IdTypeExpr&) = 0;
+        virtual void visit(class ScopeTypeExpr&) = 0;
         virtual void visit(class ArrayTypeExpr&) = 0;
         virtual void visit(class UnionTypeExpr&) = 0;
         virtual void visit(class NullableTypeExpr&) = 0;

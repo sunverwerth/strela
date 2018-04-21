@@ -11,37 +11,37 @@ module Std.Net.HTTP {
         var socket: Socket;
         
         function init() {
-            this.socket = new Socket;
+            socket = new Socket;
         }
 
         function connect(ip: u32, port: u16) {
-            this.socket.connect(ip, port);
+            socket.connect(ip, port);
         }
 
         function connect(ip: IPAddr, port: u16) {
-            this.socket.connect(ip.getInt(), port);
+            socket.connect(ip.getInt(), port);
         }
 
         function request(request: Request): Response {
-            this.socket.write("GET " + request.path + " HTTP/1.1\r\n");
-            this.socket.write("Host: " + request.host + "\r\n");
-            this.socket.write("User-Agent: strela language test client\r\n");
-            this.socket.write("Accept: text/html,*/*\r\n");
-            this.socket.write("Accept-Charset: utf-8;q=0.9,iso-8859-1;q=0.5\r\n");
-            this.socket.write("Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7\r\n");
-            this.socket.write("Connection: close\r\n");
-            this.socket.write("\r\n");
+            socket.write("GET " + request.path + " HTTP/1.1\r\n");
+            socket.write("Host: " + request.host + "\r\n");
+            socket.write("User-Agent: strela language test client\r\n");
+            socket.write("Accept: text/html,*/*\r\n");
+            socket.write("Accept-Charset: utf-8;q=0.9,iso-8859-1;q=0.5\r\n");
+            socket.write("Accept-Language: de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7\r\n");
+            socket.write("Connection: close\r\n");
+            socket.write("\r\n");
 
             var response = new Response();
-            var line = this.socket.readLine();
+            var line = socket.readLine();
             while (line != "\r\n") {
-                line = this.socket.readLine();
+                line = socket.readLine();
             }
 
-            line = this.socket.readLine();
+            line = socket.readLine();
             while (line != "") {
                 response.body = response.body + line;
-                line = this.socket.readLine();
+                line = socket.readLine();
             }
             return response;
         }
@@ -51,12 +51,12 @@ module Std.Net.HTTP {
         var socket: Socket;
         
         function init(address: i32, port: u16) {
-            this.socket = new Socket(address, port);
-            this.socket.listen();
+            socket = new Socket(address, port);
+            socket.listen();
         }
 
         function accept(): Request {
-            var sock = this.socket.accept();
+            var sock = socket.accept();
             var request = new Request;
             request.socket = sock;
             
@@ -69,8 +69,8 @@ module Std.Net.HTTP {
         }
 
         function close() {
-            this.socket.shutdown();
-            this.socket.close();
+            socket.shutdown();
+            socket.close();
         }
     }
 
@@ -82,20 +82,20 @@ module Std.Net.HTTP {
         var body: String;
 
         function init() {
-            this.path = "";
-            this.host = "";
-            this.body = "";
+            path = "";
+            host = "";
+            body = "";
         }
 
         function respond(response: Response) {
-            this.socket.write("HTTP/1.1 200 " + response.statusMessage + "\r\n");
-            this.socket.write("Content-type: text/html\r\n");
-            this.socket.write("\r\n");
-            this.socket.write("");
-            this.socket.write("");
-            this.socket.write(response.body);
-            this.socket.shutdown();
-            this.socket.close();
+            socket.write("HTTP/1.1 200 " + response.statusMessage + "\r\n");
+            socket.write("Content-type: text/html\r\n");
+            socket.write("\r\n");
+            socket.write("");
+            socket.write("");
+            socket.write(response.body);
+            socket.shutdown();
+            socket.close();
         }
     }
 
@@ -106,8 +106,8 @@ module Std.Net.HTTP {
         var body: String;
 
         function init() {
-            this.statusMessage = "";
-            this.body = "";
+            statusMessage = "";
+            body = "";
         }
     }
 }

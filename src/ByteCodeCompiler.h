@@ -10,6 +10,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 namespace Strela {
     class ByteCodeChunk;
@@ -65,11 +66,16 @@ namespace Strela {
         }
 
     private:
-        void addFixup(int address, FuncDecl* function);
+        void addFixup(size_t address, FuncDecl* function, bool immediate);
         VMType* mapType(TypeDecl* type);
 
     private:
-        std::map<int, FuncDecl*> functionFixups;
+        struct Fixup {
+            size_t address;
+            FuncDecl* function;
+            bool immediate;
+        };
+        std::vector<Fixup> functionFixups;
         FuncDecl* function = nullptr;
         std::map<TypeDecl*, VMType*> typeMap;
 

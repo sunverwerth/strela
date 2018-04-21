@@ -4,6 +4,7 @@
 #include "ModDecl.h"
 #include "FuncDecl.h"
 #include "ClassDecl.h"
+#include "EnumDecl.h"
 
 namespace Strela {
     Node* ModDecl::getMember(const std::string& name) {
@@ -24,6 +25,15 @@ namespace Strela {
         for (auto&& cls: classes) {
             if (cls->name == name) {
                 return cls;
+            }
+        }
+        return nullptr;
+    }
+
+    EnumDecl* ModDecl::getEnum(const std::string& name) {        
+        for (auto&& en: enums) {
+            if (en->name == name) {
+                return en;
             }
         }
         return nullptr;

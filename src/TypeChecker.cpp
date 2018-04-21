@@ -138,11 +138,14 @@ namespace Strela {
         if (cls && iface) {
             auto cast = new CastExpr(expr, targetType);
             cast->implementation = iface->implementations[cls];
+            cast->type = targetType;
             return cast;
         }
         
         if (targetType != expr->type) {
-            return new CastExpr(expr, targetType);
+            auto cast = new CastExpr(expr, targetType);
+            cast->type = targetType;
+            return cast;
         }
         
         return expr;
@@ -383,6 +386,7 @@ namespace Strela {
             if (!isAssignableFrom(function->type->returnType, n.expression->type)) {
                 error(n, function->name + ": Incompatible return type. Returning '" + n.expression->type->name + "' from '" + function->returnTypeExpr->type->name + "' function.");
             }
+            n.expression = addCast(n.expression, function->type->returnType);
         }
         else if (function->type->returnType != &VoidType::instance) {
             error(n, "non-void function must return a value.");
@@ -461,6 +465,7 @@ namespace Strela {
             if (ol.size() == 1) {
                 n.function = ol.front();
                 n.type = n.function->type->returnType;
+                n.right = addCast(n.right, n.function->type->paramTypes.front());
                 return;
             }
         }
@@ -492,10 +497,12 @@ namespace Strela {
             }
             else {
                 if (lint && rint) {
-                    n.type = &IntType::i64;
+                    n.type = lint;
+                    n.right = addCast(n.right, lint);
                 }
                 else if (lfloat && rfloat) {
                     n.type = lfloat;
+                    n.right = addCast(n.right, lfloat);
                 }
                 else if (lfloat) {
                     n.type = lfloat;
@@ -525,6 +532,7 @@ namespace Strela {
         else {
             error(n, "Invalid binary operator '" + getTokenName(op) + "'");
         }
+        int i = 0;
     }
 
     void TypeChecker::visit(AssignExpr& n) {
@@ -537,7 +545,7 @@ namespace Strela {
                 case TokenType::MinusEquals: op = TokenType::Minus; break;
                 case TokenType::AsteriskEquals: op = TokenType::Asterisk; break;
                 case TokenType::SlashEquals: op = TokenType::Slash; break;
-                default: error(n, "invalid op");
+                default: error(n, "Assignment expression: invalid op");
             }
             n.right = new BinopExpr(op, n.left, n.right);
         }

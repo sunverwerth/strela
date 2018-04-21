@@ -88,6 +88,17 @@ namespace Strela {
                     std::cout << "(dynamic)";
                 }
             }
+            else if (op == Opcode::CallImm) {
+                auto it = chunk.functions.find(arg);
+                if (it != chunk.functions.end()) {
+                    std::cout << it->second;
+                }
+                else {
+                    int diff = (int)arg - (int)opStart;
+                    std::cout << std::dec << (diff > 0 ? "+" : "") << diff;
+                }
+                std::cout << " (0x" << std::setw(8) << std::setfill('0') << std::hex << std::right << arg << ")";
+            }
 
             if (args.size()) {
                 std::cout << std::dec;
@@ -100,6 +111,12 @@ namespace Strela {
                         if (arg > 0) {
                             std::cout << "pop "<< (int)arg;
                         }
+                    }
+                    else if (op == Opcode::F32) {
+                        std::cout << *(float*)&arg;
+                    }
+                    else if (op == Opcode::F64) {
+                        std::cout << *(double*)&arg;
                     }
                     else {
                         std::cout << (int)arg;
@@ -114,6 +131,7 @@ namespace Strela {
         auto op = chunk.opcodes[pos];
         auto numargs = opcodeInfo[(int)op].argWidth;
         uint64_t arg = 0;
+        if (numargs > sizeof(arg)) numargs = sizeof(arg);
         memcpy(&arg, &chunk.opcodes[pos + 1], numargs);
         return arg;
     }

@@ -9,7 +9,7 @@ ifndef DEBUG
 	OBJDIR=release
 	EXECUTABLE=release/strelac
 else
-	CXXFLAGS=-std=c++11 -g -MMD -MP
+	CXXFLAGS=-std=c++11 -g -Og -MMD -MP
 	OBJDIR=debug
 	EXECUTABLE=debug/strelac
 endif

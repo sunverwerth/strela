@@ -17,7 +17,7 @@ module Std.Lang.Compiler.Ast {
 
     export class Identifier {
         function init(t: Token) {
-            token = t;
+            this.token = t;
         }
 
         var token: Token;
@@ -26,7 +26,7 @@ module Std.Lang.Compiler.Ast {
 
     export class QualifiedIdentifier {
         function init() {
-            ids = new List<Identifier>;
+            this.ids = new List<Identifier>;
         }
 
         var ids: List<Identifier>;
@@ -42,13 +42,13 @@ module Std.Lang.Compiler.Ast {
 
     export class ModuleDecl {
         function init() {
-            requires = new List<RequireDirective>;
-            imports = new List<ImportDirective>;
-            exports = new List<ExportDirective>;
-            classes = new List<ClassDecl>;
-            interfaces = new List<InterfaceDecl>;
-            enums = new List<EnumDecl>;
-            functions = new List<FunctionDecl>;
+            this.requires = new List<RequireDirective>;
+            this.imports = new List<ImportDirective>;
+            this.exports = new List<ExportDirective>;
+            this.classes = new List<ClassDecl>;
+            this.interfaces = new List<InterfaceDecl>;
+            this.enums = new List<EnumDecl>;
+            this.functions = new List<FunctionDecl>;
         }
 
         var name: Identifier;
@@ -193,8 +193,8 @@ module Std.Lang.Compiler.Ast {
     
     export class EnumDecl {
         function init(n: Identifier, el: List<EnumElement>) {
-            name = n;
-            elements = el;
+            this.name = n;
+            this.elements = el;
         }
 
         var name: Identifier;
@@ -203,7 +203,7 @@ module Std.Lang.Compiler.Ast {
     
     export class EnumElement {
         function init(n: Identifier) {
-            name = n;
+            this.name = n;
         }
 
         var name: Identifier;

@@ -33,6 +33,7 @@ namespace Strela {
 
         Node* getMember(const std::string& name) override;
         ClassDecl* getClass(const std::string& name);
+        EnumDecl* getEnum(const std::string& name);
         std::vector<FuncDecl*> getFunctions(const std::string& name);
         void addFunction(FuncDecl* func);
         void addClass(ClassDecl* cls);

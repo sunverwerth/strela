@@ -57,6 +57,17 @@ namespace Strela {
                     }
                 }
 
+                auto en = imp->module->getEnum(imp->parts.back());
+                if (en) {
+                    if (en->isExported) {
+                        scope->add(en->name, en);
+                        continue;
+                    }
+                    else {
+                        throw Exception(en->name + " is not exported.");
+                    }
+                }
+
                 auto funs = imp->module->getFunctions(imp->parts.back());
                 if (!funs.empty()) {
                     for (auto&& fun: funs) {
@@ -140,6 +151,17 @@ namespace Strela {
                     }
                 }
 
+                auto en = imp->module->getEnum(imp->parts.back());
+                if (en) {
+                    if (en->isExported) {
+                        scope->add(en->name, en);
+                        continue;
+                    }
+                    else {
+                        throw Exception(en->name + " is not exported.");
+                    }
+                }
+
                 auto funs = imp->module->getFunctions(imp->parts.back());
                 if (!funs.empty()) {
                     for (auto&& fun: funs) {
@@ -192,12 +214,12 @@ namespace Strela {
             scope->add(n.genericParams[i]->name, n.genericArguments[i]);
         }
 
-        /*for (auto&& field: n.fields) {
+        for (auto&& field: n.fields) {
             scope->add(field->name, field);
         }
         for (auto&& method: n.methods) {
             scope->add(method->name, method);
-        }*/
+        }
 
         visitChildren(n.fields);
         visitChildren(n.methods);
@@ -277,7 +299,21 @@ namespace Strela {
             n.node = par;
             n.type = par->typeExpr->type;
         }
+        else if (auto field = symbol->node->as<FieldDecl>()) {
+            n.node = field;
+            n.type = field->type;
+            auto _this = new ThisExpr();
+            _this->_class = _class;
+            _this->type = _class;
+            n.context = _this;
+        }
         else if (auto fun = symbol->node->as<FuncDecl>()) {
+            if (fun->_class) {
+                auto _this = new ThisExpr();
+                _this->_class = _class;
+                _this->type = _class;
+                n.context = _this;
+            }
             if (symbol->next) {
                 auto cur = symbol;
                 while (cur) {
@@ -373,6 +409,17 @@ namespace Strela {
         }
         else {
             error(n, "'" + n.name + "' does not name a type.");
+        }
+    }
+
+    void NameResolver::visit(ScopeTypeExpr& n) {
+        visitChild(n.target);
+        auto member = n.target->type->getMember(n.name);
+        if (auto type = member->as<TypeDecl>()) {
+            n.type = type;
+        }
+        else {
+            error(n, n.name + " is not a type.");
         }
     }
 

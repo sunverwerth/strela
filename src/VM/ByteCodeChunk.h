@@ -51,11 +51,16 @@ namespace Strela {
         int addForeignFunction(FuncDecl& n);
         int addOp(Opcode code);
         int addOp(Opcode code, size_t argSize, const void* arg);
+        int addOp(Opcode code, size_t argSize1, const void* arg1, size_t argSize2, const void* arg2);
         template <typename T> struct identity { using type = T; };
         template <typename T> int addOp(Opcode code, const typename identity<T>::type& arg) {
             return addOp(code, sizeof(T), &arg);
         }
+        template <typename T, typename T2> int addOp(Opcode code, const typename identity<T>::type& arg, const typename identity<T2>::type& arg2) {
+            return addOp(code, sizeof(T), &arg, sizeof(T2), &arg2);
+        }
         void writeArgument(size_t pos, uint64_t arg);
+        void write(size_t pos, void* data, size_t size);
     };
 
     std::ostream& operator<<(std::ostream& str, const ByteCodeChunk& chunk);

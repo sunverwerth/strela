@@ -5,196 +5,249 @@ module Examples.Ray {
     import Std.IO.*;
     import Std.Collections.List;
     import Std.Math.Lina.*;
+    import Std.cstdio.*;
+    import Std.Math.*;
 
     class TGA {
         var file: File;
         
         function init(name: String, width: int, height: int) {
-            this.file = new File(name, "wb");
-            this.file.write(0: u8); // no id
-            this.file.write(0: u8); // no palette
-            this.file.write(2: u8); // 24 bit rgb
-            this.file.write(0: u16); // palette begin
-            this.file.write(0: u16); // palette length
-            this.file.write(0: u8); // palette entry size
-            this.file.write(0: u16); // x begin
-            this.file.write(0: u16); // y begin
-            this.file.write(width: u16); // width
-            this.file.write(height: u16); // height
-            this.file.write(24: u8); // bpp
-            this.file.write(32: u8); // attrib bits (32 = top to bottom)
+            file = new File(name, "wb");
+            file.write(0: u8); // no id
+            file.write(0: u8); // no palette
+            file.write(2: u8); // 24 bit rgb
+            file.write(0: u16); // palette begin
+            file.write(0: u16); // palette length
+            file.write(0: u8); // palette entry size
+            file.write(0: u16); // x begin
+            file.write(0: u16); // y begin
+            file.write(width: u16); // width
+            file.write(height: u16); // height
+            file.write(24: u8); // bpp
+            file.write(32: u8); // attrib bits (32 = top to bottom)
         }
 
         function pixel(color: Vec) {
-            var r: u8 = 0;
-            var g: u8 = 0;
-            var b: u8 = 0;
+            var r: u8;
+            var g: u8;
+            var b: u8;
 
-            if (color.x > 1) r = 255;
-            else if (color.x < 0) r = 0;
-            else r = color.x * 255;
+            if (color.x > 1.0) r = 255;
+            else if (color.x < 0.0) r = 0;
+            else r = color.x * 255.0;
 
-            if (color.y > 1) g = 255;
-            else if (color.y < 0) g = 0;
+            if (color.y > 1.0) g = 255;
+            else if (color.y < 0.0) g = 0;
             else g = color.y * 255;
 
-            if (color.z > 1) b = 255;
-            else if (color.z < 0) b = 0;
+            if (color.z > 1.0) b = 255;
+            else if (color.z < 0.0) b = 0;
             else b = color.z * 255;
 
-            this.file.write(b);
-            this.file.write(g);
-            this.file.write(r);
+            file.write(b);
+            file.write(g);
+            file.write(r);
         }
     }
 
-    external function sqrt(f: f64): f64;
-    external function rand(): i32;
-    external function sin(r: f64): f64;
-    external function cos(r: f64): f64;
+    class Material {
+        var color: Vec;
+        var roughness: f64;
+        var reflectivity: f64;
 
-    function frand(): f64 {
-        return (rand():f64 / 2147483647:f64) - 0.5;
-        //return (rand():f64 / 65535:f64) - 0.5;
-    }
-
-    function clamp(f: f64): f64 {
-        if (f > 1.0) return 1.0;
-        if (f < 0.0) return 0.0;
-        return f;
-    }
-
-    function lerp(a: Vec, b: Vec, f: f64): Vec {
-        return a * (1.0 - f) + b * f;
+        function init(color: Vec, roughness: f64, reflectivity: f64) {
+            this.color = color;
+            this.roughness = roughness;
+            this.reflectivity = reflectivity;
+        }
     }
 
     class Plane {
         var position: Vec;
         var normal: Vec;
+        var material: Material;
 
-        function init(position: Vec, normal: Vec) {
+        function init(position: Vec, normal: Vec, material: Material) {
             this.position = position;
             this.normal = normal;
+            this.material = material;
+        }
+
+        function trace(ray: Ray, hit: Hit) {
+            var pn = normal;
+
+            var d = (position - ray.origin).dot(pn) / ray.direction.dot(pn);
+            if (d > 0.0 && d < hit.distance) {
+                hit.distance = d;
+                hit.position = ray.origin + ray.direction * d;
+                hit.normal = pn;
+                hit.material = material;
+            }
+        }
+
+        function isBehind(p: Vec): bool {
+            return (position - p).dot(normal) > 0.0;
         }
     }
 
     class Sphere {
         var center: Vec;
         var radius: f64;
-        var color: Vec;
-        var reflectivity: f64;
+        var material: Material;
 
-        function init(center: Vec, radius: f64, color: Vec, reflectivity: f64) {
+        function init(center: Vec, radius: f64, material: Material) {
             this.center = center;
             this.radius = radius;
-            this.color = color;
-            this.reflectivity = reflectivity;
+            this.material = material;
+        }
+
+        function trace(ray: Ray, hit: Hit) {
+            var oc = ray.origin - center;
+
+            var a = ray.direction.dot(oc);
+            a = a * a - oc.dot(oc) + radius * radius;
+
+            if (a > 0.0) {
+                var d = -ray.direction.dot(oc) - sqrt(a);
+
+                if (d > 0.0 && d < hit.distance) {
+                    hit.distance = d;
+                    hit.position = ray.origin + ray.direction * d;
+                    hit.normal = (hit.position - center) / radius;
+                    hit.material = material;
+                }
+            }
+        }
+    }
+
+    class Polyhedron {
+        var planes: List<Plane>;
+        var material: Material;
+
+        function init() {
+            planes = new List<Plane>;
+        }
+
+        function trace(ray: Ray, hit: Hit) {
+            var i = 0;
+            var myhit = new Hit;
+            myhit.distance = hit.distance;
+            while (i < planes.length) {
+                planes[i].trace(ray, myhit);
+                if (myhit.distance < hit.distance) {
+                    var count = 1;
+                    var j = 0;
+                    while (j < planes.length) {
+                        if (j != i && planes[j].isBehind(myhit.position)) {
+                            count++;
+                        }
+                        j++;
+                    }
+                    if (count == planes.length) {
+                        hit.distance = myhit.distance;
+                        hit.position = myhit.position;
+                        hit.normal = myhit.normal;
+                        hit.material = myhit.material;
+                        return;
+                    }
+                }
+                i++;
+            }
+        }
+    }
+
+    class Ray {
+        var origin: Vec;
+        var direction: Vec;
+
+        function init(origin: Vec, direction: Vec) {
+            this.origin = origin;
+            this.direction = direction;
         }
     }
 
     class Hit {
         var position: Vec;
         var normal: Vec;
-        var color: Vec;
-        var reflectivity: f64;
-        var roughness: f64;
+        var material: Material;
+        var distance: f64;
     }
 
     class Tracer {
         var spheres: List<Sphere>;
         var planes: List<Plane>;
+        var polyhedrons: List<Polyhedron>;
         var file: TGA;
         var width: int;
         var height: int;
 
         function init() {
-            this.planes = new List<Plane>();
-            this.planes.append(new Plane(new Vec(-20, 0, 20), (new Vec(1, 0, -1)).normalized() ));
+            polyhedrons = new List<Polyhedron>;
 
-            this.spheres = new List<Sphere>();
-            this.spheres.append(new Sphere(new Vec(5, 5, 5), 5, new Vec(0, 0, 0), 0.7));
-            this.spheres.append(new Sphere(new Vec(5, -5, 10), 5, new Vec(1, 0, 0), 0.8));
-            this.spheres.append(new Sphere(new Vec(-5, 5, 15), 5, new Vec(0, 1, 0), 0.5));
-            this.spheres.append(new Sphere(new Vec(-5, -5, 20), 5, new Vec(0, 0, 1), 0.25));
+            planes = new List<Plane>();
+            planes.append(new Plane(new Vec(-20, 0, 20), (new Vec(1, 0, -1)).normalized(), new Material(new Vec(0, 0, 0), 0.05, 0.75) ));
 
-            this.width = 320;
-            this.height = 200;
-            this.file = new TGA("out.tga", this.width, this.height);
+            spheres = new List<Sphere>();
+            spheres.append(new Sphere(new Vec(5, 5, 5), 5, new Material(new Vec(0, 0, 0), 0.0, 1.0)));
+            spheres.append(new Sphere(new Vec(5, -5, 10), 5, new Material(new Vec(1, 0, 0), 0.0, 0.8)));
+            spheres.append(new Sphere(new Vec(-6, 6, 15), 5, new Material(new Vec(0, 1, 0), 0.1, 0.6)));
+            spheres.append(new Sphere(new Vec(-6, -5, 20), 5, new Material(new Vec(0, 0, 1), 0.0, 0.4)));
+            
+            width = 64;
+            height = 64;
+            file = new TGA("out.tga", width, height);
+            print("Initialized image with ");
+            print(width);
+            print("x");
+            print(height);
+            println(" pixels.");
         }
 
-        function trace(origin: Vec, dir: Vec, recurse: int): Vec {
-            var found = false;
-            var min: f64 = 999999.0;
+        function trace(ray: Ray, recurse: int): Vec {
             var hit = new Hit;
+            hit.distance = 100000.0;
 
             var i = 0;
-            while (i < this.spheres.length) {
-                var sphere = this.spheres[i];
-
-                var oc = origin - sphere.center;
-
-                var a = dir.dot(oc);
-                a = a * a;
-                a = a - oc.dot(oc);
-                a = a + (sphere.radius * sphere.radius);
-
-                if (a > 0.0) {
-                    var d = -dir.dot(oc) - sqrt(a);
-
-                    if (d > 0.0 && (!found || d < min)) {
-                        min = d;
-                        found = true;
-
-                        hit.position = origin + dir * d;
-                        hit.normal = (hit.position - sphere.center).normalized();
-                        hit.color = sphere.color;
-                        hit.reflectivity = sphere.reflectivity;
-                        hit.roughness = 0.125;
-                    }
-                }
-
+            var numObj = spheres.length;
+            while (i < numObj) {
+                spheres[i].trace(ray, hit);
                 i++;
             }
 
             i = 0;
-            while (i < this.planes.length) {
-                var plane = this.planes[i];
-
-                var d = (plane.position - origin).dot(plane.normal) / dir.dot(plane.normal);
-
-                if (d > 0.0 && (!found || d < min)) {
-                    min = d;
-                    found = true;
-
-                    hit.position = origin + dir * d;
-                    hit.normal = plane.normal;
-                    hit.color = new Vec(0,0,0);
-                    hit.reflectivity = 0.5;
-                    hit.roughness = 0.125;
-                }
-
+            numObj = planes.length;
+            while (i < numObj) {
+                planes[i].trace(ray, hit);
                 i++;
             }
 
-            if (found) {
-                if (recurse < 5) {
-                    var n2 = hit.normal + new Vec(frand()*hit.roughness, frand()*hit.roughness, frand()*hit.roughness);
-                    n2.normalize();
-                    var r = reflect(dir, n2);
-                    return lerp(hit.color * clamp(n2.y), this.trace(hit.position + r * 0.001, r, recurse + 1), hit.reflectivity);
+            i = 0;
+            numObj = polyhedrons.length;
+            while (i < numObj) {
+                polyhedrons[i].trace(ray, hit);
+                i++;
+            }
+
+            if (hit.distance < 100000) {
+                var mat = hit.material;
+                if (recurse < 15 && hit.material.reflectivity > 0.0) {
+                    var rough = mat.roughness;
+                    var n2 = (hit.normal + new Vec(frand()*rough, frand()*rough, frand()*rough)).normalized();
+                    var r = reflect(ray.direction, n2);
+                    return lerp(mat.color * clamp(n2.y), trace(new Ray(hit.position + r * 0.0001, r), recurse + 1), mat.reflectivity);
                 }
                 else {
-                    return hit.color * clamp(hit.normal.y);
+                    return mat.color * clamp(hit.normal.y);
                 }
             }
 
-            if (dir.y < 0) {
-                var v = dir.y * 0.4;
+            if (ray.direction.y < 0) {
+                var v = ray.direction.y * 0.4;
                 return new Vec(0.4 + v, 0.3 + v, 0.1);
             }
             else {
-                var v = dir.y * 0.6;
-                return new Vec(0.4 + v, 0.4 + v, 1);
+                var v = ray.direction.y * 0.8;
+                return new Vec(0.4 + v, 0.4 + v, 0.7 + v * 0.2);
             }
         }
 
@@ -204,21 +257,24 @@ module Examples.Ray {
             var dir = new Vec;
             var origin = new Vec(0, 0, 0);
 
-            while (y < this.height) {
-                while (x < this.width) {
+            var hw = width * 0.5;
+            var hh = height * 0.5;
+
+            while (y < height) {
+                while (x < width) {
                     var color = new Vec(0, 0, 0);
                     
                     var num: i32 = 0;
 
-                    var ix = -3;
-                    var iy = -3;
-                    while (iy < -2) {
-                        while (ix < -2) {
-                            dir.x = (x:f64+ix:f64*0.14):f64 - (this.width:f64 * 0.5);
-                            dir.y = -((y:f64+iy:f64*0.14):f64 - (this.height:f64 * 0.5));
-                            dir.z = this.width:f64 * 0.3;
+                    var ix = -2;
+                    var iy = -2;
+                    while (iy < 3) {
+                        while (ix < 3) {
+                            dir.x = x + ix * 0.4 - hw;
+                            dir.y = -(y + iy * 0.4 - hh);
+                            dir.z = width * 0.3;
                             dir.normalize();
-                            color = color + this.trace(origin, dir, 0);
+                            color = color + trace(new Ray(origin, dir), 0);
                             num++;
                             ix++;
                         }
@@ -226,7 +282,7 @@ module Examples.Ray {
                         iy++;
                     }
 
-                    this.file.pixel(color * (1.0 / num:f64));
+                    file.pixel(color * (1.0 / num));
                     x++;
                 }
                 x = 0;

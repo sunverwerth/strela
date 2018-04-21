@@ -8,6 +8,8 @@ module Std.Lang.Compiler.Parser {
     import Lexer.TokenType;
     import Lexer.Token;
     import Ast.*;
+    import Std.IO.println;
+    import Std.IO.print;
 
     export class Parser {
         function init(l: Lexer) {

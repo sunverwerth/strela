@@ -2,16 +2,8 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 module Std.Net {
-    class sockaddr_in {
-        var family: u16;
-        var port: u16;
-        var addr: u32;
-        var pad1: i64;
-    }
-
-    class sockaddr_len {
-        var len: i32;
-    }
+    import Std.csockets;
+    import Std.cstdio.*;
 
     export class IPAddr {
         var a: u8;
@@ -27,7 +19,7 @@ module Std.Net {
         }
 
         function getInt(): u32 {
-            var i: u32 = this.d + this.c * 256 + this.b * 65536 + this.a * 16777216;
+            var i: u32 = d + c * 256 + b * 65536 + a * 16777216;
             return i;
         }
     }
@@ -38,84 +30,69 @@ module Std.Net {
     AF_INET6	10
     */
 
-    external function socket(domain: i32, type: i32, protocol: i32): i32;
-    external function connect(sock: i32, addr: sockaddr_in, len: i32): i32;
-    external function bind(sock: i32, addr: sockaddr_in, len: i32): i32;
-    external function listen(sock: i32, backlog: i32): i32;
-    external function accept(sock: i32, addr: sockaddr_in, len: sockaddr_len): i32;
-    external function shutdown(sock: i32, how: i32): i32;
-    external function recv(sock: i32, buffer: String, len: i32, flags: i32): i64;
-    external function send(sock: i32, buffer: String, len: i32, flags: i32): i64;
-    external function close(sock: i32): i32;
-    external function strlen(str: String): i64;
-    external function htons(val: u16): u16;
-    external function htonl(val: u32): u32;
-    external function ntohs(val: u16): u16;
-    external function ntohl(val: u32): u32;
-    
     export class Socket {
         var handle: i32;
 
         function init(s: i32) {
-            this.handle = s;
+            handle = s;
         }
 
         function init(ip: u32, port: u16) {
-            this.handle = socket(2, 1, 0);
-            this.bind(ip, port);
+            handle = csockets.socket(2, 1, 0);
+            bind(ip, port);
         }
 
         function init() {
-            this.handle = socket(2, 1, 0);
+            handle = csockets.socket(2, 1, 0);
         }
 
         function connect(ip: u32, port: u16) {
-            var addr = new sockaddr_in;
+            var addr = new csockets.sockaddr_in;
             addr.family = 2;
-            addr.addr = htonl(ip);
-            addr.port = htons(port);
-            connect(this.handle, addr, 16);
+            addr.addr = csockets.htonl(ip);
+            addr.port = csockets.htons(port);
+            csockets.connect(handle, addr, 16);
         }
 
         function readLine(): String {
             var str = "";
             var tmp = "" + 60;
-            while (tmp != "\n" && recv(this.handle, tmp, 1, 0) > 0) {
+            while (tmp != "\n" && csockets.recv(handle, tmp, 1, 0) > 0) {
                 str = str + tmp;
             }
             return str;
         }
 
         function write(str: String) {
-            send(this.handle, str, strlen(str), 16384); //MSG_NOPIPE
+            csockets.send(handle, str, strlen(str), 16384); //MSG_NOPIPE
         }
 
         function bind(ip: u32, port: u16) {
-            var addr = new sockaddr_in;
+            var addr = new csockets.sockaddr_in;
             addr.family = 2;
-            addr.addr = htonl(ip);
-            addr.port = htons(port);
+            addr.addr = csockets.htonl(ip);
+            addr.port = csockets.htons(port);
 
-            bind(this.handle, addr, 16);
+            csockets.bind(handle, addr, 16);
         }
 
         function listen() {
-            listen(this.handle, 1);
+            csockets.listen(handle, 1);
         }
 
         function accept(): Socket {
-            var addr = new sockaddr_in;
-            var len = new sockaddr_len;
-            var newsock = accept(this.handle, addr, len);
+            var addr = new csockets.sockaddr_in;
+            var len: u32 = 0;
+            var newsock = csockets.accept(handle, addr, len);
             return new Socket(newsock);
         }
 
         function shutdown() {
-            shutdown(this.handle, 0);
+            csockets.shutdown(handle, 0);
         }
 
         function close() {
-            close(this.handle);
+            csockets.close(handle);
         }
     }
 }

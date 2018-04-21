@@ -1,0 +1,27 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
+module Std.csockets {
+    
+    export class sockaddr_in {
+        var family: u16;
+        var port: u16;
+        var addr: u32;
+        var pad1: i64;
+    }
+
+    export external function socket(domain: i32, type: i32, protocol: i32): i32;
+    export external function connect(sock: i32, addr: sockaddr_in, len: i32): i32;
+    export external function bind(sock: i32, addr: sockaddr_in, len: i32): i32;
+    export external function listen(sock: i32, backlog: i32): i32;
+    export external function accept(sock: i32, addr: sockaddr_in, len: Ptr): i32;
+    export external function shutdown(sock: i32, how: i32): i32;
+    export external function recv(sock: i32, buffer: String, len: i32, flags: i32): i64;
+    export external function send(sock: i32, buffer: String, len: i32, flags: i32): i64;
+    export external function close(sock: i32): i32;
+    
+    export external function htons(val: u16): u16;
+    export external function htonl(val: u32): u32;
+    export external function ntohs(val: u16): u16;
+    export external function ntohl(val: u32): u32;
+}

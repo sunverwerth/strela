@@ -17,6 +17,7 @@
 #include "IdExpr.h"
 #include "ThisExpr.h"
 #include "IdTypeExpr.h"
+#include "ScopeTypeExpr.h"
 #include "IfStmt.h"
 #include "ImportStmt.h"
 #include "LitExpr.h"

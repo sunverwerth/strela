@@ -19,19 +19,10 @@ module Std.Lang.Compiler {
             return 1;
         }
 
-        var inFile = openFile(args[1], "rb");
-        match (inFile) {
-            case File {
-                var lexer = new Lexer(inFile);
-                var parser = new Parser(lexer);
-                var mod = parser.parseModule();
-            }
-            else {
-                print("Could not open file ");
-                println(args[1]);
-                return -1;
-            }
-        }
+        var inFile = new File(args[1], "rb");
+        var lexer = new Lexer(inFile);
+        var parser = new Parser(lexer);
+        var mod = parser.parseModule();
 
         return 0;
     }

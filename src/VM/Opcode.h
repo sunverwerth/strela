@@ -24,23 +24,26 @@ namespace Strela {
         X(Grow, 1, integer) \
         X(Var, 1, integer) \
         X(StoreVar, 1, integer) \
-        X(Field8, 1, integer) \
-        X(Field16, 1, integer) \
-        X(Field32, 1, integer) \
-        X(Field64, 1, integer) \
-        X(FieldInd8, 1, integer) \
-        X(FieldInd16, 1, integer) \
-        X(FieldInd32, 1, integer) \
-        X(FieldInd64, 1, integer) \
-        X(StoreField8, 1, integer) \
-        X(StoreField16, 1, integer) \
-        X(StoreField32, 1, integer) \
-        X(StoreField64, 1, integer) \
-        X(StoreFieldInd8, 1, integer) \
-        X(StoreFieldInd16, 1, integer) \
-        X(StoreFieldInd32, 1, integer) \
-        X(StoreFieldInd64, 1, integer) \
+        X(Ptr8, 1, integer) \
+        X(Ptr16, 1, integer) \
+        X(Ptr32, 1, integer) \
+        X(Ptr64, 1, integer) \
+        X(Ptr64Var, 2, integer) \
+        X(PtrInd8, 1, integer) \
+        X(PtrInd16, 1, integer) \
+        X(PtrInd32, 1, integer) \
+        X(PtrInd64, 1, integer) \
+        X(StorePtr8, 1, integer) \
+        X(StorePtr16, 1, integer) \
+        X(StorePtr32, 1, integer) \
+        X(StorePtr64, 1, integer) \
+        X(StorePtr64Var, 2, integer) \
+        X(StorePtrInd8, 1, integer) \
+        X(StorePtrInd16, 1, integer) \
+        X(StorePtrInd32, 1, integer) \
+        X(StorePtrInd64, 1, integer) \
         X(Call, 1, integer) \
+        X(CallImm, 9, integer) \
         X(NativeCall, 0, null) \
         X(Jmp, 0, null) \
         X(JmpIf, 0, null) \

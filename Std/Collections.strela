@@ -10,31 +10,31 @@ module Std.Collections {
         var length: int;
 
         function init() {
-            this.array = new T[](1);
-            this.length = 0;
+            array = new T[](1);
+            length = 0;
         }
 
         function append(value: T) {
-            if (this.array.length < this.length + 1) {
-                var newArray = new T[](this.array.length * 2);
+            if (array.length < length + 1) {
+                var newArray = new T[](array.length * 2);
                 var i = 0;
-                while(i < this.array.length) {
-                    newArray[i] = this.array[i];
+                while(i < array.length) {
+                    newArray[i] = array[i];
                     i = i + 1;
                 }
-                this.array = newArray;
+                array = newArray;
             }
             
-            this.array[this.length] = value;
-            this.length = this.length + 1;
+            array[length] = value;
+            length = length + 1;
         }
 
         function set(index: int, value: T) {
-            this.array[index] = value;
+            array[index] = value;
         }
 
         function [](i: int): T {
-            return this.array[i];
+            return array[i];
         }
     }
 
@@ -46,36 +46,36 @@ module Std.Collections {
         var values: List<V>;
 
         function init() {
-            this.keys = new List<K>;
-            this.values = new List<V>;
+            keys = new List<K>;
+            values = new List<V>;
         }
 
         function has(key: K): bool {
-            return this.keyIndex(key) >= 0;
+            return keyIndex(key) >= 0;
         }
 
         function keyIndex(key: K): int {
             var i: int = 0;
-            while (i < this.keys.length) {
-                if (this.keys[i] == key) return i;
-                i += 1;
+            while (i < keys.length) {
+                if (keys[i] == key) return i;
+                i = i + 1;
             }
             return -1;
         }
 
         function set(key: K, val: V) {
-            var idx = this.keyIndex(key);
+            var idx = keyIndex(key);
             if (idx >= 0) {
-                this.values.set(idx, val);
+                values.set(idx, val);
             }
             else {
-                this.keys.append(key);
-                this.values.append(val);
+                keys.append(key);
+                values.append(val);
             }
         }
 
         function [](key: K): V {
-            return this.values[this.keyIndex(key)];
+            return values[keyIndex(key)];
         }
     }
 }

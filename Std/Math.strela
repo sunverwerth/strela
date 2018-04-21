@@ -1,0 +1,23 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
+module Std.Math {
+    import Std.cstdio.*;
+
+    export function frand(): f64 {
+        return (rand():f64 / 2147483647:f64) - 0.5;
+        //return (rand():f64 / 65535:f64) - 0.5;
+    }
+
+    export function clamp(f: f64): f64 {
+        if (f > 1.0) return 1.0;
+        if (f < 0.0) return 0.0;
+        return f;
+    }
+
+    export function clamp(f: f32): f32 {
+        if (f > 1.0) return 1.0;
+        if (f < 0.0) return 0.0;
+        return f;
+    }
+}

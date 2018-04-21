@@ -18,11 +18,16 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <algorithm>
 
 using namespace Strela;
 
 void error(const std::string& msg) {
     std::cerr << "\033[1;31m" << msg << "\033[0m\n";
+}
+
+void error(const Strela::Node* n, const std::string& msg) {
+    std::cerr << "\033[1;31m" << n->source->filename << ":" << n->line << ":" << n->column << " " << msg << "\033[0m\n";
 }
 
 void help() {
@@ -183,7 +188,7 @@ int main(int argc, char** argv) {
         ByteCodeChunk chunk;
 
         // treat as bytecode
-        bool isSourcecode = fileName.rfind(".strela") == fileName.size() - 7;
+        bool isSourcecode = fileName.rfind(".strela") != std::string::npos;
 
         if (isSourcecode) {
             //std::cout << "Lexing...\n";
@@ -213,9 +218,9 @@ int main(int argc, char** argv) {
                 processImports.pop_back();
 
                 for (auto&& import: process->imports) {
-                    std::string importFilename(getImportFile(fileName, import));
+                    std::string importFilename(getImportFile(process->filename, import));
                     if (importFilename.empty()) {
-                        error(process->filename + ": Requested import not found: " + import->getFullName());
+                        error(import, "Requested import not found: " + import->getFullName());
                         return 1;
                     }
 
@@ -308,7 +313,8 @@ int main(int argc, char** argv) {
 
         //std::cout << "Running bytecode...\n";
         VM vm(chunk, arguments);
-        return vm.run().value.integer;
+        auto retVal = vm.run();
+        return retVal.value.integer;
     }
     catch (const Exception& e) {
         error(e.what());

@@ -1,0 +1,30 @@
+// Copyright (c) 2018 Stephan Unverwerth
+// This code is licensed under MIT license (See LICENSE for details)
+
+module Std.cstdio {
+    // File IO
+    export external function fopen(name: String, mode: String): u32;
+    export external function fclose(file: u32): i32;
+    export external function feof(file: u32): i32;
+    export external function fread(buffer: Ptr, size: u32, count: u32, file: u32): u32;
+    export external function fwrite(buffer: Ptr, size: u32, count: u32, file: u32): u32;
+    export external function fgetc(file: u32): i32;
+    export external function ungetc(ch: i32, file: u32): i32;
+
+    // Strings
+    export external function strlen(str: String): i32;
+
+    // Random
+    export external function rand(): i32;
+
+    // Math
+    export external function sqrt(f: f64): f64;
+    export external function sin(r: f64): f64;
+    export external function cos(r: f64): f64;
+    export external function tan(r: f64): f64;
+
+    export external function sqrtf(f: f32): f32;
+    export external function sinf(r: f32): f32;
+    export external function cosf(r: f32): f32;
+    export external function tanf(r: f32): f32;
+}

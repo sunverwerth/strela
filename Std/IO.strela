@@ -2,6 +2,8 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 module Std.IO {
+    import Std.cstdio.*;
+    
     export function print(v: u8): void {}
     export function print(v: u16): void {}
     export function print(v: u32): void {}
@@ -28,34 +30,44 @@ module Std.IO {
     export function println(v: String): void { print(v); print("\n"); }
     export function println(v: bool): void { print(v); print("\n"); }
 
-    // File IO
-
-    external function fopen(name: String, mode: String): u32;
-    external function fclose(file: u32): i32;
-    external function fwrite(buffer: Ptr, size: u32, count: u32, file: u32): u32;
-    external function strlen(str: String): i32;
-
     export class File {
         var handle: u32;
+        var name: String;
 
         function init(name: String, mode: String) {
+            this.name = name;
             this.handle = fopen(name, mode);
         }
 
         function write(str: String) {
-            fwrite(str, strlen(str), 1, this.handle);
+            fwrite(str, strlen(str), 1, handle);
         }
 
         function write(n: u8) {
-            fwrite(n, 1, 1, this.handle);
+            fwrite(n, 1, 1, handle);
         }
 
         function write(n: u16) {
-            fwrite(n, 2, 1, this.handle);
+            fwrite(n, 2, 1, handle);
         }
 
         function close() {
-            fclose(this.handle);
+            fclose(handle);
+        }
+
+        function isEof(): bool {
+            return feof(handle) != 0;
+        }
+
+        function getc(): String {
+            return "" + fgetc(handle);
+        }
+
+        function peek(): String {
+            var ch = fgetc(handle);
+            ungetc(ch, handle);
+
+            return "" + ch;
         }
     }
 }

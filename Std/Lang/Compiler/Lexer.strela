@@ -71,7 +71,7 @@ module Std.Lang.Compiler.Lexer {
         var column: u32;
 
         function init(file: File, tt: TokenType, val: String) {
-            this.file = file;
+            file = file;
             type = tt;
             value = val;
         }
