@@ -35,6 +35,7 @@ namespace Strela {
         virtual void accept(IExprVisitor&) = 0;
 
     public:
+        bool ignoreResult = false;
         TypeDecl* type = &InvalidType::instance;
         Node* node = nullptr;
         Expr* arrayIndex = nullptr;

@@ -9,19 +9,19 @@
 namespace Strela {
     #define VMVALUE_OP(OP) \
     if (type == Type::integer) return VMValue(int64_t(value.integer OP other.value.integer)); \
-    else if (type == Type::floating) return VMValue(double(value.floating OP other.value.floating)); \
+    else if (type == Type::floating) return VMValue(double(value.f64 OP other.value.f64)); \
     else if (type == Type::boolean) return VMValue(bool(value.boolean OP other.value.boolean)); \
     else return VMValue();
 
     #define VMVALUE_OP_LOG(OP) \
     if (type == Type::integer) return VMValue(bool(value.integer OP other.value.integer)); \
-    else if (type == Type::floating) return VMValue(bool(value.floating OP other.value.floating)); \
+    else if (type == Type::floating) return VMValue(bool(value.f64 OP other.value.f64)); \
     else if (type == Type::boolean) return VMValue(bool(value.boolean OP other.value.boolean)); \
     else return VMValue();
 
     VMValue::VMValue(): type(Type::null) {}
 	VMValue::VMValue(int64_t val) : type(Type::integer) { value.integer = val; }
-	VMValue::VMValue(double val) : type(Type::floating) { value.floating = val; }
+	VMValue::VMValue(double val) : type(Type::floating) { value.f64 = val; }
 	VMValue::VMValue(bool val) : type(Type::boolean) { value.boolean = val; }
 	VMValue::VMValue(const char* val) : type(Type::string) { value.string = val; }
 	VMValue::VMValue(VMObject* val) : type(Type::object) { value.object = val; }
@@ -116,7 +116,7 @@ namespace Strela {
 
 	VMValue::operator bool() const {
 		if (type == Type::integer) return value.integer != 0;
-		else if (type == Type::floating) return value.floating != 0;
+		else if (type == Type::floating) return value.f64 != 0;
 		else if (type == Type::boolean) return value.boolean;
         else if (type == Type::null) return false;
         else if (type == Type::string) return true;
@@ -128,10 +128,10 @@ namespace Strela {
         if (type != other.type) return false;
 
 		if (type == Type::integer) return value.integer == other.value.integer;
-		else if (type == Type::floating) return value.floating == other.value.floating;
+		else if (type == Type::floating) return value.f64 == other.value.f64;
 		else if (type == Type::boolean) return value.boolean == other.value.boolean;
         else if (type == Type::null) return true;
-        else if (type == Type::string) return value.string == other.value.string;
+        else if (type == Type::string) return !strcmp(value.string, other.value.string);
         else if (type == Type::object) return value.object == other.value.object;
 		else return false;
     }
@@ -142,7 +142,7 @@ namespace Strela {
         switch (type) {
             case Type::boolean: return std::string("bool: ") + (value.boolean ? "true" : "false");
             case Type::integer: return "int: " + std::to_string(value.integer);
-            case Type::floating: return "float: " + std::to_string(value.floating);
+            case Type::floating: return "float: " + std::to_string(value.f64);
             case Type::null: return "null";
             case Type::object: return "[object]";
             case Type::string: return "\"" + escape(value.string) + "\"";
@@ -156,7 +156,7 @@ namespace Strela {
         }
         else if (v.type == VMValue::Type::floating) {
             str.write("d", 1);
-            str.write((const char*)&v.value.floating, 8);
+            str.write((const char*)&v.value.f64, 8);
         }
         else if (v.type == VMValue::Type::boolean) {
             str.write("b", 1);
@@ -185,7 +185,7 @@ namespace Strela {
         }
         else if (t == 'd') {
             v.type = VMValue::Type::floating;
-            str.read((char*)&v.value.floating, 8);
+            str.read((char*)&v.value.f64, 8);
         }
         else if (t == 'b') {
             v.type = VMValue::Type::boolean;

@@ -40,7 +40,8 @@ namespace Strela {
 
         union {
             int64_t integer;
-            double floating;
+            float f32;
+            double f64;
             bool boolean;
             const char* string;
             VMObject* object;

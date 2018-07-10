@@ -15,7 +15,7 @@ namespace Strela {
     void Decompiler::printValue(const VMValue& c) const {
         std::cout << std::dec;
         if (c.type == VMValue::Type::integer) std::cout << "int(" << c.value.integer << ")";
-        else if (c.type == VMValue::Type::floating) std::cout << "float(" << c.value.floating << ")";
+        else if (c.type == VMValue::Type::floating) std::cout << "float(" << c.value.f64 << ")";
         else if (c.type == VMValue::Type::boolean) std::cout << (c.value.boolean ? "true" : "false");
         else if (c.type == VMValue::Type::string) std::cout << "\"" << escape(c.value.string) << "\"";
         else if (c.type == VMValue::Type::null) std::cout << "null";
@@ -88,17 +88,23 @@ namespace Strela {
                     std::cout << "(dynamic)";
                 }
             }
-            else if (op == Opcode::CallImm) {
-                auto it = chunk.functions.find(arg);
-                if (it != chunk.functions.end()) {
-                    std::cout << it->second;
-                }
-                else {
-                    int diff = (int)arg - (int)opStart;
-                    std::cout << std::dec << (diff > 0 ? "+" : "") << diff;
-                }
-                std::cout << " (0x" << std::setw(8) << std::setfill('0') << std::hex << std::right << arg << ")";
-            }
+			else if (op == Opcode::CallImm) {
+                arg &= 0xffffffff;
+				auto it = chunk.functions.find(arg);
+				if (it != chunk.functions.end()) {
+					std::cout << it->second;
+				}
+				else {
+					int diff = (int)arg - (int)opStart;
+					std::cout << std::dec << (diff > 0 ? "+" : "") << diff;
+				}
+				std::cout << " (0x" << std::setw(8) << std::setfill('0') << std::hex << std::right << arg << ")";
+			}
+			else if (op == Opcode::New) {
+				if (arg < chunk.types.size()) {
+					std::cout << chunk.types[arg]->name << " ";
+				}
+			}
 
             if (args.size()) {
                 std::cout << std::dec;

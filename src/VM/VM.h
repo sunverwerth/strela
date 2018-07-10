@@ -11,9 +11,13 @@
 #include <vector>
 #include <string>
 
+struct Frame {
+    size_t bp;
+    size_t ip;
+};
+
 namespace Strela {
     class ByteCodeChunk;
-    class VMFrame;
     
     class VM {
     public:
@@ -25,23 +29,22 @@ namespace Strela {
     private:
         bool execute();
 
-        size_t push(const VMValue& val);
+        void push(const VMValue& val);
         VMValue pop();
         void pop(size_t num);
-
-        VMFrame* getFrame();
-        void recycleFrame(VMFrame*);
+		VMValue peek(size_t idx);
+		void poke(size_t idx, const VMValue& val);
 
         template<typename T> T read();
-
-        std::vector<VMFrame*> framePool;
 
     public:
         const ByteCodeChunk& chunk;
         char op;
         GC gc;
-
-        VMFrame* frame = nullptr;
+        size_t ip;
+        size_t bp;
+        std::vector<VMValue> stack;
+        std::vector<Frame> callStack;
     };
 }
 

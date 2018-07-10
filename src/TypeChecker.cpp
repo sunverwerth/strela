@@ -260,7 +260,7 @@ namespace Strela {
                 unreachableWarning = true;
                 warning(*stmt, "Unreachable code detected.");
             }
-            stmt->accept(*this);
+            visitChild(stmt);
             if (stmt->returns) n.returns = true;
         }
 
@@ -395,6 +395,7 @@ namespace Strela {
 
     void TypeChecker::visit(ExprStmt& n) {
         visitChild(n.expression);
+        n.expression->ignoreResult = true;
     }
 
     void TypeChecker::visit(LitExpr& n) {

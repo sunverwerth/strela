@@ -12,8 +12,6 @@
 #include <list>
 
 namespace Strela {
-    class VMFrame;
-
     /**
      * Naive mark-and-sweep collector
      */
@@ -22,7 +20,7 @@ namespace Strela {
         VMObject* allocObject(const VMType* type);
         VMObject* allocArray(const VMType* type, uint64_t length);
         
-        void collect(VMFrame* frame);
+        void collect(std::vector<VMValue>& stack);
     
     private:
         void mark(VMObject* object);

@@ -1,6 +1,9 @@
 /release
 /debug
+/Release
+/Debug
 /.vscode
 /.vs
 /x64
 *.sbc
+*.vcxproj.user

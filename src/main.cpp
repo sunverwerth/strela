@@ -136,6 +136,11 @@ void bail() {
     exit(1);
 }
 
+namespace Strela {
+    std::map<char, uint64_t> timings;
+    std::map<char, uint64_t> counts;
+}
+
 int main(int argc, char** argv) {
 
     #ifdef _WIN32
@@ -314,6 +319,21 @@ int main(int argc, char** argv) {
         //std::cout << "Running bytecode...\n";
         VM vm(chunk, arguments);
         auto retVal = vm.run();
+
+        std::vector<char> indices;
+        for(int i=0; i<numOpcodes; ++i) {
+            indices.push_back(i);
+        }
+        std::sort(indices.begin(), indices.end(), [&](int a, int b) {
+            return timings[a] > timings[b];
+        });
+
+        for (auto& i: indices) {
+            if (counts[i] > 0) {
+                std::cout << opcodeInfo[i].name << ": " << timings[i]/1000000 << "ms = " << counts[i] << "x " << (double)timings[i] / counts[i] << "ns\n";
+            }
+        }
+
         return retVal.value.integer;
     }
     catch (const Exception& e) {

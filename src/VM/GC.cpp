@@ -2,7 +2,6 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 #include "GC.h"
-#include "VMFrame.h"
 #include "VMType.h"
 
 #include <memory.h>
@@ -23,18 +22,13 @@ namespace Strela {
         return obj;
     }
 
-    void GC::collect(VMFrame* frame) {
+    void GC::collect(std::vector<VMValue>& stack) {
         if (objects.empty()) return;
 
-        while (frame) {
-            // stack
-            for (auto&& val: frame->stack) {
-                if (val.type == VMValue::Type::object) {
-                    mark(val.value.object);
-                }
+        for (auto&& val: stack) {
+            if (val.type == VMValue::Type::object) {
+                mark(val.value.object);
             }
-
-            frame = frame->parent;
         }
         
         auto it = objects.begin();
