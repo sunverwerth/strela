@@ -7,19 +7,21 @@
 #include <memory.h>
 
 namespace Strela {
-    VMObject* GC::allocObject(const VMType* type) {
+    void* GC::allocObject(const VMType* type) {
         auto obj = (VMObject*)calloc(1, sizeof(VMObject) + type->objectSize);
         obj->type = type;
         objects.push_back(obj);
-        return obj;
+        //std::cout << "Alloc object " << type->name << "\n";
+        return obj + 1;
     }
 
-    VMObject* GC::allocArray(const VMType* type, uint64_t length) {
+    void* GC::allocArray(const VMType* type, uint64_t length) {
         auto obj = (VMObject*)calloc(1, sizeof(VMObject) + sizeof(uint64_t) + type->arrayType->size * length);
         obj->type = type;
         memcpy(obj->data, &length, sizeof(length));
         objects.push_back(obj);
-        return obj;
+        //std::cout << "Alloc array " << type->name << "\n";
+        return obj + 1;
     }
 
     void GC::collect(std::vector<VMValue>& stack) {
@@ -27,7 +29,7 @@ namespace Strela {
 
         for (auto&& val: stack) {
             if (val.type == VMValue::Type::object) {
-                mark(val.value.object);
+                mark((VMObject*)val.value.object - 1);
             }
         }
         
@@ -39,6 +41,12 @@ namespace Strela {
                 ++it;
             }
             else {
+                //std::cout << "Free " << obj->type->name << "\n";
+                if (obj->type->name == "Tracer") {
+                    for (auto& val: stack) {
+                    }
+                    exit(1);
+                }
                 free(obj);
                 it = objects.erase(it);
             }
@@ -61,15 +69,19 @@ namespace Strela {
                 memcpy(&length, ptr, 8);
                 ptr += 8;
                 while (length--) {
-                    mark(*(VMObject**)ptr);
-                    ptr += sizeof(VMObject*);
+                    if (*(void**)ptr) {
+                        mark(*(VMObject**)ptr - 1);
+                    }
+                    ptr += 8;
                 }
             }
         }
         else {
             for (auto&& field: type->fields) {
                 if (field.type == nullptr || !(field.type->isArray || field.type->isObject)) continue;
-                mark(*(VMObject**)&object->data[field.offset]);
+                if (*(void**)&object->data[field.offset]) {
+                    mark(*(VMObject**)&object->data[field.offset] - 1);
+                }
             }
         }
     }

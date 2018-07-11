@@ -218,6 +218,7 @@ namespace Strela {
             scope->add(field->name, field);
         }
         for (auto&& method: n.methods) {
+            method->_class = _class;
             scope->add(method->name, method);
         }
 

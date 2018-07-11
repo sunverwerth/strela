@@ -33,9 +33,9 @@ namespace Strela {
         vmtype->isArray = type->as<ArrayType>();
 
         if (vmtype->isArray) {
-            vmtype->objectAlignment = sizeof(void*);
-            vmtype->size = sizeof(void*);
-            vmtype->alignment = sizeof(void*);
+            vmtype->objectAlignment = 8;
+            vmtype->size = 8;
+            vmtype->alignment = 8;;
             vmtype->arrayType = mapType(type->as<ArrayType>()->baseType);
             vmtype->fields.push_back({
                 mapType(&IntType::u64),
@@ -44,8 +44,8 @@ namespace Strela {
         }
         else if (vmtype->isObject) {
             if (auto cls = type->as<ClassDecl>()) {
-                vmtype->size = sizeof(void*);
-                vmtype->alignment = sizeof(void*);
+                vmtype->size = 8;;
+                vmtype->alignment = 8;;
                 size_t offset = 0;
                 size_t alignment = 1;
                 for (auto&& field: cls->fields) {
@@ -57,7 +57,7 @@ namespace Strela {
                         offset
                     });
                     if (ftype->isArray || ftype->isObject) {
-                        offset += sizeof(void*);
+                        offset += 8;
                     }
                     else {
                         offset += ftype->size;
@@ -67,14 +67,14 @@ namespace Strela {
                 vmtype->objectAlignment = alignment;
             }
             else if (auto iface = type->as<InterfaceDecl>()) {
-                vmtype->size = sizeof(void*);
-                vmtype->alignment = sizeof(void*);
-                vmtype->objectSize = sizeof(void*) + iface->methods.size() * sizeof(void*);
-                vmtype->objectAlignment = sizeof(void*);
+                vmtype->size = 8;;
+                vmtype->alignment = 8;;
+                vmtype->objectSize = 8 + iface->methods.size() * 8;
+                vmtype->objectAlignment = 8;
             }
             else if (auto un = type->as<UnionType>()) {
-                vmtype->size = sizeof(void*);
-                vmtype->alignment = sizeof(void*);
+                vmtype->size = 8;
+                vmtype->alignment = 8;
                 vmtype->objectSize = 16;
                 vmtype->objectAlignment = 8;
                 vmtype->fields.push_back({mapType(&IntType::u64), 0});
@@ -99,12 +99,12 @@ namespace Strela {
                 vmtype->alignment = 8;
             }
             else if (type == &ClassDecl::String) {
-                vmtype->size = sizeof(void*);
-                vmtype->alignment = sizeof(void*);
+                vmtype->size = 8;
+                vmtype->alignment = 8;
             }
             else if (type == &PointerType::instance) {
-                vmtype->size = sizeof(void*);
-                vmtype->alignment = sizeof(void*);
+                vmtype->size = 8;
+                vmtype->alignment = 8;
             }
         }
         return vmtype;
@@ -254,7 +254,7 @@ namespace Strela {
                 case 8: op = Opcode::Ptr64; break;
             }
             if (op == Opcode::Ptr64) {
-                chunk.addOp<uint8_t, uint8_t>(Opcode::Ptr64Var, t->fields[field->index].offset, 0);
+                chunk.addOp<uint8_t, uint8_t>((ft->isObject || ft->isArray) ? Opcode::ObjPtr64Var : Opcode::Ptr64Var, t->fields[field->index].offset, 0);
             }
             else {
                 visitChild(n.context);
@@ -436,7 +436,7 @@ namespace Strela {
         }
         else if (fromunion) {
             visitChild(n.sourceExpr);
-            chunk.addOp<uint8_t>(Opcode::Ptr64, 8);
+            chunk.addOp<uint8_t>(Opcode::ObjPtr64, 8);
         }
         else if (fromtype == &FloatType::f32 && totype->as<IntType>()) {
             if (auto lit = n.sourceExpr->as<LitExpr>()) {
@@ -673,7 +673,7 @@ namespace Strela {
             chunk.addOp(Opcode::Repeat);
             chunk.addOp<uint8_t>(Opcode::Ptr64, 8 + im->index * 8);
             chunk.addOp(Opcode::Swap);
-            chunk.addOp<uint8_t>(Opcode::Ptr64, 0);
+            chunk.addOp<uint8_t>(Opcode::ObjPtr64, 0);
             chunk.addOp(Opcode::Swap);
         }
         else if (auto field = n.node->as<FieldDecl>()) {
@@ -689,14 +689,14 @@ namespace Strela {
 
             if (op == Opcode::Ptr64 && n.scopeTarget->as<IdExpr>() && n.scopeTarget->as<IdExpr>()->node->as<VarDecl>()) {
                 auto var = n.scopeTarget->as<IdExpr>()->node->as<VarDecl>();
-                chunk.addOp<uint8_t, uint8_t>(Opcode::Ptr64Var, t->fields[field->index].offset, function->params.size() + (_class ? 1 : 0) + var->index);
+                chunk.addOp<uint8_t, uint8_t>((ft->isObject || ft->isArray) ? Opcode::ObjPtr64Var : Opcode::Ptr64Var, t->fields[field->index].offset, function->params.size() + (_class ? 1 : 0) + var->index);
             }
             else if (op == Opcode::Ptr64 && n.scopeTarget->as<IdExpr>() && n.scopeTarget->as<IdExpr>()->node->as<Param>()) {
                 auto par = n.scopeTarget->as<IdExpr>()->node->as<Param>();
-                chunk.addOp<uint8_t, uint8_t>(Opcode::Ptr64Var, t->fields[field->index].offset, par->index);
+                chunk.addOp<uint8_t, uint8_t>((ft->isObject || ft->isArray) ? Opcode::ObjPtr64Var : Opcode::Ptr64Var, t->fields[field->index].offset, par->index);
             }
             else if (op == Opcode::Ptr64 && n.scopeTarget->as<ThisExpr>()) {
-                chunk.addOp<uint8_t, uint8_t>(Opcode::Ptr64Var, t->fields[field->index].offset, 0);
+                chunk.addOp<uint8_t, uint8_t>((ft->isObject || ft->isArray) ? Opcode::ObjPtr64Var : Opcode::Ptr64Var, t->fields[field->index].offset, 0);
             }
             else {
                 visitChild(n.scopeTarget);
@@ -742,6 +742,7 @@ namespace Strela {
         }
         else {
             auto fieldSize = mapType(n.callTarget->type)->arrayType->size;
+            auto ft = mapType(n.callTarget->type->as<ArrayType>()->baseType);
             for (int i = n.arguments.size() - 1; i >= 0; --i) {
                 visitChild(n.arguments[i]);
                 if (fieldSize != 1) {
@@ -758,7 +759,7 @@ namespace Strela {
             }
 
             visitChild(n.callTarget);
-            chunk.addOp<uint8_t>(op, 8);
+            chunk.addOp<uint8_t>((ft->isObject || ft->isArray) ? Opcode::ObjPtrInd64 : op, 8);
         }
     }
 

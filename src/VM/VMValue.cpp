@@ -24,7 +24,7 @@ namespace Strela {
 	VMValue::VMValue(double val) : type(Type::floating) { value.f64 = val; }
 	VMValue::VMValue(bool val) : type(Type::boolean) { value.boolean = val; }
 	VMValue::VMValue(const char* val) : type(Type::string) { value.string = val; }
-	VMValue::VMValue(VMObject* val) : type(Type::object) { value.object = val; }
+	VMValue::VMValue(void* val) : type(Type::object) { value.object = val; }
 
     VMValue VMValue::operator==(const VMValue& other) const {
         if (type == Type::string && other.type == Type::string) {

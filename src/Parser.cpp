@@ -528,7 +528,7 @@ namespace Strela {
         }
 
         if (!type && !initializer) {
-            expected("variable initializer.");
+            expected("type or initializer expression.");
         }
 
         eat(TokenType::Semicolon);

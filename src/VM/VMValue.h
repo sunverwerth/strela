@@ -16,7 +16,7 @@ namespace Strela {
         explicit VMValue(double val);
         explicit VMValue(const char* val);
         explicit VMValue(bool val);
-        explicit VMValue(VMObject* val);
+        explicit VMValue(void* val);
 
         VMValue operator==(const VMValue& other) const;
         VMValue operator!=(const VMValue& other) const;
@@ -44,7 +44,7 @@ namespace Strela {
             double f64;
             bool boolean;
             const char* string;
-            VMObject* object;
+            void* object;
         } value;
 
         enum class Type {

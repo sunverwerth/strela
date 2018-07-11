@@ -131,13 +131,13 @@ namespace Strela {
     }
 
     Expr* addCast(Expr* expr, TypeDecl* targetType) {
-        auto iface = targetType->as<InterfaceDecl>();
+        auto toIface = targetType->as<InterfaceDecl>();
         auto targetunion = targetType->as<UnionType>();
-        auto cls = expr->type->as<ClassDecl>();
+        auto fromClass = expr->type->as<ClassDecl>();
         
-        if (cls && iface) {
+        if (fromClass && toIface) {
             auto cast = new CastExpr(expr, targetType);
-            cast->implementation = iface->implementations[cls];
+            cast->implementation = getImplementation(fromClass, toIface);
             cast->type = targetType;
             return cast;
         }

@@ -17,8 +17,8 @@ namespace Strela {
      */
     class GC {
     public:
-        VMObject* allocObject(const VMType* type);
-        VMObject* allocArray(const VMType* type, uint64_t length);
+        void* allocObject(const VMType* type);
+        void* allocArray(const VMType* type, uint64_t length);
         
         void collect(std::vector<VMValue>& stack);
     

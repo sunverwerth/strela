@@ -29,10 +29,13 @@ namespace Strela {
         X(Ptr32, 1, integer) \
         X(Ptr64, 1, integer) \
         X(Ptr64Var, 2, integer) \
+        X(ObjPtr64, 1, integer) \
+        X(ObjPtr64Var, 2, integer) \
         X(PtrInd8, 1, integer) \
         X(PtrInd16, 1, integer) \
         X(PtrInd32, 1, integer) \
         X(PtrInd64, 1, integer) \
+        X(ObjPtrInd64, 1, integer) \
         X(StorePtr8, 1, integer) \
         X(StorePtr16, 1, integer) \
         X(StorePtr32, 1, integer) \
