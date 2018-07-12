@@ -408,15 +408,13 @@ namespace Strela {
 
         if (fromclass && toiface && n.implementation) {
             chunk.addOp<uint16_t>(Opcode::New, mapType(toiface)->index);
-            chunk.addOp(Opcode::Repeat);
             visitChild(n.sourceExpr);
-            chunk.addOp(Opcode::Swap);
+            chunk.addOp<uint8_t>(Opcode::Peek, 1);
             chunk.addOp<uint8_t>(Opcode::StorePtr64, 0);
             for(size_t i = 0; i < toiface->methods.size(); ++i) {
-                chunk.addOp(Opcode::Repeat);
                 auto index = chunk.addOp<uint8_t>(Opcode::Const, 255);
                 addFixup(index, n.implementation->classMethods[i], false);
-                chunk.addOp(Opcode::Swap);
+                chunk.addOp<uint8_t>(Opcode::Peek, 1);
                 chunk.addOp<uint8_t>(Opcode::StorePtr64, i * 8 + 8);
             }
         }
