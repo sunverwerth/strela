@@ -4,18 +4,17 @@
 #ifndef Strela_Ast_AstArrayTypeExpr_h
 #define Strela_Ast_AstArrayTypeExpr_h
 
-#include "TypeExpr.h"
+#include "Expr.h"
 
 namespace Strela {
 
-    class ArrayTypeExpr: public TypeExpr {
+    class ArrayTypeExpr: public Expr {
     public:
-        ArrayTypeExpr(TypeExpr* base): TypeExpr(), base(base) {}
-        STRELA_GET_TYPE(Strela::ArrayTypeExpr, Strela::TypeExpr);
-        STRELA_IMPL_TYPE_EXPR_VISITOR;
+        STRELA_GET_TYPE(Strela::ArrayTypeExpr, Strela::Expr);
+        STRELA_IMPL_EXPR_VISITOR;
 
     public:
-        TypeExpr* base;
+        Expr* baseTypeExpr = nullptr;
     };
 }
 

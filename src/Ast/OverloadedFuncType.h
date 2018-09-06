@@ -9,7 +9,7 @@
 namespace Strela {
     class OverloadedFuncType: public TypeDecl {
     public:
-        OverloadedFuncType(): TypeDecl("$overloaded") {}
+        OverloadedFuncType() { _name = "$overloaded"; }
         STRELA_GET_TYPE(Strela::OverloadedFuncType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

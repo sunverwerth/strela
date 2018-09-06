@@ -14,7 +14,7 @@
 #include "../Ast/PointerType.h"
 #include "../Ast/VoidType.h"
 
-
+#include <sstream>
 #include <cstring>
 #include <chrono>
 #include <cmath>
@@ -74,10 +74,7 @@ namespace Strela {
         return &ffi_type_pointer;
     }
 
-    extern std::map<char, uint64_t> timings;
-    extern std::map<char, uint64_t> counts;
-
-    VM::VM(const ByteCodeChunk& chunk, const std::vector<std::string>& arguments): chunk(chunk) {
+    VM::VM(ByteCodeChunk& chunk, const std::vector<std::string>& arguments): chunk(chunk), status(RUNNING) {
 #ifdef _WIN32
 		auto mod = LoadLibrary("msvcrt.dll");
 		auto sockmod = LoadLibrary("ws2_32.dll");
@@ -119,8 +116,12 @@ namespace Strela {
             }
         }
 		auto arr = gc.allocArray(arrtype, arguments.size());
+		auto data = (char*)arr;
+		data += 8;
 		for (int i = 0; i < arguments.size(); ++i) {
-			*(const char**)((char*)arr + sizeof(char*) * i) = arguments[i].c_str();
+			*(uint64_t*)data = (uint64_t)arguments[i].c_str();
+			//*(const char**)((char*)arr + sizeof(char*) * i) = arguments[i].c_str();
+			data += 8;
 		}
 		push(VMValue(arr));
     }
@@ -134,74 +135,77 @@ namespace Strela {
 
     VMValue VM::run() {
         uint64_t start = millis();
-        int numallocs = 0;
-        uint64_t opcounter = 0;
 
-        for (int i=0; i<numOpcodes;++i){
-            timings[i] = 0;
-            counts[i] = 0;
-        }
+		while (status != FINISHED) {
+            step(0xffffff);
 
-		while (true) {
-            if (g_timeout > 0 && (opcounter & 0x00ffffff) == 0 && millis() - start > g_timeout) {
-                std::cerr << "Aborted due to timeout.\n";
-                exit(1);
-            }
+			if (g_timeout > 0 && millis() - start > g_timeout) {
+				std::cerr << "Aborted due to timeout.\n";
+				return VMValue((int64_t)-1);
+			}
+		}
 
-            //auto opstart = nanos();
-            
-            ++opcounter;
+        return exitCode;
+    }
 
-            op = read<char>();
+    void VM::step(size_t maxOps) {
+		while (maxOps--) {
+			op = read<Opcode>();
 
-            switch ((Opcode)op) {
-            case Opcode::I8:
-                push(VMValue((int64_t)read<int8_t>()));
-                break;
-            case Opcode::I16:
-                push(VMValue((int64_t)read<int16_t>()));
-                break;
-            case Opcode::I32:
-                push(VMValue((int64_t)read<int32_t>()));
-                break;
-            case Opcode::I64:
-                push(VMValue((int64_t)read<int64_t>()));
-                break;
-            case Opcode::U8:
-                push(VMValue((int64_t)read<uint8_t>()));
-                break;
-            case Opcode::U16:
-                push(VMValue((int64_t)read<uint16_t>()));
-                break;
-            case Opcode::U32:
-                push(VMValue((int64_t)read<uint32_t>()));
-                break;
-            case Opcode::U64:
-                push(VMValue((int64_t)read<uint64_t>()));
-                break;
-            case Opcode::F32: {
-                VMValue val;
-                val.value.f32 = read<float>();
-                val.type = VMValue::Type::floating;
-                push(val);
-                break;
-            }
-            case Opcode::F64:
-                push(VMValue((double)read<double>()));
-                break;
-
-            case Opcode::Null:
-                push(VMValue());
-                break;
-
-			case Opcode::Const: {
-				push(chunk.constants[read<uint8_t>()]);
+			switch (op) {
+			case Opcode::Trap: {
+				status = STOPPED;
+				ip--;
+				return;
 				break;
 			}
-            case Opcode::Grow: {
-                stack.resize(stack.size() + read<uint8_t>());
-                break;
-            }
+			case Opcode::I8:
+				push(VMValue((int64_t)read<int8_t>()));
+				break;
+			case Opcode::I16:
+				push(VMValue((int64_t)read<int16_t>()));
+				break;
+			case Opcode::I32:
+				push(VMValue((int64_t)read<int32_t>()));
+				break;
+			case Opcode::I64:
+				push(VMValue((int64_t)read<int64_t>()));
+				break;
+			case Opcode::U8:
+				push(VMValue((int64_t)read<uint8_t>()));
+				break;
+			case Opcode::U16:
+				push(VMValue((int64_t)read<uint16_t>()));
+				break;
+			case Opcode::U32:
+				push(VMValue((int64_t)read<uint32_t>()));
+				break;
+			case Opcode::U64:
+				push(VMValue((int64_t)read<uint64_t>()));
+				break;
+			case Opcode::F32: {
+				VMValue val;
+				val.value.f32 = read<float>();
+				val.type = VMValue::Type::floating;
+				push(val);
+				break;
+			}
+			case Opcode::F64:
+				push(VMValue((double)read<double>()));
+				break;
+
+			case Opcode::Null:
+				push(VMValue());
+				break;
+
+			case Opcode::Const: {
+				push(chunk.constants[read<uint16_t>()]);
+				break;
+			}
+			case Opcode::Grow: {
+				stack.resize(stack.size() + read<uint8_t>());
+				break;
+			}
 			case Opcode::Var: {
 				push(peek(bp + read<uint8_t>()));
 				break;
@@ -216,24 +220,24 @@ namespace Strela {
 			}
 			case Opcode::Call: {
 				auto newip = pop().value.integer;
-                auto numargs = read<uint8_t>();
-                callStack.push_back({bp, ip});
-                bp = stack.size() - numargs;
-                ip = newip;
+				auto numargs = read<uint8_t>();
+				callStack.push_back({ bp, ip - 1 });
+				bp = stack.size() - numargs;
+				ip = newip;
 				break;
 			}
 			case Opcode::CallImm: {
 				auto newip = read<uint32_t>();
-                auto numargs = read<uint8_t>();
-                callStack.push_back({bp, ip});
-                bp = stack.size() - numargs;
-                ip = newip;
+				auto numargs = read<uint8_t>();
+				callStack.push_back({ bp, ip - 1 });
+				bp = stack.size() - numargs;
+				ip = newip;
 				break;
 			}
 			case Opcode::F32tI64: {
-                float f;
-                auto val = pop();
-                val.value.f64 = val.value.f32;
+				float f;
+				auto val = pop();
+				val.value.f64 = val.value.f32;
 				push(val);
 				break;
 			}
@@ -242,9 +246,9 @@ namespace Strela {
 				break;
 			}
 			case Opcode::I64tF32: {
-                auto val = pop();
-                val.type = VMValue::Type::floating;
-                val.value.f32  = val.value.integer;
+				auto val = pop();
+				val.type = VMValue::Type::floating;
+				val.value.f32 = val.value.integer;
 				push(val);
 				break;
 			}
@@ -253,177 +257,180 @@ namespace Strela {
 				break;
 			}
 			case Opcode::F64tF32: {
-                auto val = pop();
-                float f = (float)val.value.f64;
-                val.value.f64 = 0;
-                memcpy(&val, &f, sizeof(float));
+				auto val = pop();
+				float f = (float)val.value.f64;
+				val.value.f64 = 0;
+				memcpy(&val, &f, sizeof(float));
 				push(val);
 				break;
 			}
 			case Opcode::F32tF64: {
-                auto val = pop();
-                float f;
-                memcpy(&f, &val, sizeof(float));
-                val.value.f64 = f;
+				auto val = pop();
+				float f;
+				memcpy(&f, &val, sizeof(float));
+				val.value.f64 = f;
 				push(val);
 				break;
 			}
 			case Opcode::NativeCall: {
 				auto funcindex = pop();
 				auto& ff = chunk.foreignFunctions[funcindex.value.integer];
-				
-                VMValue retVal((int64_t)0);
-                if (ff.returnType->as<FloatType>()) retVal.type = VMValue::Type::floating;
-                else if (ff.returnType->as<IntType>()) retVal.type = VMValue::Type::integer;
 
-                std::vector<VMValue> originalArgs;
-                originalArgs.resize(ff.argTypes.size());
-                for (int i = ff.argTypes.size() - 1; i >= 0; --i) {
-                    originalArgs[i] = pop();
-                }
-				
-                std::vector<VMValue> args;
-                args.reserve(ff.argTypes.size());
-                std::vector<void*> argPtrs;
-                argPtrs.reserve(ff.argTypes.size());
-                for (size_t i = 0; i < ff.argTypes.size(); ++i) {
-                    if (originalArgs[i].type == VMValue::Type::object) {
-                        void* aptr = originalArgs[i].value.object;
+				VMValue retVal((int64_t)0);
+				if (ff.returnType->as<FloatType>()) retVal.type = VMValue::Type::floating;
+				else if (ff.returnType->as<IntType>()) retVal.type = VMValue::Type::integer;
+
+				std::vector<VMValue> originalArgs;
+				originalArgs.resize(ff.argTypes.size());
+				for (int i = ff.argTypes.size() - 1; i >= 0; --i) {
+					originalArgs[i] = pop();
+				}
+
+				std::vector<VMValue> args;
+				args.reserve(ff.argTypes.size());
+				std::vector<void*> argPtrs;
+				argPtrs.reserve(ff.argTypes.size());
+				for (size_t i = 0; i < ff.argTypes.size(); ++i) {
+					if (originalArgs[i].type == VMValue::Type::object) {
+						void* aptr = originalArgs[i].value.object;
 						VMValue arg((int64_t)0);
-                        memcpy(&arg.value.integer, &aptr, sizeof(void*));
-                        args.push_back(arg);
-                        argPtrs.push_back(&args.back());
-                    }
-                    else if (ff.argTypes[i] == &PointerType::instance) {
-                        void* aptr = &originalArgs[i].value;
-                        VMValue arg((int64_t)0);
-                        memcpy(&arg.value.integer, &aptr, sizeof(void*));
-                        args.push_back(arg);
-                        argPtrs.push_back(&args.back());
-                    }
-                    else {
-                        argPtrs.push_back(&originalArgs[i]);
-                    }
-                }
+						memcpy(&arg.value.integer, &aptr, sizeof(void*));
+						args.push_back(arg);
+						argPtrs.push_back(&args.back());
+					}
+					else if (ff.argTypes[i] == &PointerType::instance) {
+						void* aptr = &originalArgs[i].value;
+						VMValue arg((int64_t)0);
+						memcpy(&arg.value.integer, &aptr, sizeof(void*));
+						args.push_back(arg);
+						argPtrs.push_back(&args.back());
+					}
+					else {
+						argPtrs.push_back(&originalArgs[i]);
+					}
+				}
 
-                ffi_call(&ff.cif, ff.ptr, &retVal, ff.argTypes.empty() ? nullptr : &argPtrs[0]);
-                if (errno > 0) {
-                    auto err = strerror(errno);
-                    std::cerr << ff.name << ": " << err << "\n";
-                    errno = 0;
-                }
+				ffi_call(&ff.cif, ff.ptr, &retVal, ff.argTypes.empty() ? nullptr : &argPtrs[0]);
+				if (errno > 0) {
+					auto err = strerror(errno);
+					std::cerr << ff.name << ": " << err << "\n";
+					errno = 0;
+				}
 
-                if (ff.returnType != &VoidType::instance) {
-				    push(retVal);
-                }
+				if (ff.returnType != &VoidType::instance) {
+					push(retVal);
+				}
 				break;
 			}
 			case Opcode::Return: {
-                auto retVal = pop();
-                if (callStack.empty()) {
-                    return retVal;
-                }
+				auto retVal = pop();
+				if (callStack.empty()) {
+					exitCode = retVal;
+					status = FINISHED;
+					maxOps = 0;
+					return;
+				}
 
-                stack.resize(bp);
+				stack.resize(bp);
 
-                auto& frame = callStack.back();
-                ip = frame.ip;
-                bp = frame.bp;
-                callStack.pop_back();
+				auto& frame = callStack.back();
+				ip = frame.ip + 1;
+				bp = frame.bp;
+				callStack.pop_back();
 
-                push(retVal);
+				push(retVal);
 				break;
 			}
 			case Opcode::ReturnVoid: {
-                stack.resize(bp);
+				stack.resize(bp);
 
-                auto& frame = callStack.back();
-                ip = frame.ip;
-                bp = frame.bp;
-                callStack.pop_back();
+				auto& frame = callStack.back();
+				ip = frame.ip + 1;
+				bp = frame.bp;
+				callStack.pop_back();
 				break;
 			}
 			case Opcode::AddI: {
 				auto r = pop();
 				auto l = pop();
-                l.value.integer += r.value.integer;
+				l.value.integer += r.value.integer;
 				push(l);
 				break;
 			}
 			case Opcode::AddF32: {
 				auto r = pop();
 				auto l = pop();
-                l.value.f32 += r.value.f32;
+				l.value.f32 += r.value.f32;
 				push(l);
 				break;
 			}
 			case Opcode::AddF64: {
 				auto r = pop();
 				auto l = pop();
-                l.value.f64 += r.value.f64;
+				l.value.f64 += r.value.f64;
 				push(l);
 				break;
 			}
 			case Opcode::SubI: {
 				auto r = pop();
 				auto l = pop();
-                l.value.integer -= r.value.integer;
+				l.value.integer -= r.value.integer;
 				push(l);
 				break;
 			}
-            case Opcode::SubF32: {
+			case Opcode::SubF32: {
 				auto r = pop();
 				auto l = pop();
-                l.value.f32 -= r.value.f32;
+				l.value.f32 -= r.value.f32;
 				push(l);
 				break;
 			}
 			case Opcode::SubF64: {
 				auto r = pop();
 				auto l = pop();
-                l.value.f64 -= r.value.f64;
+				l.value.f64 -= r.value.f64;
 				push(l);
 				break;
 			}
 			case Opcode::MulI: {
 				auto r = pop();
 				auto l = pop();
-                l.value.integer *= r.value.integer;
+				l.value.integer *= r.value.integer;
 				push(l);
 				break;
 			}
 			case Opcode::MulF32: {
 				auto r = pop();
 				auto l = pop();
-                l.value.f32 *= r.value.f32;
+				l.value.f32 *= r.value.f32;
 				push(l);
 				break;
 			}
 			case Opcode::MulF64: {
 				auto r = pop();
 				auto l = pop();
-                l.value.f64 *= r.value.f64;
+				l.value.f64 *= r.value.f64;
 				push(l);
 				break;
 			}
 			case Opcode::DivI: {
 				auto r = pop();
 				auto l = pop();
-                l.value.integer /= r.value.integer;
+				l.value.integer /= r.value.integer;
 				push(l);
 				break;
 			}
 			case Opcode::DivF32: {
 				auto r = pop();
 				auto l = pop();
-                l.value.f32 /= r.value.f32;
+				l.value.f32 /= r.value.f32;
 				push(l);
 				break;
 			}
 			case Opcode::DivF64: {
 				auto r = pop();
 				auto l = pop();
-                l.value.f64 /= r.value.f64;
+				l.value.f64 /= r.value.f64;
 				push(l);
 				break;
 			}
@@ -445,7 +452,7 @@ namespace Strela {
 				push(l != r);
 				break;
 			}
-            case Opcode::CmpLTI: {
+			case Opcode::CmpLTI: {
 				auto r = pop();
 				auto l = pop();
 				push(VMValue(bool(l.value.integer < r.value.integer)));
@@ -511,40 +518,40 @@ namespace Strela {
 				push(VMValue(!v.value.boolean));
 				break;
 			}
-            case Opcode::PrintI: {
-                std::cout << pop().value.integer;
-                break;
-            }
-            case Opcode::PrintF32: {
-                float f;
-                auto v = pop();
-                memcpy(&f, &v, sizeof(float));
-                std::cout << f;
-                break;
-            }
-            case Opcode::PrintF64: {
-                std::cout << pop().value.f64;
-                break;
-            }
-            case Opcode::PrintN: {
-                std::cout << "(null)";
-                break;
-            }
-            case Opcode::PrintS: {
-                auto val = pop();
-                std::cout << val.value.string;
-                break;
-            }
-            case Opcode::PrintO: {
-                std::cout << "[object]";
-                break;
-            }
-            case Opcode::PrintB: {
-                std::cout << (pop().value.boolean ? "true" : "false");
-                break;
-            }
+			case Opcode::PrintI: {
+				std::cout << pop().value.integer;
+				break;
+			}
+			case Opcode::PrintF32: {
+				float f;
+				auto v = pop();
+				memcpy(&f, &v, sizeof(float));
+				std::cout << f;
+				break;
+			}
+			case Opcode::PrintF64: {
+				std::cout << pop().value.f64;
+				break;
+			}
+			case Opcode::PrintN: {
+				std::cout << "(null)";
+				break;
+			}
+			case Opcode::PrintS: {
+				auto val = pop();
+				std::cout << val.value.string;
+				break;
+			}
+			case Opcode::PrintO: {
+				std::cout << "[object]";
+				break;
+			}
+			case Opcode::PrintB: {
+				std::cout << (pop().value.boolean ? "true" : "false");
+				break;
+			}
 			case Opcode::Jmp: {
-    			ip = pop().value.integer;
+				ip = pop().value.integer;
 				break;
 			}
 			case Opcode::JmpIf: {
@@ -563,162 +570,162 @@ namespace Strela {
 				}
 				break;
 			}
-            case Opcode::New: {
-                numallocs++;
-                if ((numallocs % 1000) == 0) {
-                    gc.collect(stack);
-                }
-                auto type = read<uint16_t>();
-                auto obj = gc.allocObject(chunk.types[type]);
-                auto val = VMValue(obj);
-                val.type = VMValue::Type::object;
-                push(val);
-                break;
-            }
-            case Opcode::Array: {
-                numallocs++;
-                if ((numallocs % 1000) == 0) {
-                    gc.collect(stack);
-                }
-                auto length = pop();
-                auto type = pop();
-                auto obj = gc.allocArray(chunk.types[type.value.integer], length.value.integer);
-                auto val = VMValue(obj);
-                val.type = VMValue::Type::object;
-                push(val);
-                break;
-            }
-            case Opcode::Ptr8: {
-            case Opcode::Ptr16:
-            case Opcode::Ptr32:
-            case Opcode::Ptr64:
-            case Opcode::ObjPtr64:
-                auto obj = pop();
-                if (!obj.value.object) {
-                    std::cerr << "Null pointer access\n";
-                    printCallStack();
-                    exit(1);
-                }
-                auto offset = read<int8_t>();
-                VMValue val((int64_t)0);
-                switch ((Opcode)op) {
-                    case Opcode::Ptr8: memcpy(&val.value.integer, (char*)obj.value.object + offset, 1); break;
-                    case Opcode::Ptr16: memcpy(&val.value.integer, (char*)obj.value.object + offset, 2); break;
-                    case Opcode::Ptr32: memcpy(&val.value.integer, (char*)obj.value.object + offset, 4); break;
-                    case Opcode::Ptr64: memcpy(&val.value.integer, (char*)obj.value.object + offset, 8); break;
-                    case Opcode::ObjPtr64: memcpy(&val.value.integer, (char*)obj.value.object + offset, 8); break;
-                    default: exit(1);
-                }
-                val.type = (op == (char)Opcode::ObjPtr64) ? VMValue::Type::object : VMValue::Type::integer;
-                push(val);
-                break;
-            }
-            case Opcode::Ptr64Var: {
-            case Opcode::ObjPtr64Var:
-                auto offset = read<int8_t>();
-                auto var = read<int8_t>();
-                auto obj = peek(bp + var).value.object;
-                if (!obj) {
-                    std::cerr << "Null pointer access\n";
-                    printCallStack();
-                    exit(1);
-                }
-                VMValue val((int64_t)0);
-                memcpy(&val.value.integer, (char*)obj + offset, 8);
-                val.type = (op == (char)Opcode::ObjPtr64Var) ? VMValue::Type::object : VMValue::Type::integer;
-                push(val);
-                break;
-            }
-            case Opcode::PtrInd8: {
-            case Opcode::PtrInd16:
-            case Opcode::PtrInd32:
-            case Opcode::PtrInd64:
-            case Opcode::ObjPtrInd64:
-                auto obj = pop();
-                if (!obj) {
-                    std::cerr << "Null pointer access\n";
-                    printCallStack();
-                    exit(1);
-                }
-                auto off = pop();
-                auto off2 = read<int8_t>();
-                VMValue val((int64_t)0);
-                switch ((Opcode)op) {
-                    case Opcode::PtrInd8: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 1); break;
-                    case Opcode::PtrInd16: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 2); break;
-                    case Opcode::PtrInd32: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 4); break;
-                    case Opcode::PtrInd64: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 8); break;
-                    case Opcode::ObjPtrInd64: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 8); break;
-                    default: exit(1);
-                }
-                val.type = (op == (char)Opcode::ObjPtrInd64) ? VMValue::Type::object : VMValue::Type::integer;
-                push(val);
-                break;
-            }
-            case Opcode::StorePtr8: {
-            case Opcode::StorePtr16:
-            case Opcode::StorePtr32:
-            case Opcode::StorePtr64: 
-                auto obj = pop();
-                if (!obj.value.object) {
-                    std::cerr << "Null pointer access\n";
-                    printCallStack();
-                    exit(1);
-                }
-                auto val = pop();
-                auto offset = read<int8_t>();
-                switch ((Opcode)op) {
-                    case Opcode::StorePtr8: memcpy((char*)obj.value.object + offset, &val.value.integer, 1); break;
-                    case Opcode::StorePtr16: memcpy((char*)obj.value.object + offset, &val.value.integer, 2); break;
-                    case Opcode::StorePtr32: memcpy((char*)obj.value.object + offset, &val.value.integer, 4); break;
-                    case Opcode::StorePtr64: memcpy((char*)obj.value.object + offset, &val.value.integer, 8); break;
-                    default: exit(1);
-                }
-                break;
-            }
-            case Opcode::StorePtr64Var: {
-                auto val = pop();
-                auto offset = read<int8_t>();
-                auto var = read<int8_t>();
-                auto obj = peek(bp + var).value.object;
-                if (!obj) {
-                    std::cerr << "Null pointer access\n";
-                    printCallStack();
-                    exit(1);
-                }
-                memcpy((char*)obj + offset, &val, 8);
-                break;
-            }
-            case Opcode::StorePtrInd8: {
-            case Opcode::StorePtrInd16:
-            case Opcode::StorePtrInd32:
-            case Opcode::StorePtrInd64:
-                auto obj = pop();
-                if (!obj.value.object) {
-                    std::cerr << "Null pointer access\n";
-                    printCallStack();
-                    exit(1);
-                }
-                auto off = pop();
-                auto val = pop();
-                auto off2 = read<int8_t>();
-                switch ((Opcode)op) {
-                    case Opcode::StorePtrInd8: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 1); break;
-                    case Opcode::StorePtrInd16: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 2); break;
-                    case Opcode::StorePtrInd32: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 4); break;
-                    case Opcode::StorePtrInd64: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 8); break;
-                    default: exit(1);
-                }
-                break;
-            }
-            case Opcode::Repeat: {
-                push(stack.back());
-                break;
-            }
-            case Opcode::Pop: {
-                pop();
-                break;
-            }
+			case Opcode::New: {
+				numallocs++;
+				if ((numallocs % 1000) == 0) {
+					gc.collect(stack);
+				}
+				auto type = read<uint16_t>();
+				auto obj = gc.allocObject(chunk.types[type]);
+				auto val = VMValue(obj);
+				val.type = VMValue::Type::object;
+				push(val);
+				break;
+			}
+			case Opcode::Array: {
+				numallocs++;
+				if ((numallocs % 1000) == 0) {
+					gc.collect(stack);
+				}
+				auto length = pop();
+				auto type = pop();
+				auto obj = gc.allocArray(chunk.types[type.value.integer], length.value.integer);
+				auto val = VMValue(obj);
+				val.type = VMValue::Type::object;
+				push(val);
+				break;
+			}
+			case Opcode::Ptr8: {
+			case Opcode::Ptr16:
+			case Opcode::Ptr32:
+			case Opcode::Ptr64:
+			case Opcode::ObjPtr64:
+				auto obj = pop();
+				if (!obj.value.object) {
+					std::cerr << "Null pointer access\n";
+					std::cerr << printCallStack();
+					exit(1);
+				}
+				auto offset = read<int8_t>();
+				VMValue val((int64_t)0);
+				switch ((Opcode)op) {
+				case Opcode::Ptr8: memcpy(&val.value.integer, (char*)obj.value.object + offset, 1); break;
+				case Opcode::Ptr16: memcpy(&val.value.integer, (char*)obj.value.object + offset, 2); break;
+				case Opcode::Ptr32: memcpy(&val.value.integer, (char*)obj.value.object + offset, 4); break;
+				case Opcode::Ptr64: memcpy(&val.value.integer, (char*)obj.value.object + offset, 8); break;
+				case Opcode::ObjPtr64: memcpy(&val.value.integer, (char*)obj.value.object + offset, 8); break;
+				default: exit(1);
+				}
+				val.type = (op == Opcode::ObjPtr64) ? VMValue::Type::object : VMValue::Type::integer;
+				push(val);
+				break;
+			}
+			case Opcode::Ptr64Var: {
+			case Opcode::ObjPtr64Var:
+				auto offset = read<int8_t>();
+				auto var = read<int8_t>();
+				auto obj = peek(bp + var).value.object;
+				if (!obj) {
+					std::cerr << "Null pointer access\n";
+					std::cerr << printCallStack();
+					exit(1);
+				}
+				VMValue val((int64_t)0);
+				memcpy(&val.value.integer, (char*)obj + offset, 8);
+				val.type = (op == Opcode::ObjPtr64Var) ? VMValue::Type::object : VMValue::Type::integer;
+				push(val);
+				break;
+			}
+			case Opcode::PtrInd8: {
+			case Opcode::PtrInd16:
+			case Opcode::PtrInd32:
+			case Opcode::PtrInd64:
+			case Opcode::ObjPtrInd64:
+				auto obj = pop();
+				if (!obj) {
+					std::cerr << "Null pointer access\n";
+					std::cerr << printCallStack();
+					exit(1);
+				}
+				auto off = pop();
+				auto off2 = read<int8_t>();
+				VMValue val((int64_t)0);
+				switch ((Opcode)op) {
+				case Opcode::PtrInd8: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 1); break;
+				case Opcode::PtrInd16: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 2); break;
+				case Opcode::PtrInd32: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 4); break;
+				case Opcode::PtrInd64: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 8); break;
+				case Opcode::ObjPtrInd64: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 8); break;
+				default: exit(1);
+				}
+				val.type = (op == Opcode::ObjPtrInd64) ? VMValue::Type::object : VMValue::Type::integer;
+				push(val);
+				break;
+			}
+			case Opcode::StorePtr8: {
+			case Opcode::StorePtr16:
+			case Opcode::StorePtr32:
+			case Opcode::StorePtr64:
+				auto obj = pop();
+				if (!obj.value.object) {
+					std::cerr << "Null pointer access\n";
+					std::cerr << printCallStack();
+					exit(1);
+				}
+				auto val = pop();
+				auto offset = read<int8_t>();
+				switch ((Opcode)op) {
+				case Opcode::StorePtr8: memcpy((char*)obj.value.object + offset, &val.value.integer, 1); break;
+				case Opcode::StorePtr16: memcpy((char*)obj.value.object + offset, &val.value.integer, 2); break;
+				case Opcode::StorePtr32: memcpy((char*)obj.value.object + offset, &val.value.integer, 4); break;
+				case Opcode::StorePtr64: memcpy((char*)obj.value.object + offset, &val.value.integer, 8); break;
+				default: exit(1);
+				}
+				break;
+			}
+			case Opcode::StorePtr64Var: {
+				auto val = pop();
+				auto offset = read<int8_t>();
+				auto var = read<int8_t>();
+				auto obj = peek(bp + var).value.object;
+				if (!obj) {
+					std::cerr << "Null pointer access\n";
+					std::cerr << printCallStack();
+					exit(1);
+				}
+				memcpy((char*)obj + offset, &val, 8);
+				break;
+			}
+			case Opcode::StorePtrInd8: {
+			case Opcode::StorePtrInd16:
+			case Opcode::StorePtrInd32:
+			case Opcode::StorePtrInd64:
+				auto obj = pop();
+				if (!obj.value.object) {
+					std::cerr << "Null pointer access\n";
+					std::cerr << printCallStack();
+					exit(1);
+				}
+				auto off = pop();
+				auto val = pop();
+				auto off2 = read<int8_t>();
+				switch ((Opcode)op) {
+				case Opcode::StorePtrInd8: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 1); break;
+				case Opcode::StorePtrInd16: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 2); break;
+				case Opcode::StorePtrInd32: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 4); break;
+				case Opcode::StorePtrInd64: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 8); break;
+				default: exit(1);
+				}
+				break;
+			}
+			case Opcode::Repeat: {
+				push(stack.back());
+				break;
+			}
+			case Opcode::Pop: {
+				pop();
+				break;
+			}
 			case Opcode::Swap: {
 				auto a = pop();
 				auto b = pop();
@@ -726,39 +733,34 @@ namespace Strela {
 				push(b);
 				break;
 			}
-            case Opcode::ConcatSS: {
-                auto r = pop();
-                auto l = pop();
-                r.type = l.type = VMValue::Type::string;
-                push(l + r);
-                break;
-            }
-            case Opcode::ConcatSI: {
-                auto r = pop();
-                auto l = pop();
-                l.type = VMValue::Type::string;
-                r.type = VMValue::Type::integer;
-                push(l + r);
-                break;
-            }
-			default:
-                if (op >= numOpcodes) {
-                    std::cerr << "Opcode '" << op << "' not implemented\n";
-                    printCallStack();
-                    exit(1);
-                }
-                else {
-                    std::cerr << "Opcode '" << opcodeInfo[op].name << "' not implemented\n";
-                    printCallStack();
-                    exit(1);
-                }
+			case Opcode::ConcatSS: {
+				auto r = pop();
+				auto l = pop();
+				r.type = l.type = VMValue::Type::string;
+				push(l + r);
+				break;
 			}
-
-            //timings[op] += nanos() - opstart;
-            //counts[op]++;
+			case Opcode::ConcatSI: {
+				auto r = pop();
+				auto l = pop();
+				l.type = VMValue::Type::string;
+				r.type = VMValue::Type::integer;
+				push(l + r);
+				break;
+			}
+			default:
+				if ((unsigned char)op >= numOpcodes) {
+					std::cerr << "Opcode '" << (unsigned char)op << "' not implemented\n";
+					std::cerr << printCallStack();
+					exit(1);
+				}
+				else {
+					std::cerr << "Opcode '" << opcodeInfo[(unsigned char)op].name << "' not implemented\n";
+					std::cerr << printCallStack();
+					exit(1);
+				}
+			}
 		}
-
-        return VMValue();
     }
 	
     void VM::push(const VMValue& val) {
@@ -783,26 +785,38 @@ namespace Strela {
 		stack[idx] = val;
 	}
 
-	void VM::printCallStack() {
-        std::cerr << "[Call Stack]\n";
+	std::string VM::printCallStack() {
+        std::stringstream sstr;
         Frame cur{bp, ip};
         int i = callStack.size();
+		sstr << std::dec << (i+1) << "\n";
         while (i >= 0) {
             std::string name("???");
 
             size_t largest = 0;
             for (auto&& it: chunk.functions) {
                 if (it.first >= largest && it.first <= cur.ip) {
-                    name = it.second;
+                    name = it.second.name;
                     largest = it.first;
                 }
             }
 
-            std::cerr << name << " 0x" << std::setfill('0') << std::setw(8) << std::hex << cur.ip << "\n";
+			std::string source = "";
+			size_t line = 0;
+			auto sourceLine = chunk.getLine(cur.ip);
+			if (sourceLine) {
+				source = chunk.files[sourceLine->file];
+				line = sourceLine->line;
+			}
+
+			sstr << source << "\n";
+			sstr << std::dec << line << "\n";
+			sstr << name << " " << std::hex << std::setfill('0') << std::setw(8) << cur.ip << "\n";
 
             --i;
             if (i < 0 || callStack.empty()) break;
             cur = callStack[i];
         }
+        return sstr.str();
     }
 }

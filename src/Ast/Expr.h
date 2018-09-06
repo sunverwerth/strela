@@ -9,7 +9,7 @@
 #include "InvalidType.h"
 #include <vector>
 
-#define STRELA_IMPL_EXPR_VISITOR void accept(Strela::IExprVisitor& v) override { v.visit(*this); }
+#define STRELA_IMPL_EXPR_VISITOR void accept(Strela::IExprVisitor<void>& v) override { return v.visit(*this); }
 
 namespace Strela {
     class TypeDecl;
@@ -30,13 +30,12 @@ namespace Strela {
 
     class Expr: public Node {
     public:
-        Expr(): Node() {}
         STRELA_GET_TYPE(Strela::Expr, Strela::Node);
-        virtual void accept(IExprVisitor&) = 0;
+        virtual void accept(IExprVisitor<void>&) = 0;
 
     public:
-        bool ignoreResult = false;
         TypeDecl* type = &InvalidType::instance;
+        TypeDecl* typeValue = &InvalidType::instance;
         Node* node = nullptr;
         Expr* arrayIndex = nullptr;
         Expr* context = nullptr;

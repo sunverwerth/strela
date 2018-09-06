@@ -8,7 +8,7 @@
 
 namespace Strela {
     void NodePrinter::visit(ModDecl& n) {
-        std::cout << "module " << n.name << " {\n";
+        std::cout << "module " << n._name << " {\n";
         push();
         for (auto&& en: n.enums) {
             std::cout << indent;
@@ -17,6 +17,10 @@ namespace Strela {
         for (auto&& cls: n.classes) {
             std::cout << indent;
             visitChild(cls);
+        }
+        for (auto&& ta: n.typeAliases) {
+            std::cout << indent;
+            visitChild(ta);
         }
         for (auto&& fun: n.functions) {
             std::cout << indent;
@@ -31,7 +35,7 @@ namespace Strela {
         if (n.isExported) {
             std::cout << "export ";
         }
-        std::cout << "class " << n.name;
+        std::cout << "class " << n._name;
         if (!n.genericParams.empty()) {
             std::cout << "<";
             list(n.genericParams, ", ");
@@ -181,15 +185,6 @@ namespace Strela {
         visitChild(n.right);
     }
 
-    void NodePrinter::visit(IdTypeExpr& n) {
-        std::cout << n.name;
-    }
-
-    void NodePrinter::visit(ScopeTypeExpr& n) {
-        visitChild(n.target);
-        std::cout << "." << n.name;
-    }
-
     void NodePrinter::visit(WhileStmt& n) {
         std::cout << "while (";
         visitChild(n.condition);
@@ -203,7 +198,7 @@ namespace Strela {
     }
 
     void NodePrinter::visit(ArrayTypeExpr& n) {
-        visitChild(n.base);
+        visitChild(n.baseTypeExpr);
         std::cout << "[]";
     }
 
@@ -294,19 +289,25 @@ namespace Strela {
     }
 
     void NodePrinter::visit(NullableTypeExpr& n) {
-        visitChild(n.base);
+        visitChild(n.baseTypeExpr);
         std::cout << "?";
     }
 
     void NodePrinter::visit(GenericParam& n) {
-        std::cout << n.name;
+        std::cout << n._name;
     }
 
     void NodePrinter::visit(GenericReificationExpr& n) {
-        visitChild(n.base);
+        visitChild(n.baseTypeExpr);
         std::cout << "<";
         list(n.genericArguments, ", ");
         std::cout << ">";
+    }
+
+    void NodePrinter::visit(TypeAliasDecl& n) {
+        std::cout << "type " << n._name << " = ";
+        visitChild(n.typeExpr);
+        std::cout << ";\n";
     }
 
     void NodePrinter::push() {

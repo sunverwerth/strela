@@ -12,7 +12,6 @@
 namespace Strela {
     class ImportStmt: public Stmt {
     public:
-        ImportStmt(const std::vector<std::string>& parts, bool all): Stmt(), parts(parts), all(all) {}
         STRELA_GET_TYPE(Strela::ImportStmt, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 

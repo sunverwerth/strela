@@ -13,14 +13,12 @@ namespace Strela {
     class BlockStmt;
     class Param;
     class Expr;
-    class TypeExpr;
     class ByteCodeChunk;
     class FuncType;
     class TypeDecl;
 
     class InterfaceMethodDecl: public Stmt {
     public:
-        InterfaceMethodDecl(const std::string& name, const std::vector<Param*>& params, TypeExpr* returnTypeExpr): Stmt(), name(name), params(params), returnTypeExpr(returnTypeExpr) {}
         STRELA_GET_TYPE(Strela::InterfaceMethodDecl, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 
@@ -28,7 +26,7 @@ namespace Strela {
         bool isExported = false;
         std::string name;
         std::vector<Param*> params;
-        TypeExpr* returnTypeExpr;
+        Expr* returnTypeExpr = nullptr;
         FuncType* type = nullptr;
         size_t index = 0;
     };

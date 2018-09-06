@@ -9,20 +9,19 @@
 #include <string>
 
 namespace Strela {
-    class TypeExpr;
+    class Expr;
     class TypeDecl;
     
     class Param: public Stmt {
     public:
-        Param(const std::string& name, TypeExpr* typeExpr): Stmt(), name(name), typeExpr(typeExpr) {}
         STRELA_GET_TYPE(Strela::Param, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 
     public:
         int index = 0;
         std::string name;
-        TypeExpr* typeExpr;
-        TypeDecl* type = nullptr;
+        Expr* typeExpr = nullptr;
+        TypeDecl* declType = nullptr;
     };
 }
 

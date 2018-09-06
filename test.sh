@@ -1,6 +1,6 @@
 #!/bin/bash
 
-STRELAC=release/strelac
+STRELA=release/strela
 if [ $# -gt 0 ]; then
     if [ -d $1 ]; then
         DIR=$1
@@ -39,7 +39,7 @@ else
     MODNAME=`basename $1 .strela`
     DIRNAME=`dirname $1`
     printf "$1 "
-    if output=$($STRELAC --search ./ --timeout 5 $1); then
+    if output=$($STRELA --search ./ --timeout 5 $1); then
         echo "$output" | diff -u --strip-trailing-cr $DIRNAME/$MODNAME.out - # &>/dev/null
         if [ $? == 0 ]; then
             echo -e "\033[32mOK\033[0m"

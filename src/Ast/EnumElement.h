@@ -11,7 +11,6 @@
 namespace Strela {    
     class EnumElement: public Stmt {
     public:
-        EnumElement(const std::string& name): Stmt(), name(name) {}
         STRELA_GET_TYPE(Strela::EnumElement, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 

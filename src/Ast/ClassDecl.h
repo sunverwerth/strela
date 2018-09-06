@@ -16,7 +16,8 @@ namespace Strela {
     
     class ClassDecl: public TypeDecl {
     public:
-        ClassDecl(const std::string& name, const std::vector<GenericParam*>& genericParams, const std::vector<FuncDecl*>& methods, const std::vector<FieldDecl*>& fields): TypeDecl(name), genericParams(genericParams), methods(methods), fields(fields) {}
+        ClassDecl() = default;
+        ClassDecl(const std::string& name) { this->_name = name; }
         STRELA_GET_TYPE(Strela::ClassDecl, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

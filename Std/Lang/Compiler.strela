@@ -10,16 +10,16 @@ module Std.Lang.Compiler {
 
     function help() {
         println("-- The strela compiler --");
-        println("Syntax: strelac infile [outfile]");
+        println("Syntax: strela infile [outfile]");
     }
 
     function main(args: String[]): i32 {
-        if (args.length < 3) {
+        if (args.length < 2) {
             help();
             return 1;
         }
 
-        var inFile = new File(args[1], "rb");
+        var inFile = new File(args[0], "rb");
         var lexer = new Lexer(inFile);
         var parser = new Parser(lexer);
         var mod = parser.parseModule();

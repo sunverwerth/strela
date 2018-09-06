@@ -11,13 +11,12 @@ namespace Strela {
 
     class WhileStmt: public Stmt {
     public:
-        WhileStmt(Expr* condition, Stmt* body): Stmt(), condition(condition), body(body) {}
         STRELA_GET_TYPE(Strela::WhileStmt, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 
     public:
-        Expr* condition;
-        Stmt* body;
+        Expr* condition = nullptr;
+        Stmt* body = nullptr;
     };
 }
 

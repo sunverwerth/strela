@@ -11,7 +11,6 @@
 namespace Strela {
     class UnionType: public TypeDecl {
     public:
-        UnionType(const std::set<TypeDecl*>& containedTypes);
         STRELA_GET_TYPE(Strela::UnionType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

@@ -35,7 +35,7 @@ namespace Strela {
         for (size_t i = 0; i < chunk.opcodes.size(); ++i) {
             auto function = chunk.functions.find(i);
             if (function != chunk.functions.end()) {
-                std::cout << "\n; " << function->second << "\n";
+                std::cout << "\n; " << function->second.name << "\n";
             }
             size_t opStart = i;
             auto op = (Opcode)chunk.opcodes[i];
@@ -45,7 +45,7 @@ namespace Strela {
             int width = numArgs + 1;
             std::vector<unsigned char> args;
             for (int a = 0; a < numArgs; ++a) {
-                args.push_back(chunk.opcodes[++i]);
+                args.push_back((unsigned char)chunk.opcodes[++i]);
             }
             auto arg = getArg(opStart);
 
@@ -76,7 +76,7 @@ namespace Strela {
                     auto address = chunk.constants[constIndex].value.integer;
                     auto it = chunk.functions.find(address);
                     if (it != chunk.functions.end()) {
-                        std::cout << it->second;
+                        std::cout << it->second.name;
                     }
                     else {
                         int diff = (int)address - (int)opStart;
@@ -92,7 +92,7 @@ namespace Strela {
                 arg &= 0xffffffff;
 				auto it = chunk.functions.find(arg);
 				if (it != chunk.functions.end()) {
-					std::cout << it->second;
+					std::cout << it->second.name;
 				}
 				else {
 					int diff = (int)arg - (int)opStart;

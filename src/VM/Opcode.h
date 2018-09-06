@@ -8,9 +8,10 @@
 
 namespace Strela {
     #define OPCODES(X) \
+        X(Trap, 0, null) \
         X(ReturnVoid, 0, null) \
         X(Return, 0, null) \
-        X(Const, 1, integer) \
+        X(Const, 2, integer) \
         X(I8, 1, integer) \
         X(I16, 2, integer) \
         X(I32, 4, integer) \
@@ -105,7 +106,7 @@ namespace Strela {
         X(Mov64, 0, null) \
     
     #define AS_ENUM(X, A, T) X,
-    enum class Opcode {
+    enum class Opcode: unsigned char {
         OPCODES(AS_ENUM)
     };
     #undef AS_ENUM

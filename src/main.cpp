@@ -14,6 +14,7 @@
 #include "VM/ByteCodeChunk.h"
 #include "Decompiler.h"
 #include "SourceFile.h"
+#include "VM/Debugger.h"
 
 #include <iostream>
 #include <fstream>
@@ -31,9 +32,9 @@ void error(const Strela::Node* n, const std::string& msg) {
 }
 
 void help() {
-    std::cout << "strelac - The strela compiler and VM\n";
+    std::cout << "strela - The strela compiler and VM\n";
     std::cout << "general usage:\n";
-    std::cout << "strelac [options] input-file\n";
+    std::cout << "strela [options] input-file\n";
     std::cout << "\n";
     std::cout << "options are:\n";
     std::cout << "    --dump             dumps decompiled bytecode to stdout and exits.\n";
@@ -73,6 +74,7 @@ namespace Strela {
     int g_timeout = -1;
     std::string g_homePath;
     std::string g_searchPath;
+    unsigned short g_debugPort = 0;
 }
 
 
@@ -136,11 +138,6 @@ void bail() {
     exit(1);
 }
 
-namespace Strela {
-    std::map<char, uint64_t> timings;
-    std::map<char, uint64_t> counts;
-}
-
 int main(int argc, char** argv) {
 
     #ifdef _WIN32
@@ -166,6 +163,9 @@ int main(int argc, char** argv) {
         }
         else if (!strcmp(argv[i], "--write-bytecode")) {
             byteCodePath = argv[++i];
+        }
+        else if (!strcmp(argv[i], "--debug")) {
+            g_debugPort = std::strtoul(argv[++i], nullptr, 10);
         }
         else {
             fileName = argv[i++];
@@ -214,7 +214,7 @@ int main(int argc, char** argv) {
             }
 
             std::map<std::string, ModDecl*> modules {
-                { module->name, module },
+                { module->getFullName(), module },
             };
 
             std::vector<ModDecl*> processImports { module };
@@ -316,25 +316,14 @@ int main(int argc, char** argv) {
             return 0;
         }
 
-        //std::cout << "Running bytecode...\n";
-        VM vm(chunk, arguments);
-        auto retVal = vm.run();
-
-        std::vector<char> indices;
-        for(int i=0; i<numOpcodes; ++i) {
-            indices.push_back(i);
+		VM vm(chunk, arguments);
+        if (g_debugPort > 0) {
+            Debugger dbg(g_debugPort, vm);
+			return dbg.run();
         }
-        std::sort(indices.begin(), indices.end(), [&](int a, int b) {
-            return timings[a] > timings[b];
-        });
-
-        for (auto& i: indices) {
-            if (counts[i] > 0) {
-                std::cout << opcodeInfo[i].name << ": " << timings[i]/1000000 << "ms = " << counts[i] << "x " << (double)timings[i] / counts[i] << "ns\n";
-            }
-        }
-
-        return retVal.value.integer;
+		else {
+			return vm.run();
+		}
     }
     catch (const Exception& e) {
         error(e.what());

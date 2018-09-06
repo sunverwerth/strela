@@ -23,49 +23,49 @@ namespace Strela {
         for (int i = 0; i < foreignFunctions.size(); ++i) {
             if (
                 foreignFunctions[i].name == n.name &&
-                foreignFunctions[i].returnType == n.type->returnType &&
-                foreignFunctions[i].argTypes == n.type->paramTypes
+                foreignFunctions[i].returnType == n.declType->returnType &&
+                foreignFunctions[i].argTypes == n.declType->paramTypes
             ) {
                 return i;
             }
         }
-        foreignFunctions.push_back(ForeignFunction(n.name, n.type->returnType, n.type->paramTypes));
+        foreignFunctions.push_back(ForeignFunction(n.name, n.declType->returnType, n.declType->paramTypes));
         return foreignFunctions.size() - 1;
     }
 
     int ByteCodeChunk::addOp(Opcode code) {
-        if (opcodeInfo[(int)code].argWidth > 0) throw Exception(std::string("Opcode ") + opcodeInfo[(int)code].name + " requires arguments.");
-        opcodes.push_back((char)code);
+        if (opcodeInfo[(unsigned char)code].argWidth > 0) throw Exception(std::string("Opcode ") + opcodeInfo[(unsigned char)code].name + " requires arguments.");
+        opcodes.push_back(code);
         return opcodes.size() - 1;
     }
 
     int ByteCodeChunk::addOp(Opcode code, size_t argSize, const void* arg) {
-        auto opwidth = opcodeInfo[(int)code].argWidth;
-        if (opwidth != argSize) throw Exception(std::string("Opcode ") + opcodeInfo[(int)code].name + " has mismatching argument size. "
+        auto opwidth = opcodeInfo[(unsigned char)code].argWidth;
+        if (opwidth != argSize) throw Exception(std::string("Opcode ") + opcodeInfo[(unsigned char)code].name + " has mismatching argument size. "
         + std::to_string(opwidth) + " expected but got " + std::to_string(argSize)
         );
         auto opAddr = opcodes.size();
-        opcodes.push_back((char)code);
+        opcodes.push_back(code);
         opcodes.resize(opcodes.size() + argSize);
         memcpy(&opcodes[opAddr + 1], arg, argSize);
         return opAddr;
     }
 
     int ByteCodeChunk::addOp(Opcode code, size_t argSize1, const void* arg1, size_t argSize2, const void* arg2) {
-        auto opwidth = opcodeInfo[(int)code].argWidth;
-        if (opwidth != argSize1 + argSize2) throw Exception(std::string("Opcode ") + opcodeInfo[(int)code].name + " has mismatching argument size. "
+        auto opwidth = opcodeInfo[(unsigned char)code].argWidth;
+        if (opwidth != argSize1 + argSize2) throw Exception(std::string("Opcode ") + opcodeInfo[(unsigned char)code].name + " has mismatching argument size. "
         + std::to_string(opwidth) + " expected but got " + std::to_string(argSize1 + argSize2)
         );
         auto opAddr = opcodes.size();
-        opcodes.push_back((char)code);
+        opcodes.push_back(code);
         opcodes.resize(opcodes.size() + argSize1 + argSize2);
         memcpy(&opcodes[opAddr + 1], arg1, argSize1);
         memcpy(&opcodes[opAddr + 1 + argSize1], arg2, argSize2);
         return opAddr;
     }
 
-    void ByteCodeChunk::addFunction(size_t address, const std::string& name) {
-        functions.insert(std::make_pair(address, name));
+    void ByteCodeChunk::addFunction(size_t address, const FunctionInfo& func) {
+        functions.insert(std::make_pair(address, func));
     }
 
     void ByteCodeChunk::writeArgument(size_t pos, uint64_t arg) {
@@ -87,8 +87,8 @@ namespace Strela {
         str.write((const char*)&numFunctions, 4);
         for (auto&& function: chunk.functions) {
             uint64_t offset = function.first;
-            uint64_t len = function.second.size();
-            const char* name = function.second.c_str();
+            uint64_t len = function.second.name.size();
+            const char* name = function.second.name.c_str();
             str.write((const char*)&offset, 8);
             str.write((const char*)&len, 8);
             str.write((const char*)name, len);
@@ -131,7 +131,7 @@ namespace Strela {
             char* name = new char[len + 1];
             name[len] = 0;
             str.read((char*)name, len);
-            chunk.functions.insert(std::make_pair(offset, std::string(name)));
+            chunk.functions.insert(std::make_pair(offset, FunctionInfo{std::string(name)}));
             delete[] name;
         }
 
@@ -150,7 +150,7 @@ namespace Strela {
         uint64_t numOpcodes;
         str.read((char*)&numOpcodes, 8);
         for (size_t i = 0; i < numOpcodes; ++i) {
-            char op;
+            Opcode op;
             str.read((char*)&op, 1);
             chunk.opcodes.push_back(op);
         }
@@ -158,4 +158,27 @@ namespace Strela {
         return str;
     }
 
+	SourceLine* ByteCodeChunk::getLine(size_t address) {
+		for (int i = 0; i < lines.size(); ++i) {
+			if (lines[i].address > address) {
+				if (i == 0) return nullptr;
+				return &lines[i - 1];
+			}
+		}
+		return nullptr;
+	}
+
+    void ByteCodeChunk::setLine(const std::string& filename, size_t line) {
+        for (size_t i = 0; i < files.size(); ++i) {
+            if (files[i] == filename) {
+                if (!lines.empty() && lines.back().file == i && lines.back().line == line) {
+                    return;
+                }
+                lines.push_back({ opcodes.size(), i, line });
+                return;
+            }
+        }
+        files.push_back(filename);
+        lines.push_back({ opcodes.size(), files.size() - 1, line });
+    }
 }

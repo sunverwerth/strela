@@ -42,6 +42,7 @@ module Std.Lang.Compiler.Ast {
 
     export class ModuleDecl {
         function init() {
+            this.name = new List<Identifier>;
             this.requires = new List<RequireDirective>;
             this.imports = new List<ImportDirective>;
             this.exports = new List<ExportDirective>;
@@ -51,7 +52,7 @@ module Std.Lang.Compiler.Ast {
             this.functions = new List<FunctionDecl>;
         }
 
-        var name: Identifier;
+        var name: List<Identifier>;
         var requires: List<RequireDirective>;
         var imports: List<ImportDirective>;
         var exports: List<ExportDirective>;
@@ -125,13 +126,13 @@ module Std.Lang.Compiler.Ast {
     }
 
     export class Parameter {
-        function init(name: Identifier, type: TypeRef) {
+        function init(name: Identifier, _type: TypeRef) {
             this.name = name;
-            this.type = type;
+            this._type = _type;
         }
 
         var name: Identifier;
-        var type: TypeRef;
+        var _type: TypeRef;
     }
 
     export class ClassDecl {
@@ -163,13 +164,13 @@ module Std.Lang.Compiler.Ast {
     }
 
     export class VarDecl {
-        function init(name: Identifier, type: TypeRef) {
+        function init(name: Identifier, _type: TypeRef) {
             this.name = name;
-            this.type = type;
+            this._type = _type;
         }
 
         var name: Identifier;
-        var type: TypeRef;
+        var _type: TypeRef;
     }
 
     export class TypeRef {

@@ -12,6 +12,7 @@ namespace Strela {
 
     class VMField {
     public:
+        std::string name;
         VMType* type;
         size_t offset;
     };
@@ -22,12 +23,14 @@ namespace Strela {
         std::string name;
         bool isObject = false;
         bool isArray = false;
+        bool isEnum = false;
         VMType* arrayType = nullptr;
         size_t size = 0;
         size_t alignment = 0;
         size_t objectSize = 0;
         size_t objectAlignment = 0;
         std::vector<VMField> fields;
+        std::vector<std::string> enumValues;
     };
 }
 

@@ -9,7 +9,7 @@
 namespace Strela {
     class PointerType: public TypeDecl {
     public:
-        PointerType(): TypeDecl("Ptr") {}
+        PointerType() { _name = "Ptr"; }
         STRELA_GET_TYPE(Strela::PointerType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

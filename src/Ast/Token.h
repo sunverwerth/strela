@@ -25,24 +25,25 @@ namespace Strela {
         X(CurlyClose) \
         X(CurlyOpen) \
         X(Else) \
+        X(Enum) \
         X(Eof) \
         X(Equals) \
         X(EqualsEquals) \
         X(ExclamationMark) \
+        X(ExclamationMarkEquals) \
         X(Export) \
         X(External) \
-        X(Import) \
-        X(Is) \
-        X(ExclamationMarkEquals) \
         X(Float) \
         X(Function) \
         X(GreaterThan) \
         X(GreaterThanEquals) \
         X(Identifier) \
         X(If) \
+        X(Import) \
         X(Integer) \
         X(Interface) \
         X(Invalid) \
+        X(Is) \
         X(LessThan) \
         X(LessThanEquals) \
         X(Minus) \
@@ -69,11 +70,11 @@ namespace Strela {
         X(Slash) \
         X(SlashEquals) \
         X(String) \
+        X(This) \
         X(Tilde) \
+        X(Type) \
         X(Var) \
         X(While) \
-        X(Enum) \
-        X(This) \
 
 
     #define AS_ENUM(X) X,
@@ -84,6 +85,7 @@ namespace Strela {
 
     struct Token {
     public:
+        Token() = default;
         Token(TokenType type, const std::string& value, int line, int column, int index): type(type), value(value), line(line), column(column), index(index) {}
     public:
         TokenType type;

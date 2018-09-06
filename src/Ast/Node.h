@@ -18,8 +18,10 @@ namespace Strela {
         STRELA_BASE_TYPE(Strela::Node);
 
     public:
+        Node* parent = nullptr;
         int line = 0;
-        int column = 0;
+		int lineend = 0;
+		int column = 0;
         const SourceFile* source = nullptr;
         int firstToken = 0;
     };

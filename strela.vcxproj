@@ -40,7 +40,6 @@
     <ClInclude Include="src\Ast\GenericParam.h" />
     <ClInclude Include="src\Ast\GenericReificationExpr.h" />
     <ClInclude Include="src\Ast\IdExpr.h" />
-    <ClInclude Include="src\Ast\IdTypeExpr.h" />
     <ClInclude Include="src\Ast\IfStmt.h" />
     <ClInclude Include="src\Ast\ImportStmt.h" />
     <ClInclude Include="src\Ast\InterfaceDecl.h" />
@@ -65,6 +64,7 @@
     <ClInclude Include="src\Ast\SubscriptExpr.h" />
     <ClInclude Include="src\Ast\ThisExpr.h" />
     <ClInclude Include="src\Ast\Token.h" />
+    <ClInclude Include="src\Ast\TypeAliasDecl.h" />
     <ClInclude Include="src\Ast\TypeDecl.h" />
     <ClInclude Include="src\Ast\TypeExpr.h" />
     <ClInclude Include="src\Ast\TypeType.h" />
@@ -79,7 +79,6 @@
     <ClInclude Include="src\exceptions.h" />
     <ClInclude Include="src\IExprVisitor.h" />
     <ClInclude Include="src\IStmtVisitor.h" />
-    <ClInclude Include="src\ITypeExprVisitor.h" />
     <ClInclude Include="src\Lexer.h" />
     <ClInclude Include="src\NameResolver.h" />
     <ClInclude Include="src\NodePrinter.h" />
@@ -89,7 +88,9 @@
     <ClInclude Include="src\SourceFile.h" />
     <ClInclude Include="src\TypeChecker.h" />
     <ClInclude Include="src\TypeInfo.h" />
+    <ClInclude Include="src\utils.h" />
     <ClInclude Include="src\VM\ByteCodeChunk.h" />
+    <ClInclude Include="src\VM\Debugger.h" />
     <ClInclude Include="src\VM\GC.h" />
     <ClInclude Include="src\VM\Opcode.h" />
     <ClInclude Include="src\VM\VM.h" />
@@ -106,6 +107,7 @@
     <ClCompile Include="src\Ast\InterfaceDecl.cpp" />
     <ClCompile Include="src\Ast\ModDecl.cpp" />
     <ClCompile Include="src\Ast\Token.cpp" />
+    <ClCompile Include="src\Ast\TypeAliasDecl.cpp" />
     <ClCompile Include="src\Ast\types.cpp" />
     <ClCompile Include="src\Ast\UnionType.cpp" />
     <ClCompile Include="src\ByteCodeCompiler.cpp" />
@@ -119,7 +121,9 @@
     <ClCompile Include="src\Scope.cpp" />
     <ClCompile Include="src\TypeChecker.cpp" />
     <ClCompile Include="src\TypeInfo.cpp" />
+    <ClCompile Include="src\utils.cpp" />
     <ClCompile Include="src\VM\ByteCodeChunk.cpp" />
+    <ClCompile Include="src\VM\Debugger.cpp" />
     <ClCompile Include="src\VM\GC.cpp" />
     <ClCompile Include="src\VM\Opcode.cpp" />
     <ClCompile Include="src\VM\VM.cpp" />
@@ -202,7 +206,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>libffi_convenience.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;libffi_convenience.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -228,8 +232,14 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>libffi_convenience.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;libffi_convenience.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>install.bat</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>install into user home directory</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

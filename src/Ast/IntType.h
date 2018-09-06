@@ -9,7 +9,7 @@
 namespace Strela {
     class IntType: public TypeDecl {
     public:
-        IntType(const std::string& name, bool isSigned, int bytes): TypeDecl(name), isSigned(isSigned), bytes(bytes) {}
+        IntType(const std::string& name, bool isSigned, int bytes): isSigned(isSigned), bytes(bytes) { this->_name = name; }
         STRELA_GET_TYPE(Strela::IntType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

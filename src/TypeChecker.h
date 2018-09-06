@@ -19,7 +19,7 @@ namespace Strela {
     class Stmt;
     class Expr;
 
-    class TypeChecker: public Pass, public IStmtVisitor, public IExprVisitor {
+    class TypeChecker: public Pass, public IStmtVisitor<void>, public IExprVisitor<void> {
     public:
         TypeChecker();
 
@@ -45,6 +45,7 @@ namespace Strela {
         void visit(ThisExpr&) override;
         void visit(CastExpr&) override;
         void visit(GenericParam&) override {}
+        void visit(TypeAliasDecl&) override;
 
         void visit(IdExpr&) override;
         void visit(FieldDecl&) override {}
@@ -56,6 +57,11 @@ namespace Strela {
         void visit(ArrayLitExpr&) override;
         void visit(SubscriptExpr&) override;
 
+        void visit(ArrayTypeExpr&) override {}
+        void visit(NullableTypeExpr&) override {}
+        void visit(UnionTypeExpr&) override {}
+        void visit(GenericReificationExpr&) override {}
+        
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {
                 child->accept(*this);
@@ -63,13 +69,15 @@ namespace Strela {
         }
 
         template<typename T> void visitChild(T& child) {
-            child->accept(*this);
+            if (child) child->accept(*this);
         }
 
         void negateRefinements();
         
         std::vector<TypeDecl*> getTypes(const std::vector<Expr*>& arguments);
         TypeDecl* getType(Expr* expr);
+        TypeDecl* getType(VarDecl* var);
+        TypeDecl* getType(Param* param);
 
     private:
 		std::vector<FuncDecl*> findOverload(Expr* target, const std::vector<TypeDecl*>& argtypes);
@@ -84,7 +92,7 @@ namespace Strela {
 
         std::vector<ClassDecl*> genericStack;
 
-        std::map<Node*, std::vector<Refinement>> refinements;
+        std::vector<std::map<Node*, std::vector<Refinement>>> refinements;
     };
 }
 #endif

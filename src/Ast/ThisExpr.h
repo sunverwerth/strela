@@ -9,7 +9,6 @@
 namespace Strela {
     class ThisExpr: public Expr {
     public:
-        ThisExpr(): Expr() {}
         STRELA_GET_TYPE(Strela::ThisExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 

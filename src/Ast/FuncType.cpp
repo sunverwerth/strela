@@ -14,13 +14,14 @@ namespace Strela {
         std::stringstream sstr;
         sstr << "(";
         for (auto&& p: paramTypes) {
-            sstr << p->name;
+            sstr << p->getFullName();
             if (&p != &paramTypes.back()) {
                 sstr << ", ";
             }
         }
-        sstr << "): " << returnType->name;
-        auto ftype = new FuncType(sstr.str());
+        sstr << "): " << returnType->getFullName();
+        auto ftype = new FuncType();
+        ftype->_name = sstr.str();
         ftype->returnType = returnType;
         ftype->paramTypes = paramTypes;
         funcTypes.push_back(ftype);

@@ -11,7 +11,6 @@
 namespace Strela {
     class FuncType: public TypeDecl {
     public:
-        FuncType(const std::string& name): TypeDecl(name) {}
         STRELA_GET_TYPE(Strela::FuncType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 
@@ -19,7 +18,7 @@ namespace Strela {
 
     public:
         std::vector<TypeDecl*> paramTypes;
-        TypeDecl* returnType;
+        TypeDecl* returnType = nullptr;
 
         static std::vector<FuncType*> funcTypes;
     };

@@ -21,7 +21,7 @@ module Std.Lang.Compiler.Parser {
             var mod = new ModuleDecl();
 
             eat(TokenType.Module);
-            mod.name = parseIdentifier();
+            mod.name = parseIdentifierList(TokenType.Period);
             eat(TokenType.CurlyOpen);
 
             while(matches([
@@ -247,16 +247,16 @@ module Std.Lang.Compiler.Parser {
             eat(TokenType.Var);
             var name = parseIdentifier();
             eat(TokenType.Colon);
-            var type = parseTypeRef();
+            var _type = parseTypeRef();
             eat(TokenType.Semicolon);
-            return new VarDecl(name, type);
+            return new VarDecl(name, _type);
         }
 
         function parseParameter(): Parameter {
             var name = parseIdentifier();
             eat(TokenType.Colon);
-            var type = parseTypeRef();
-            return new Parameter(name, type);
+            var _type = parseTypeRef();
+            return new Parameter(name, _type);
         }
 
         function matchesStatement(): bool {
@@ -274,8 +274,8 @@ module Std.Lang.Compiler.Parser {
             ]);
         }
 
-        function matches(type: TokenType): bool {
-            return token.type == type;
+        function matches(_type: TokenType): bool {
+            return token._type == _type;
         }
 
         function matches(types: TokenType[]): bool {
@@ -290,15 +290,16 @@ module Std.Lang.Compiler.Parser {
         }
 
         function eat(): Token {
+            var oldtoken = token;
             token = lexer.next();
             while (matches(TokenType.Comment) || matches(TokenType.Whitespace)) {
                 token = lexer.next();
             }
-            return token;
+            return oldtoken;
         }
 
-        function eat(type: TokenType): Token {
-            if (matches(type)) {
+        function eat(_type: TokenType): Token {
+            if (matches(_type)) {
                 return eat();
             }
             else {
@@ -313,7 +314,7 @@ module Std.Lang.Compiler.Parser {
         }
 
         /**
-         * Eats tokens until given type is found
+         * Eats tokens until given _type is found
          */
         function sync(t: TokenType) {
             while (!matches(t) && lexer.hasNext()) {

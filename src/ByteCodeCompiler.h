@@ -19,7 +19,7 @@ namespace Strela {
     class VMType;
     class TypeDecl;
 
-    class ByteCodeCompiler: public Pass, public IStmtVisitor, public IExprVisitor {
+    class ByteCodeCompiler: public Pass, public IStmtVisitor<void>, public IExprVisitor<void> {
     public:
         ByteCodeCompiler(ByteCodeChunk&);
 
@@ -54,6 +54,12 @@ namespace Strela {
         void visit(ArrayLitExpr&) override;
         void visit(SubscriptExpr&) override;
         void visit(GenericParam&) override {}
+        void visit(TypeAliasDecl&) override {}
+
+        void visit(ArrayTypeExpr&) override {}
+        void visit(NullableTypeExpr&) override {}
+        void visit(UnionTypeExpr&) override {}
+        void visit(GenericReificationExpr&) override {}
 
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {
@@ -62,7 +68,7 @@ namespace Strela {
         }
 
         template<typename T> void visitChild(T& child) {
-            child->accept(*this);
+            if (child) child->accept(*this);
         }
 
     private:

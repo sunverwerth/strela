@@ -8,6 +8,10 @@
 #include "SourceFile.h"
 
 namespace Strela {
+    bool checkTypeExpr(Expr* e) {
+        return e->type == &TypeType::instance && e->typeValue != &InvalidType::instance;
+    }
+
     NameResolver::NameResolver(Scope* globals): scope(globals) {
     }
 
@@ -16,8 +20,6 @@ namespace Strela {
 
         auto oldscope = scope;
         scope = new Scope(scope);
-
-        scope->add(n.name, &n);
 
         for (auto&& imp: n.imports) {
             if (imp->all) {
@@ -28,17 +30,17 @@ namespace Strela {
                 }
                 for (auto&& cls: imp->module->classes) {
                     if (cls->isExported) {
-                        scope->add(cls->name, cls);
+                        scope->add(cls->_name, cls);
                     }
                 }
                 for (auto&& iface: imp->module->interfaces) {
                     if (iface->isExported) {
-                        scope->add(iface->name, iface);
+                        scope->add(iface->_name, iface);
                     }
                 }
                 for (auto&& en: imp->module->enums) {
                     if (en->isExported) {
-                        scope->add(en->name, en);
+                        scope->add(en->_name, en);
                     }
                 }
             }
@@ -49,22 +51,22 @@ namespace Strela {
                 auto cls = imp->module->getClass(imp->parts.back());
                 if (cls) {
                     if (cls->isExported) {
-                        scope->add(cls->name, cls);
+                        scope->add(cls->_name, cls);
                         continue;
                     }
                     else {
-                        throw Exception(cls->name + " is not exported.");
+                        throw Exception(cls->_name + " is not exported.");
                     }
                 }
 
                 auto en = imp->module->getEnum(imp->parts.back());
                 if (en) {
                     if (en->isExported) {
-                        scope->add(en->name, en);
+                        scope->add(en->_name, en);
                         continue;
                     }
                     else {
-                        throw Exception(en->name + " is not exported.");
+                        throw Exception(en->_name + " is not exported.");
                     }
                 }
 
@@ -83,13 +85,16 @@ namespace Strela {
             scope->add(fun->name, fun);
         }
         for (auto&& cls: n.classes) {
-            scope->add(cls->name, cls);
+            scope->add(cls->_name, cls);
         }
         for (auto&& iface: n.interfaces) {
-            scope->add(iface->name, iface);
+            scope->add(iface->_name, iface);
         }
         for (auto&& en: n.enums) {
-            scope->add(en->name, en);
+            scope->add(en->_name, en);
+        }
+        for (auto&& ta: n.typeAliases) {
+            scope->add(ta->_name, ta);
         }
 
         for (auto& cls: n.classes) {
@@ -111,84 +116,28 @@ namespace Strela {
         auto oldscope = scope;
         scope = new Scope(scope);
 
-        scope->add(n.name, &n);
-
-        for (auto&& imp: n.imports) {
-            if (imp->all) {
-                for (auto&& fun: imp->module->functions) {
-                    if (fun->isExported) {
-                        scope->add(fun->name, fun);
-                    }
-                }
-                for (auto&& cls: imp->module->classes) {
-                    if (cls->isExported) {
-                        scope->add(cls->name, cls);
-                    }
-                }
-                for (auto&& iface: imp->module->interfaces) {
-                    if (iface->isExported) {
-                        scope->add(iface->name, iface);
-                    }
-                }
-                for (auto&& en: imp->module->enums) {
-                    if (en->isExported) {
-                        scope->add(en->name, en);
-                    }
-                }
-            }
-            else if (imp->importModule) {
-                scope->add(imp->parts.back(), imp->module);
-            }
-            else {
-                auto cls = imp->module->getClass(imp->parts.back());
-                if (cls) {
-                    if (cls->isExported) {
-                        scope->add(cls->name, cls);
-                        continue;
-                    }
-                    else {
-                        throw Exception(cls->name + " is not exported.");
-                    }
-                }
-
-                auto en = imp->module->getEnum(imp->parts.back());
-                if (en) {
-                    if (en->isExported) {
-                        scope->add(en->name, en);
-                        continue;
-                    }
-                    else {
-                        throw Exception(en->name + " is not exported.");
-                    }
-                }
-
-                auto funs = imp->module->getFunctions(imp->parts.back());
-                if (!funs.empty()) {
-                    for (auto&& fun: funs) {
-                        if (fun->isExported) {
-                            scope->add(fun->name, fun);
-                        }
-                    }
-                }
-            }
-        }
+        visitChildren(n.imports);
 
         for (auto&& fun: n.functions) {
             scope->add(fun->name, fun);
         }
         for (auto&& cls: n.classes) {
-            scope->add(cls->name, cls);
+            scope->add(cls->_name, cls);
         }
         for (auto&& iface: n.interfaces) {
-            scope->add(iface->name, iface);
+            scope->add(iface->_name, iface);
         }
         for (auto&& en: n.enums) {
-            scope->add(en->name, en);
+            scope->add(en->_name, en);
+        }
+        for (auto&& ta: n.typeAliases) {
+            scope->add(ta->_name, ta);
         }
 
         visitChildren(n.functions);
         visitChildren(n.classes);
         visitChildren(n.interfaces);
+        visitChildren(n.typeAliases);
 
         delete scope;
         scope = oldscope;
@@ -207,25 +156,19 @@ namespace Strela {
         auto oldscope = scope;
         scope = new Scope(scope);
 
-        auto oldclass = _class;
-        _class = &n;
-
         for (int i = 0; i < n.genericParams.size(); ++i) {
-            scope->add(n.genericParams[i]->name, n.genericArguments[i]);
+            scope->add(n.genericParams[i]->_name, n.genericArguments[i]);
         }
 
         for (auto&& field: n.fields) {
             scope->add(field->name, field);
         }
         for (auto&& method: n.methods) {
-            method->_class = _class;
             scope->add(method->name, method);
         }
 
         visitChildren(n.fields);
         visitChildren(n.methods);
-
-        _class = oldclass;
 
         delete scope;
         scope = oldscope;
@@ -235,18 +178,15 @@ namespace Strela {
         auto oldscope = scope;
         scope = new Scope(scope);
 
-        n._class = _class;
-        n._interface = _interface;
-
-        visitChild(n.returnTypeExpr);
+        if (n.returnTypeExpr) visitChild(n.returnTypeExpr);
         visitChildren(n.params);
         visitChildren(n.stmts);
 
         std::vector<TypeDecl*> paramTypes;
         for (auto&& param: n.params) {
-            paramTypes.push_back(param->typeExpr->type);
+            paramTypes.push_back(param->typeExpr->typeValue);
         }
-        n.type = FuncType::get(n.returnTypeExpr->type, paramTypes);
+        n.declType = FuncType::get(n.returnTypeExpr ? n.returnTypeExpr->typeValue : &VoidType::instance, paramTypes);
 
         delete scope;
         scope = oldscope;
@@ -254,14 +194,14 @@ namespace Strela {
 
     void NameResolver::visit(Param& n) {
         visitChild(n.typeExpr);
-        n.type = n.typeExpr->type;
+        n.declType = n.typeExpr->typeValue;
         scope->add(n.name, &n);
     }
 
     void NameResolver::visit(VarDecl& n) {
         if (n.typeExpr) {
             visitChild(n.typeExpr);
-            n.type = n.typeExpr->type;
+            n.declType = n.typeExpr->typeValue;
         }
 
         if (n.initializer) {
@@ -278,7 +218,8 @@ namespace Strela {
     void NameResolver::visit(UnionTypeExpr& n) {
         visitChild(n.base);
         visitChild(n.next);
-        n.type = UnionType::get(n.base->type, n.next->type);
+        n.type = &TypeType::instance;
+        n.typeValue = UnionType::get(n.base->typeValue, n.next->typeValue);
     }
 
     void NameResolver::visit(IdExpr& n) {
@@ -290,29 +231,30 @@ namespace Strela {
 
         if (auto td = symbol->node->as<TypeDecl>()) {
             n.type = &TypeType::instance;
-            n.node = td;
+            n.typeValue = td;
         }
         else if (auto var = symbol->node->as<VarDecl>()) {
             n.node = var;
-            n.type = var->type;
+            n.type = var->declType;
         }
         else if (auto par = symbol->node->as<Param>()) {
             n.node = par;
-            n.type = par->typeExpr->type;
+            n.type = par->declType;
         }
         else if (auto field = symbol->node->as<FieldDecl>()) {
             n.node = field;
-            n.type = field->type;
+            n.type = field->declType;
             auto _this = new ThisExpr();
-            _this->_class = _class;
-            _this->type = _class;
+            _this->_class = field->parent->as<ClassDecl>();
+            _this->type = field->parent->as<ClassDecl>();
             n.context = _this;
         }
         else if (auto fun = symbol->node->as<FuncDecl>()) {
-            if (fun->_class) {
+            ClassDecl* cls = fun->parent ? fun->parent->as<ClassDecl>() : nullptr;
+            if (cls) {
                 auto _this = new ThisExpr();
-                _this->_class = _class;
-                _this->type = _class;
+                _this->_class = cls;
+                _this->type = cls;
                 n.context = _this;
             }
             if (symbol->next) {
@@ -326,11 +268,12 @@ namespace Strela {
             }
             else {
                 n.node = fun;
-                n.type = fun->type;
+                n.type = fun->declType;
             }
         }
         else {
             error(n, "Unhandled symbol kind.");
+            return;
         }
     }
 
@@ -342,9 +285,6 @@ namespace Strela {
 
     void NameResolver::visit(ExprStmt& n) {
         visitChild(n.expression);
-    }
-
-    void NameResolver::visit(LitExpr&) {
     }
 
     void NameResolver::visit(CallExpr& n) {
@@ -386,7 +326,7 @@ namespace Strela {
 
     void NameResolver::visit(FieldDecl& n) {
         visitChild(n.typeExpr);
-        n.type = n.typeExpr->type;
+        n.declType = n.typeExpr->typeValue;
     }
 
     void NameResolver::visit(NewExpr& n) {
@@ -399,31 +339,6 @@ namespace Strela {
         visitChild(n.right);
     }
 
-    void NameResolver::visit(IdTypeExpr& n) {
-        auto symbol = scope->find(n.name);
-        if (!symbol) {
-            error(n, "Unresolved symbol '" + n.name + "'.");
-        }
-        
-        if (auto td = symbol->node->as<TypeDecl>()) {
-            n.type = td;
-        }
-        else {
-            error(n, "'" + n.name + "' does not name a type.");
-        }
-    }
-
-    void NameResolver::visit(ScopeTypeExpr& n) {
-        visitChild(n.target);
-        auto member = n.target->type->getMember(n.name);
-        if (auto type = member->as<TypeDecl>()) {
-            n.type = type;
-        }
-        else {
-            error(n, n.name + " is not a type.");
-        }
-    }
-
     void NameResolver::visit(WhileStmt& n) {
         visitChild(n.condition);
         visitChild(n.body);
@@ -434,11 +349,67 @@ namespace Strela {
     }
 
     void NameResolver::visit(ArrayTypeExpr& n) {
-        visitChild(n.base);
-        n.type = ArrayType::get(n.base->type);
+        visitChild(n.baseTypeExpr);
+        n.type = &TypeType::instance;
+        n.typeValue = ArrayType::get(n.baseTypeExpr->typeValue);
     }
 
     void NameResolver::visit(ImportStmt& n) {
+        if (n.all) {
+            for (auto&& fun: n.module->functions) {
+                if (fun->isExported) {
+                    scope->add(fun->name, fun);
+                }
+            }
+            for (auto&& cls: n.module->classes) {
+                if (cls->isExported) {
+                    scope->add(cls->_name, cls);
+                }
+            }
+            for (auto&& iface: n.module->interfaces) {
+                if (iface->isExported) {
+                    scope->add(iface->_name, iface);
+                }
+            }
+            for (auto&& en: n.module->enums) {
+                if (en->isExported) {
+                    scope->add(en->_name, en);
+                }
+            }
+        }
+        else if (n.importModule) {
+            scope->add(n.parts.back(), n.module);
+        }
+        else {
+            auto cls = n.module->getClass(n.parts.back());
+            if (cls) {
+                if (cls->isExported) {
+                    scope->add(cls->_name, cls);
+                    return;
+                }
+            }
+
+            auto en = n.module->getEnum(n.parts.back());
+            if (en) {
+                if (en->isExported) {
+                    scope->add(en->_name, en);
+                    return;
+                }
+            }
+
+            auto funs = n.module->getFunctions(n.parts.back());
+            if (!funs.empty()) {
+                for (auto&& fun: funs) {
+                    if (fun->isExported) {
+                        scope->add(fun->name, fun);
+                    }
+                }
+                return;
+            }
+
+            // nothing found
+            error(n, "Symbol '" + n.parts.back() + "' not found in module '" + n.getBaseName() + "'");
+        }
     }
 
     void NameResolver::visit(UnaryExpr& n) {
@@ -454,52 +425,43 @@ namespace Strela {
         visitChild(n.callTarget);
     }
 
-    void NameResolver::visit(EnumDecl& n) {
-        visitChildren(n.elements);
-    }
-
-    void NameResolver::visit(EnumElement& n) {
-    }
-
     void NameResolver::visit(InterfaceDecl& n) {
-        auto oldinterface = _interface;
-        _interface = &n;
         visitChildren(n.methods);
-        _interface = oldinterface;
     }
 
     void NameResolver::visit(NullableTypeExpr& n) {
-        visitChild(n.base);
-        n.type = UnionType::get(n.base->type, &NullType::instance);
-    }
-
-    void NameResolver::visit(GenericParam&) {
+        visitChild(n.baseTypeExpr);
+        n.type = &TypeType::instance;
+        n.typeValue = UnionType::get(n.baseTypeExpr->typeValue, &NullType::instance);
     }
 
     void NameResolver::visit(GenericReificationExpr& n) {
-        visitChild(n.base);
+        visitChild(n.baseTypeExpr);
         visitChildren(n.genericArguments);
 
-        if (auto cls = n.base->type->as<ClassDecl>()) {
-            if (cls->genericParams.size() > 0) {
-                if (cls->genericParams.size() == n.genericArguments.size()) {
-                    std::vector<TypeDecl*> types;
-                    for (auto&& tex: n.genericArguments) {
-                        types.push_back(tex->type);
-                    }
-                    n.type = cls->getReifiedClass(types);
-                }
-                else {
-                    error(n, "Expected " + std::to_string(cls->genericParams.size()) + " type arguments, " + std::to_string(n.genericArguments.size()) + " given.");
-                }
-            }
-            else {
-                error(n, "Can not reify non-generic type '" + n.base->type->name + "'.");
-            }
+        auto cls = n.baseTypeExpr->typeValue->as<ClassDecl>();
+        if (!cls) {
+            error(n, "Can not reify non-class type '" + n.baseTypeExpr->typeValue->getFullName() + "'.");
+            return;
         }
-        else {
-            error(n, "Can not reify non-generic type '" + n.base->type->name + "'.");
+
+        if (cls->genericParams.empty()) {
+            error(n, "Can not reify non-generic class '" + n.baseTypeExpr->typeValue->getFullName() + "'.");
+            return;
         }
+
+        if (cls->genericParams.size() != n.genericArguments.size()) {
+            error(n, "Expected " + std::to_string(cls->genericParams.size()) + " type arguments, " + std::to_string(n.genericArguments.size()) + " given.");
+            return;
+        }
+
+        std::vector<TypeDecl*> types;
+        for (auto&& tex: n.genericArguments) {
+            types.push_back(tex->typeValue);
+        }
+
+        n.type = &TypeType::instance;
+        n.typeValue = cls->getReifiedClass(types);
     }
 
     void NameResolver::visit(InterfaceMethodDecl& n) {
@@ -508,8 +470,12 @@ namespace Strela {
 
         std::vector<TypeDecl*> paramTypes;
         for (auto&& param: n.params) {
-            paramTypes.push_back(param->typeExpr->type);
+            paramTypes.push_back(param->typeExpr->typeValue);
         }
-        n.type = FuncType::get(n.returnTypeExpr->type, paramTypes);
+        n.type = FuncType::get(n.returnTypeExpr ? n.returnTypeExpr->typeValue : &VoidType::instance, paramTypes);
+    }
+
+    void NameResolver::visit(TypeAliasDecl& n) {
+        visitChild(n.typeExpr);
     }
 }

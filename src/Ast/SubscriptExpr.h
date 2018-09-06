@@ -12,12 +12,11 @@
 namespace Strela {
     class SubscriptExpr: public Expr {
     public:
-        SubscriptExpr(Expr* callTarget, const std::vector<Expr*>& arguments): Expr(), callTarget(callTarget), arguments(arguments) {}
         STRELA_GET_TYPE(Strela::SubscriptExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 
     public:
-        Expr* callTarget;
+        Expr* callTarget = nullptr;
         std::vector<Expr*> arguments;
         FuncDecl* subscriptFunction = nullptr;
     };

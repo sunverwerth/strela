@@ -10,7 +10,7 @@ module Std.csockets {
         var pad1: i64;
     }
 
-    export external function socket(domain: i32, type: i32, protocol: i32): i32;
+    export external function socket(domain: i32, socktype: i32, protocol: i32): i32;
     export external function connect(sock: i32, addr: sockaddr_in, len: i32): i32;
     export external function bind(sock: i32, addr: sockaddr_in, len: i32): i32;
     export external function listen(sock: i32, backlog: i32): i32;

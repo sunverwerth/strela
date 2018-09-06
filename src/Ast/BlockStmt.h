@@ -11,7 +11,6 @@
 namespace Strela {
     class BlockStmt: public Stmt {
     public:
-        BlockStmt(const std::vector<Stmt*>& stmts): Stmt(), stmts(stmts) {}
         STRELA_GET_TYPE(Strela::BlockStmt, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 

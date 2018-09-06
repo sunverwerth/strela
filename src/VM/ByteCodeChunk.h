@@ -10,7 +10,9 @@
 
 #include <map>
 #include <vector>
+#include <string>
 #include <iostream>
+
 #ifdef __APPLE__
     #include <ffi/ffi.h>
 #else
@@ -37,16 +39,37 @@ namespace Strela {
         mutable callback ptr = nullptr;
     };
 
+    struct SourceLine {
+        size_t address;
+		size_t file;
+		size_t line;
+    };
+
+    struct VarInfo {
+        int offset;
+        std::string name;
+        VMType* type;
+    };
+
+    struct FunctionInfo {
+        std::string name;
+        std::vector<VarInfo> variables;
+    };
+
     class ByteCodeChunk {
     public:
         std::vector<VMValue> constants;
-        std::vector<char> opcodes;
-        std::map<size_t, std::string> functions;
+        std::vector<Opcode> opcodes;
+        std::map<size_t, FunctionInfo> functions;
         std::vector<ForeignFunction> foreignFunctions;
         std::vector<VMType*> types;
         size_t main;
+        std::vector<std::string> files;
+        std::vector<SourceLine> lines;
 
-        void addFunction(size_t address, const std::string& name);
+		SourceLine* getLine(size_t address);
+        void setLine(const std::string& file, size_t line);
+        void addFunction(size_t address, const FunctionInfo& func);
         int addConstant(VMValue c);
         int addForeignFunction(FuncDecl& n);
         int addOp(Opcode code);

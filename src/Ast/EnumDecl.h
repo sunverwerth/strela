@@ -13,7 +13,6 @@ namespace Strela {
     
     class EnumDecl: public TypeDecl {
     public:
-        EnumDecl(const std::string& name, const std::vector<EnumElement*>& elements): TypeDecl(name), elements(elements) {}
         STRELA_GET_TYPE(Strela::EnumDecl, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

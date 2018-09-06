@@ -4,19 +4,18 @@
 #ifndef Strela_Ast_AstUnionTypeExpr_h
 #define Strela_Ast_AstUnionTypeExpr_h
 
-#include "TypeExpr.h"
+#include "Expr.h"
 
 namespace Strela {
 
-    class UnionTypeExpr: public TypeExpr {
+    class UnionTypeExpr: public Expr {
     public:
-        UnionTypeExpr(TypeExpr* base, TypeExpr* next): TypeExpr(), base(base), next(next) {}
-        STRELA_GET_TYPE(Strela::UnionTypeExpr, Strela::TypeExpr);
-        STRELA_IMPL_TYPE_EXPR_VISITOR;
+        STRELA_GET_TYPE(Strela::UnionTypeExpr, Strela::Expr);
+        STRELA_IMPL_EXPR_VISITOR;
 
     public:
-        TypeExpr* base;
-        TypeExpr* next;
+        Expr* base = nullptr;
+        Expr* next = nullptr;
     };
 }
 

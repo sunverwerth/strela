@@ -2,6 +2,7 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 #include "Lexer.h"
+#include "utils.h"
 
 #include <sstream>
 
@@ -53,69 +54,28 @@ namespace Strela {
     };
 
     std::map<std::string, TokenType> keywords {
-        { "var", TokenType::Var },
+        { "class", TokenType::Class },
+        { "else", TokenType::Else },
+        { "enum", TokenType::Enum },
         { "export", TokenType::Export },
         { "external", TokenType::External },
-        { "import", TokenType::Import },
-        { "class", TokenType::Class },
-        { "interface", TokenType::Interface },
-        { "module", TokenType::Module },
-        { "function", TokenType::Function },
-        { "true", TokenType::Boolean },
         { "false", TokenType::Boolean },
+        { "function", TokenType::Function },
+        { "if", TokenType::If },
+        { "import", TokenType::Import },
+        { "interface", TokenType::Interface },
+        { "is", TokenType::Is },
+        { "module", TokenType::Module },
+        { "mutable", TokenType::Mutable },
+        { "new", TokenType::New },
         { "null", TokenType::Null },
         { "return", TokenType::Return },
-        { "new", TokenType::New },
-        { "mutable", TokenType::Mutable },
-        { "if", TokenType::If },
-        { "else", TokenType::Else },
-        { "while", TokenType::While },
-        { "enum", TokenType::Enum },
         { "this", TokenType::This },
-        { "is", TokenType::Is },
+        { "true", TokenType::Boolean },
+        { "type", TokenType::Type },
+        { "var", TokenType::Var },
+        { "while", TokenType::While },
     };
-
-    std::string unescape(const std::string& str) {
-        std::string unescaped;
-        for (size_t i = 0; i < str.size(); ++i) {
-            if (str[i] == '\\') {
-                if (i < str.size() - 1) {
-                    char c = str[++i];
-                    switch (c) {
-                        case '0': unescaped += '0'; break;
-                        case 'r': unescaped += '\r'; break;
-                        case 'n': unescaped += '\n'; break;
-                        case 't': unescaped += '\t'; break;
-                        case '\\': unescaped += '\\'; break;
-                        case '"': unescaped += '"'; break;
-                        default:
-                        unescaped += '\\';
-                        unescaped += c;
-                    }
-                    continue;
-                }
-            }
-            unescaped += str[i];
-        }
-        return unescaped;
-    }
-
-    std::string escape(const std::string& str) {
-        std::string escaped;
-        for (size_t i = 0; i < str.size(); ++i) {
-            switch (str[i]) {
-                case '\0': escaped += "\\0"; break;
-                case '\r': escaped += "\\r"; break;
-                case '\n': escaped += "\\n"; break;
-                case '\t': escaped += "\\t"; break;
-                case '\\': escaped += "\\\\"; break;
-                case '"': escaped += "\\\""; break;
-                default:
-                escaped += str[i];
-            }
-        }
-        return escaped;
-    }
 
     std::vector<Token> Lexer::tokenize() {
         std::vector<Token> tokens;

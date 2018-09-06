@@ -9,13 +9,12 @@
 namespace Strela {
     class UnaryExpr: public Expr {
     public:
-        UnaryExpr(TokenType op, Expr* target): Expr(), op(op), target(target) {}
         STRELA_GET_TYPE(Strela::UnaryExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 
     public:
         TokenType op;
-        Expr* target;
+        Expr* target = nullptr;
     };
 }
 

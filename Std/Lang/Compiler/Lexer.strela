@@ -64,15 +64,15 @@ module Std.Lang.Compiler.Lexer {
     }
 
     export class Token {
-        var type: TokenType;
+        var _type: TokenType;
         var value: String;
         var file: File;
         var row: u32;
         var column: u32;
 
         function init(file: File, tt: TokenType, val: String) {
-            file = file;
-            type = tt;
+            this.file = file;
+            _type = tt;
             value = val;
         }
     }
@@ -254,10 +254,10 @@ module Std.Lang.Compiler.Lexer {
             else if (ch == "%") { var old = ch; ch = file.getc(); return new Token(file, TokenType.Percent, old); }
             else {
                 if (singleChars.has(ch)) {
-                    var type = singleChars[ch];
+                    var _type = singleChars[ch];
                     var old = ch;
                     ch = file.getc();
-                    return new Token(file, type, old);
+                    return new Token(file, _type, old);
                 }
                 else {
                     var old = ch;

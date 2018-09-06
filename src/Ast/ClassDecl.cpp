@@ -47,17 +47,17 @@ namespace Strela {
 
         // copy class definition
         Parser parser(*source, firstToken);
-        auto cls = parser.parseClassDecl();
+        auto cls = parser.parseClassDecl(parent);
         // set type arguments
         cls->genericArguments = typeArgs;
-        cls->name += "<";
+        cls->_name += "<";
         for (auto&& t: typeArgs) {
-            cls->name += t->name;
+            cls->_name += t->getFullName();
             if (&t != &typeArgs.back()) {
-                cls->name += ",";
+                cls->_name += ",";
             }
         }
-        cls->name += ">";
+        cls->_name += ">";
         reifiedClasses.push_back(cls);
         return cls;
     }

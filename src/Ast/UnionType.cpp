@@ -28,7 +28,7 @@ namespace Strela {
             if (&type != &*types.begin()) {
                 name += "|";
             }
-            name += type->name;
+            name += type->getFullName();
         }
         return name;
     }
@@ -46,9 +46,6 @@ namespace Strela {
         return containedTypes.find(t) != containedTypes.end();
     }
 
-    UnionType::UnionType(const std::set<TypeDecl*>& containedTypes): containedTypes(containedTypes), TypeDecl(getUnionName(containedTypes)) {        
-    }
-    
     TypeDecl* UnionType::getComplementaryType(TypeDecl* t) {
         if (containedTypes.size() != 2) throw Exception("Calling UnionType::getComplementaryType() on union without exactly 2 contained types.");
         for (auto& ct: containedTypes) {
@@ -65,8 +62,10 @@ namespace Strela {
             return it->second;
         }
 
-        auto ut = new UnionType(set);
-        unionTypes.insert(std::make_pair(ut->name, ut));
+        auto ut = new UnionType();
+        ut->containedTypes = set;
+        ut->_name = getUnionName(set);
+        unionTypes.insert(std::make_pair(ut->_name, ut));
         return ut;
     }
 

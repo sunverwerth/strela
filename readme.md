@@ -13,7 +13,7 @@ Strela is a static and strongly typed object oriented programming language with 
 The included MSVC project file has been tested with Visual Studio Community 2017.
 
 ## Basic usage
-    strelac [options] input-file
+    strela [options] input-file
 
 where `input-file` is either a .strela module or a module compiled to strela bytecode.
     

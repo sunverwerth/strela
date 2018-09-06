@@ -14,7 +14,7 @@ namespace Strela {
             }
         }
         for (auto&& cls: classes) {
-            if (cls->name == name) {
+            if (cls->_name == name) {
                 return cls;
             }
         }
@@ -23,16 +23,16 @@ namespace Strela {
 
     ClassDecl* ModDecl::getClass(const std::string& name) {        
         for (auto&& cls: classes) {
-            if (cls->name == name) {
+            if (cls->_name == name) {
                 return cls;
             }
         }
         return nullptr;
     }
 
-    EnumDecl* ModDecl::getEnum(const std::string& name) {        
+    EnumDecl* ModDecl::getEnum(const std::string& name) {
         for (auto&& en: enums) {
-            if (en->name == name) {
+            if (en->_name == name) {
                 return en;
             }
         }

@@ -18,33 +18,34 @@ namespace Strela {
         Parser(const SourceFile& source, int starttoken = 0): source(source), tokens(source.tokens), token(tokens.begin() + starttoken) {}
 
         ModDecl* parseModDecl();
-        IdExpr* parseIdExpr();
-        FuncDecl* parseFuncDecl(bool external = false);
-        Param* parseParam();
-        VarDecl* parseVarDecl();
-        BlockStmt* parseBlockStmt();
-        ClassDecl* parseClassDecl();
-        FieldDecl* parseFieldDecl();
-        EnumDecl* parseEnumDecl();
-        ImportStmt* parseImportStmt();
-        InterfaceDecl* parseInterfaceDecl();
-        InterfaceMethodDecl* parseInterfaceMethodDecl();
+        IdExpr* parseIdExpr(Node* parent);
+        FuncDecl* parseFuncDecl(Node* parent, bool external = false);
+        Param* parseParam(Node* parent);
+        VarDecl* parseVarDecl(Node* parent);
+        BlockStmt* parseBlockStmt(Node* parent);
+        ClassDecl* parseClassDecl(Node* parent);
+        FieldDecl* parseFieldDecl(Node* parent);
+        EnumDecl* parseEnumDecl(Node* parent);
+        ImportStmt* parseImportStmt(Node* parent);
+        InterfaceDecl* parseInterfaceDecl(Node* parent);
+        InterfaceMethodDecl* parseInterfaceMethodDecl(Node* parent);
+        TypeAliasDecl* parseTypeAliasDecl(Node* parent);
 
-        Stmt* parseStmt();
-        RetStmt* parseRetStmt();
-        ExprStmt* parseExprStmt();
-        IfStmt* parseIfStmt();
-        WhileStmt* parseWhileStmt();
+        Stmt* parseStmt(Node* parent);
+        RetStmt* parseRetStmt(Node* parent);
+        ExprStmt* parseExprStmt(Node* parent);
+        IfStmt* parseIfStmt(Node* parent);
+        WhileStmt* parseWhileStmt(Node* parent);
 
-        Expr* parseExpr(int precedence = 0);
-        NewExpr* parseNewExpr();
-        LitExpr* parseLitExpr();
-        CallExpr* parseCallExpr(Expr* callTarget);
-        ArrayLitExpr* parseArrayLitExpr();
-        SubscriptExpr* parseSubscriptExpr(Expr* callTarget);
+        Expr* parseExpr(Node* parent, int precedence = 0);
+        NewExpr* parseNewExpr(Node* parent);
+        LitExpr* parseLitExpr(Node* parent);
+        CallExpr* parseCallExpr(Node* parent, Expr* callTarget);
+        ArrayLitExpr* parseArrayLitExpr(Node* parent);
+        SubscriptExpr* parseSubscriptExpr(Node* parent, Expr* callTarget);
 
-        TypeExpr* parseTypeExpr();
-        GenericReificationExpr* parseGenericReificationExpr(TypeExpr* target);
+        Expr* parseTypeExpr(Node* parent);
+        GenericReificationExpr* parseGenericReificationExpr(Node* parent, Expr* target);
 
         bool match(TokenType type);
         bool matchExpr();
@@ -69,6 +70,7 @@ namespace Strela {
 
         template <typename T> T* addPosition(T* node, const Token& tok) {
             node->line = tok.line;
+			node->lineend = (token - 1)->line;
             node->column = tok.column;
             node->source = &source;
             node->firstToken = tok.index;

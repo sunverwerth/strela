@@ -6,7 +6,6 @@
 
 #include "IStmtVisitor.h"
 #include "IExprVisitor.h"
-#include "ITypeExprVisitor.h"
 #include "Pass.h"
 
 #include <string>
@@ -15,7 +14,7 @@ namespace Strela {
     class Scope;
     class Node;
 
-    class NameResolver: public Pass, public IStmtVisitor, public IExprVisitor, public ITypeExprVisitor {
+    class NameResolver: public Pass, public IStmtVisitor<void>, public IExprVisitor<void> {
     public:
         NameResolver(Scope* globals);
 
@@ -25,7 +24,7 @@ namespace Strela {
         void visit(VarDecl&) override;
         void visit(IdExpr&) override;
         void visit(RetStmt&) override;
-        void visit(LitExpr&) override;
+        void visit(LitExpr&) override {}
         void visit(BlockStmt&) override;
         void visit(CallExpr&) override;
         void visit(ExprStmt&) override;
@@ -36,15 +35,13 @@ namespace Strela {
         void visit(FieldDecl&) override;
         void visit(NewExpr&) override;
         void visit(AssignExpr&) override;
-        void visit(IdTypeExpr&) override;
-        void visit(ScopeTypeExpr&) override;
         void visit(WhileStmt&) override;
         void visit(PostfixExpr&) override;
         void visit(ArrayTypeExpr&) override;
         void visit(ImportStmt&) override;
         void visit(UnaryExpr&) override;
-        void visit(EnumDecl&) override;
-        void visit(EnumElement&) override;
+        void visit(EnumDecl&) override {}
+        void visit(EnumElement&) override {}
         void visit(InterfaceDecl&) override;
         void visit(InterfaceMethodDecl&) override;
         void visit(ThisExpr&) override {};
@@ -54,8 +51,9 @@ namespace Strela {
         void visit(ArrayLitExpr&) override;
         void visit(SubscriptExpr&) override;
         void visit(NullableTypeExpr&) override;
-        void visit(GenericParam&) override;
+        void visit(GenericParam&) override {}
         void visit(GenericReificationExpr&) override;
+        void visit(TypeAliasDecl&) override;
 
         int resolveGenerics(ModDecl&);
 
@@ -70,8 +68,6 @@ namespace Strela {
         }
         
     private:
-        ClassDecl* _class = nullptr;
-        InterfaceDecl* _interface = nullptr;
         Scope* scope;
     };
 }

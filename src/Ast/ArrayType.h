@@ -10,7 +10,6 @@ namespace Strela {
     class FieldDecl;
     class ArrayType: public TypeDecl {
     public:
-        ArrayType(const std::string& name, TypeDecl* baseType): TypeDecl(name), baseType(baseType) {}
         STRELA_GET_TYPE(Strela::ArrayType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 
@@ -19,8 +18,8 @@ namespace Strela {
         static ArrayType* get(TypeDecl* base);
 
     public:
-        TypeDecl* baseType;
-        FieldDecl* lengthField;
+        TypeDecl* baseType = nullptr;
+        FieldDecl* lengthField = nullptr;
         static std::map<TypeDecl*, ArrayType*> arrayTypes;
     };
 }

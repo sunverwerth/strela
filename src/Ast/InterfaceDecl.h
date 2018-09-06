@@ -21,7 +21,6 @@ namespace Strela {
     
     class InterfaceDecl: public TypeDecl {
     public:
-        InterfaceDecl(const std::string& name, const std::vector<InterfaceMethodDecl*>& methods): TypeDecl(name), methods(methods) {}
         STRELA_GET_TYPE(Strela::InterfaceDecl, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

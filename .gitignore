@@ -2,7 +2,7 @@
 /debug
 /Release
 /Debug
-/.vscode
+**/.vscode
 /.vs
 /x64
 *.sbc

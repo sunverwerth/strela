@@ -193,8 +193,8 @@ module Examples.Ray {
             spheres.append(new Sphere(new Vec(-6, 6, 15), 5, new Material(new Vec(0, 1, 0), 0.1, 0.6)));
             spheres.append(new Sphere(new Vec(-6, -5, 20), 5, new Material(new Vec(0, 0, 1), 0.0, 0.4)));
             
-            width = 64;
-            height = 64;
+            width = 640;
+            height = 480;
             file = new TGA("out.tga", width, height);
             print("Initialized image with ");
             print(width);

@@ -9,7 +9,7 @@
 namespace Strela {
     class BoolType: public TypeDecl {
     public:
-        BoolType(): TypeDecl("bool") {}
+        BoolType() { _name = "bool"; }
         STRELA_GET_TYPE(Strela::BoolType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

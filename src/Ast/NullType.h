@@ -9,7 +9,7 @@
 namespace Strela {
     class NullType: public TypeDecl {
     public:
-        NullType(): TypeDecl("null") {}
+        NullType() { _name = "null"; }
         STRELA_GET_TYPE(Strela::NullType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

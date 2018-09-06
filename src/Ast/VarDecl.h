@@ -10,19 +10,17 @@
 
 namespace Strela {
     class Expr;
-    class TypeExpr;
     
     class VarDecl: public Stmt {
     public:
-        VarDecl(const std::string& name, TypeExpr* typeExpr, Expr* initializer): Stmt(), name(name), typeExpr(typeExpr), initializer(initializer) {}
         STRELA_GET_TYPE(Strela::VarDecl, Strela::Stmt);
         STRELA_IMPL_STMT_VISITOR;
 
     public:
         std::string name;
-        TypeExpr* typeExpr;
-        Expr* initializer;
-        TypeDecl* type = nullptr;
+        Expr* typeExpr = nullptr;
+        Expr* initializer = nullptr;
+        TypeDecl* declType = nullptr;
 
         int index = 0;
     };

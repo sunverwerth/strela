@@ -10,16 +10,15 @@
 #include <vector>
 
 namespace Strela {
-    class TypeExpr;
+    class Expr;
 
     class NewExpr: public Expr {
     public:
-        NewExpr(TypeExpr* typeExpr, const std::vector<Expr*>& arguments): Expr(), typeExpr(typeExpr), arguments(arguments) {}
         STRELA_GET_TYPE(Strela::NewExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 
     public:
-        TypeExpr* typeExpr;
+        Expr* typeExpr = nullptr;
         std::vector<Expr*> arguments;
         FuncDecl* initMethod = nullptr;
     };

@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 struct Frame {
     size_t bp;
@@ -18,17 +19,16 @@ struct Frame {
 
 namespace Strela {
     class ByteCodeChunk;
-    
+
     class VM {
     public:
-        VM(const ByteCodeChunk& chunk, const std::vector<std::string>& arguments);
+        VM(ByteCodeChunk& chunk, const std::vector<std::string>& arguments);
         VMValue run();
+        void step(size_t maxOps);
 
-        void printCallStack();
+        std::string printCallStack();
 
     private:
-        bool execute();
-
         void push(const VMValue& val);
         VMValue pop();
         void pop(size_t num);
@@ -38,8 +38,17 @@ namespace Strela {
         template<typename T> T read();
 
     public:
-        const ByteCodeChunk& chunk;
-        char op;
+		enum {
+			RUNNING,
+			STOPPED,
+			FINISHED,
+		} status;
+
+        bool halt = false;
+        VMValue exitCode;
+        int numallocs = 0;
+        ByteCodeChunk& chunk;
+        Opcode op;
         GC gc;
         size_t ip;
         size_t bp;

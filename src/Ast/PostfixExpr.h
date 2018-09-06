@@ -9,13 +9,12 @@
 namespace Strela {
     class PostfixExpr: public Expr {
     public:
-        PostfixExpr(Expr* target, TokenType op): Expr(), target(target), op(op) {}
         STRELA_GET_TYPE(Strela::PostfixExpr, Strela::Expr);
         STRELA_IMPL_EXPR_VISITOR;
 
     public:
         TokenType op;
-        Expr* target;
+        Expr* target = nullptr;
     };
 }
 

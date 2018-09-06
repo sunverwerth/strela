@@ -9,7 +9,7 @@
 namespace Strela {
     class TypeType: public TypeDecl {
     public:
-        TypeType(): TypeDecl("Type") {}
+        TypeType() { _name = "Type"; }
         STRELA_GET_TYPE(Strela::TypeType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

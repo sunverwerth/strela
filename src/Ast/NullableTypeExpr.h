@@ -4,17 +4,16 @@
 #ifndef Strela_Ast_AstNullableTypeExpr_h
 #define Strela_Ast_AstNullableTypeExpr_h
 
-#include "TypeExpr.h"
+#include "Expr.h"
 
 namespace Strela {
-    class NullableTypeExpr: public TypeExpr {
+    class NullableTypeExpr: public Expr {
     public:
-        NullableTypeExpr(TypeExpr* base): TypeExpr(), base(base) {}
-        STRELA_GET_TYPE(Strela::NullableTypeExpr, Strela::TypeExpr);
-        STRELA_IMPL_TYPE_EXPR_VISITOR;
+        STRELA_GET_TYPE(Strela::NullableTypeExpr, Strela::Expr);
+        STRELA_IMPL_EXPR_VISITOR;
 
     public:
-        TypeExpr* base;
+        Expr* baseTypeExpr = nullptr;
     };
 }
 

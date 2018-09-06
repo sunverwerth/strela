@@ -5,40 +5,38 @@
 #define Strela_IStmtVisitor_h
 
 namespace Strela {
-    class IStmtVisitor {
+    template<typename T> class IStmtVisitor {
     public:
-        virtual void visit(class ModDecl&) = 0;
-        virtual void visit(class ImportStmt&) = 0;
-        virtual void visit(class FuncDecl&) = 0;
-        virtual void visit(class Param&) = 0;
-        virtual void visit(class VarDecl&) = 0;
-        virtual void visit(class ClassDecl&) = 0;
-        virtual void visit(class FieldDecl&) = 0;
-        virtual void visit(class EnumDecl&) = 0;
-        virtual void visit(class EnumElement&) = 0;
-        virtual void visit(class InterfaceDecl&) = 0;
-        virtual void visit(class InterfaceMethodDecl&) = 0;
-        virtual void visit(class GenericParam&) = 0;
-
-        virtual void visit(class RetStmt&) = 0;
-        virtual void visit(class BlockStmt&) = 0;
-        virtual void visit(class ExprStmt&) = 0;
-        virtual void visit(class IfStmt&) = 0;
-        virtual void visit(class WhileStmt&) = 0;
-
-        // builtin types
-        virtual void visit(class ArrayType&) {}
-        virtual void visit(class FloatType&) {}
-        virtual void visit(class FuncType&) {}
-        virtual void visit(class IntType&) {}
-        virtual void visit(class NullType&) {}
-        virtual void visit(class VoidType&) {}
-        virtual void visit(class BoolType&) {}
-        virtual void visit(class TypeType&) {}
-        virtual void visit(class UnionType&) {}
-        virtual void visit(class InvalidType&) {}
-        virtual void visit(class PointerType&) {}
-        virtual void visit(class OverloadedFuncType&) {}
+        virtual T visit(class ModDecl&) = 0;
+        virtual T visit(class ImportStmt&) = 0;
+        virtual T visit(class FuncDecl&) = 0;
+        virtual T visit(class Param&) = 0;
+        virtual T visit(class VarDecl&) = 0;
+        virtual T visit(class ClassDecl&) = 0;
+        virtual T visit(class FieldDecl&) = 0;
+        virtual T visit(class EnumDecl&) = 0;
+        virtual T visit(class EnumElement&) = 0;
+        virtual T visit(class InterfaceDecl&) = 0;
+        virtual T visit(class InterfaceMethodDecl&) = 0;
+        virtual T visit(class GenericParam&) = 0;
+        virtual T visit(class TypeAliasDecl&) = 0;
+        virtual T visit(class RetStmt&) = 0;
+        virtual T visit(class BlockStmt&) = 0;
+        virtual T visit(class ExprStmt&) = 0;
+        virtual T visit(class IfStmt&) = 0;
+        virtual T visit(class WhileStmt&) = 0;
+        virtual T visit(class ArrayType&) {}
+        virtual T visit(class FloatType&) {}
+        virtual T visit(class FuncType&) {}
+        virtual T visit(class IntType&) {}
+        virtual T visit(class NullType&) {}
+        virtual T visit(class VoidType&) {}
+        virtual T visit(class BoolType&) {}
+        virtual T visit(class TypeType&) {}
+        virtual T visit(class UnionType&) {}
+        virtual T visit(class InvalidType&) {}
+        virtual T visit(class PointerType&) {}
+        virtual T visit(class OverloadedFuncType&) {}
     };
 }
 

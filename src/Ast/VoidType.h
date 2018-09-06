@@ -9,7 +9,7 @@
 namespace Strela {
     class VoidType: public TypeDecl {
     public:
-        VoidType(): TypeDecl("void") {}
+        VoidType() { _name = "void"; }
         STRELA_GET_TYPE(Strela::VoidType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

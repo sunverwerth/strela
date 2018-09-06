@@ -9,7 +9,7 @@
 namespace Strela {
     class FloatType: public TypeDecl {
     public:
-        FloatType(const std::string& name, int bytes): TypeDecl(name), bytes(bytes) {}
+        FloatType(const std::string& name, int bytes): bytes(bytes) { this->_name = name; }
         STRELA_GET_TYPE(Strela::FloatType, Strela::TypeDecl);
         STRELA_IMPL_STMT_VISITOR;
 

@@ -76,20 +76,19 @@ namespace Strela {
     };
 
     ModDecl* Parser::parseModDecl() {
+        auto moddecl = new ModDecl();
         auto startToken = eat(TokenType::Module);
+        moddecl->line = startToken.line;
+        moddecl->column = startToken.column;
+
         auto name = eat(TokenType::Identifier).value;
         while (eatOptional(TokenType::Period)) {
             name += ".";
             name += eat(TokenType::Identifier).value;
         }
+        moddecl->_name = name;
 
         eat(TokenType::CurlyOpen);
-
-        std::vector<FuncDecl*> functions;
-        std::vector<ClassDecl*> classes;
-        std::vector<InterfaceDecl*> interfaces;
-        std::vector<ImportStmt*> imports;
-        std::vector<EnumDecl*> enums;
 
         bool exportNext = false;
         bool externalNext = false;
@@ -106,27 +105,32 @@ namespace Strela {
             }
 
             if (match(TokenType::Function)) {
-                auto fun = parseFuncDecl(externalNext);
+                auto fun = parseFuncDecl(moddecl, externalNext);
                 if (exportNext) fun->isExported = true;
-                functions.push_back(fun);
+                moddecl->functions.push_back(fun);
             }
             else if (match(TokenType::Class)) {
-                auto cls = parseClassDecl();
+                auto cls = parseClassDecl(moddecl);
                 if (exportNext) cls->isExported = true;
-                classes.push_back(cls);
+                moddecl->classes.push_back(cls);
             }
             else if (match(TokenType::Interface)) {
-                auto iface = parseInterfaceDecl();
+                auto iface = parseInterfaceDecl(moddecl);
                 if (exportNext) iface->isExported = true;
-                interfaces.push_back(iface);
+                moddecl->interfaces.push_back(iface);
             }
             else if (match(TokenType::Enum)) {
-                auto en = parseEnumDecl();
+                auto en = parseEnumDecl(moddecl);
                 if (exportNext) en->isExported = true;
-                enums.push_back(en);
+                moddecl->enums.push_back(en);
+            }
+            else if (match(TokenType::Type)) {
+                auto al = parseTypeAliasDecl(moddecl);
+                moddecl->typeAliases.push_back(al);
             }
             else if (match(TokenType::Import)) {
-                imports.push_back(parseImportStmt());
+                auto imp = parseImportStmt(moddecl);
+                moddecl->imports.push_back(imp);
             }
             else {
                 eat();
@@ -136,53 +140,56 @@ namespace Strela {
             exportNext = false;
             externalNext = false;
         }
-        eat(TokenType::CurlyClose);
+        auto endToken = eat(TokenType::CurlyClose);
+        moddecl->lineend = endToken.line;
 
-        return addPosition(new ModDecl(name, imports, functions, classes, interfaces, enums), startToken);
+        return moddecl;
     }
 
-    ImportStmt* Parser::parseImportStmt() {
+    ImportStmt* Parser::parseImportStmt(Node* parent) {
+        auto import = new ImportStmt();
+        import->parent = parent;
         auto st = eat(TokenType::Import);
-        std::vector<std::string> parts;
-        bool all = false;
-        parts.push_back(eat(TokenType::Identifier).value);
+
+        import->parts.push_back(eat(TokenType::Identifier).value);
         while (eatOptional(TokenType::Period)) {
             if (eatOptional(TokenType::Asterisk)) {
-                all = true;
+                import->all = true;
                 break;
             }
             else {
-                parts.push_back(eat(TokenType::Identifier).value);
+                import->parts.push_back(eat(TokenType::Identifier).value);
             }
         }
         eat(TokenType::Semicolon);
-        return addPosition(new ImportStmt(parts, all), st);
+        return addPosition(import, st);
     }
 
-    FuncDecl* Parser::parseFuncDecl(bool external) {
+    FuncDecl* Parser::parseFuncDecl(Node* parent, bool external) {
+        auto fun = new FuncDecl();
+        fun->parent = parent;
         numVariables = 0;
         auto startToken = eat(TokenType::Function);
-        std::string name;
         if (match(TokenType::Identifier)) {
-            name = eat().value;
+            fun->name = eat().value;
         }
         else if (match(TokenType::BracketOpen)) {
             eat();
             eat(TokenType::BracketClose);
-            name = "[]";
+            fun->name = "[]";
         }
         else if (matchBinary()) {
-            name = eat().value;
+            fun->name = eat().value;
         }
         else {
             expected("function name");
         }
+
         eat(TokenType::ParenOpen);
-        std::vector<Param*> parameters;
         while (!eof() && !match(TokenType::ParenClose)) {
-            auto param = parseParam();
-            param->index = parameters.size();
-            parameters.push_back(param);
+            auto param = parseParam(fun);
+            param->index = fun->params.size();
+            fun->params.push_back(param);
             if (match(TokenType::Comma)) {
                 eat();
             }
@@ -191,71 +198,67 @@ namespace Strela {
             }
         }
         eat(TokenType::ParenClose);
-        TypeExpr* returnTypeExpr = nullptr;
         
         if (eatOptional(TokenType::Colon)) {
-            returnTypeExpr = parseTypeExpr();
-        }
-        else {
-            returnTypeExpr = new IdTypeExpr("void");
+            fun->returnTypeExpr = parseTypeExpr(fun);
         }
 
-        std::vector<Stmt*> stmts;
         if (external) {
             eat(TokenType::Semicolon);
         }
-        else {        
+        else {
             eat(TokenType::CurlyOpen);
             while (!eof() && !match(TokenType::CurlyClose)) {
                 if (match(TokenType::Semicolon)) {
                     eat();
                 }
                 else {
-                    stmts.push_back(parseStmt());
+                    fun->stmts.push_back(parseStmt(fun));
                 }
             }
             eat(TokenType::CurlyClose);
         }
 
-        auto fun = new FuncDecl(name, parameters, returnTypeExpr, stmts);
         fun->numVariables = numVariables;
         fun->isExternal = external;
         return addPosition(fun, startToken);
     }
 
-    BlockStmt* Parser::parseBlockStmt() {
+    BlockStmt* Parser::parseBlockStmt(Node* parent) {
+        auto block = new BlockStmt();
+        block->parent = parent;
         auto startToken = eat(TokenType::CurlyOpen);
-        std::vector<Stmt*> stmts;
+
         while (!eof() && !match(TokenType::CurlyClose)) {
             if (match(TokenType::Semicolon)) {
                 eat();
             }
             else {
-                stmts.push_back(parseStmt());
+                block->stmts.push_back(parseStmt(block));
             }
         }
         eat(TokenType::CurlyClose);
-        return addPosition(new BlockStmt(stmts), startToken);
+        return addPosition(block, startToken);
     }
 
-    Stmt* Parser::parseStmt() {
+    Stmt* Parser::parseStmt(Node* parent) {
         if (match(TokenType::Return)) {
-            return parseRetStmt();
+            return parseRetStmt(parent);
         }
         else if (match(TokenType::CurlyOpen)) {
-            return parseBlockStmt();
+            return parseBlockStmt(parent);
         }
         else if (match(TokenType::If)) {
-            return parseIfStmt();
+            return parseIfStmt(parent);
         }
         else if (match(TokenType::While)) {
-            return parseWhileStmt();
+            return parseWhileStmt(parent);
         }
         else if (match(TokenType::Var)) {
-            return parseVarDecl();
+            return parseVarDecl(parent);
         }
         else if (matchExpr()) {
-            return parseExprStmt();
+            return parseExprStmt(parent);
         }
         else {
             eat();
@@ -264,77 +267,105 @@ namespace Strela {
         }
     }
 
-    ExprStmt* Parser::parseExprStmt() {
+    ExprStmt* Parser::parseExprStmt(Node* parent) {
+        auto stmt = new ExprStmt();
+        stmt->parent = parent;
         auto startToken = *token;
-        auto expr = new ExprStmt(parseExpr());
+        stmt->expression = parseExpr(stmt);
         eat(TokenType::Semicolon);
-        return addPosition(expr, startToken);
+        return addPosition(stmt, startToken);
     }
 
-    RetStmt* Parser::parseRetStmt() {
+    RetStmt* Parser::parseRetStmt(Node* parent) {
+        auto ret = new RetStmt();
+        ret->parent = parent;
         auto startToken = eat(TokenType::Return);
-        Expr* expr = nullptr;
         if (matchExpr()) {
-            expr = parseExpr();
+            ret->expression = parseExpr(ret);
         }
-        auto ret = new RetStmt(expr);
         eat(TokenType::Semicolon);
         return addPosition(ret, startToken);
     }
 
-    IfStmt* Parser::parseIfStmt() {
+    IfStmt* Parser::parseIfStmt(Node* parent) {
+        auto ifStmt = new IfStmt();
+        ifStmt->parent = parent;
+
         auto startToken = eat(TokenType::If);
         eat(TokenType::ParenOpen);
-        auto condition = parseExpr();
+        ifStmt->condition = parseExpr(ifStmt);
         eat(TokenType::ParenClose);
-        auto trueBranch = parseStmt();
-        Stmt* falseBranch = nullptr;
+        ifStmt->trueBranch = parseStmt(ifStmt);
         if (eatOptional(TokenType::Else)) {
-            falseBranch = parseStmt();
+            ifStmt->falseBranch = parseStmt(ifStmt);
         }
-        return addPosition(new IfStmt(condition, trueBranch, falseBranch), startToken);
+        return addPosition(ifStmt, startToken);
     }
 
-    WhileStmt* Parser::parseWhileStmt() {
+    WhileStmt* Parser::parseWhileStmt(Node* parent) {
+        auto whileStmt = new WhileStmt();
+        whileStmt->parent = parent;
+
         auto startToken = eat(TokenType::While);
         eat(TokenType::ParenOpen);
-        auto condition = parseExpr();
+        whileStmt->condition = parseExpr(whileStmt);
         eat(TokenType::ParenClose);
-        auto body = parseStmt();
-        return addPosition(new WhileStmt(condition, body), startToken);
+        whileStmt->body = parseStmt(whileStmt);
+        return addPosition(whileStmt, startToken);
     }
 
-    TypeExpr* Parser::parseTypeExpr() {
-        TypeExpr* expression = nullptr;
+    Expr* Parser::parseTypeExpr(Node* parent) {
+        Expr* expression = nullptr;
         if (match(TokenType::Identifier) || match(TokenType::Null)) {
             auto start = eat();
-            expression = addPosition(new IdTypeExpr(start.value), start);
+            auto id = new IdExpr();
+            id->parent = parent;
+            id->name = start.value;
+            expression = addPosition(id, start);
         }
         else {
-            expected(TokenType::Identifier);
+            expected("Type name");
         }
 
         while (matchTypeSecondary()) {
             if (match(TokenType::BracketOpen)) {
                 auto st = eat();
                 eat(TokenType::BracketClose);
-                expression = addPosition(new ArrayTypeExpr(expression), st);
+                auto arr = new ArrayTypeExpr();
+                arr->parent = parent;
+                arr->baseTypeExpr = expression;
+                arr->baseTypeExpr->parent = arr;
+                expression = addPosition(arr, st);
             }
             else if (match(TokenType::LessThan)) {
-                expression = parseGenericReificationExpr(expression);
+                expression = parseGenericReificationExpr(parent, expression);
             }
             else if (match(TokenType::Pipe)) {
                 auto st = eat();
-                expression = addPosition(new UnionTypeExpr(expression, parseTypeExpr()), st);
+                auto un = new UnionTypeExpr();
+                un->parent = parent;
+                un->base = expression;
+                un->base->parent = un;
+                un->next = parseTypeExpr(un);
+                expression = addPosition(un, st);
             }
             else if (match(TokenType::QuestionMark)) {
                 auto st = eat();
-                expression = addPosition(new NullableTypeExpr(expression), st);
+                auto nullable = new NullableTypeExpr();
+                nullable->parent = parent;
+                nullable->baseTypeExpr = expression;
+                nullable->baseTypeExpr->parent = nullable;
+                expression = addPosition(nullable, st);
             }
             else if (match(TokenType::Period)) {
                 auto st = eat();
                 auto name = eat(TokenType::Identifier);
-                expression = addPosition(new ScopeTypeExpr(expression, name.value), st);
+                auto scope = new ScopeExpr();
+                scope->parent = parent;
+                scope->name = name.value;
+                scope->scopeTarget = expression;
+                scope->scopeTarget->parent = scope;
+                expression = addPosition(scope, st);
             }
             else {
                 eat();
@@ -345,49 +376,58 @@ namespace Strela {
         return expression;
     }
 
-    GenericReificationExpr* Parser::parseGenericReificationExpr(TypeExpr* target) {
+    GenericReificationExpr* Parser::parseGenericReificationExpr(Node* parent, Expr* target) {
         auto startToken = eat(TokenType::LessThan);
-        std::vector<TypeExpr*> genericArguments;
+        auto rei = new GenericReificationExpr();
+        rei->parent = parent;
+        rei->baseTypeExpr = target;
+        rei->baseTypeExpr->parent = rei;
         while (!eof() && !match(TokenType::GreaterThan)) {
-            genericArguments.push_back(parseTypeExpr());
+            rei->genericArguments.push_back(parseTypeExpr(rei));
             if (!eatOptional(TokenType::Comma)) {
                 break;
             }
         }
         eat(TokenType::GreaterThan);
-        return addPosition(new GenericReificationExpr(target, genericArguments), startToken);
+        return addPosition(rei, startToken);
     }
     
-    Expr* Parser::parseExpr(int precedence) {
+    Expr* Parser::parseExpr(Node* parent, int precedence) {
         Expr* expression = nullptr;
         if (match(TokenType::Integer) || match(TokenType::Float) || match(TokenType::String) || match(TokenType::Boolean) || match(TokenType::Null)) {
-            expression = parseLitExpr();
+            expression = parseLitExpr(parent);
         }
         else if (match(TokenType::Identifier)) {
-            expression = parseIdExpr();
+            expression = parseIdExpr(parent);
         }
         else if (matchUnary()) {
             auto st = eat();
-            expression = addPosition(new UnaryExpr(st.type, parseExpr(unaryPrecedenceMap[st.type])), st);
+            auto un = new UnaryExpr();
+            un->parent = parent;
+            un->op = st.type;
+            un->target = parseExpr(un, unaryPrecedenceMap[st.type]);
+            expression = addPosition(un, st);
         }
         else if (match(TokenType::ParenOpen)) {
             eat();
-            expression = parseExpr();
+            expression = parseExpr(parent);
             eat(TokenType::ParenClose);
         }
         else if (match(TokenType::New)) {
-            expression = parseNewExpr();
+            expression = parseNewExpr(parent);
         }
         else if (match(TokenType::This)) {
             auto st = eat();
-            expression = addPosition(new ThisExpr(), st);
+            auto thisExpr = new ThisExpr();
+            thisExpr->parent = parent;
+            expression = addPosition(thisExpr, st);
         }
         else if (match(TokenType::BracketOpen)) {
-            expression = parseArrayLitExpr();
+            expression = parseArrayLitExpr(parent);
         }
         else {
-            expression = new LitExpr(eat());
             expected("primary expression or prefix operator");
+            return nullptr; // TODO return null object
         }
 
         while (matchSecondary()) {
@@ -403,27 +443,46 @@ namespace Strela {
             int myprec = it->second;
 
             if (match(TokenType::ParenOpen)) {
-                expression = parseCallExpr(expression);
+                expression = parseCallExpr(parent, expression);
             }
             else if (match(TokenType::BracketOpen)) {
-                expression = parseSubscriptExpr(expression);
+                expression = parseSubscriptExpr(parent, expression);
             }
             else if (match(TokenType::Period)) {
                 auto st = eat();
-                auto name = eat(TokenType::Identifier).value;
-                expression = addPosition(new ScopeExpr(expression, name), st);
+                auto scope = new ScopeExpr();
+                scope->parent = parent;
+                scope->name = eat(TokenType::Identifier).value;
+                scope->scopeTarget = expression;
+                scope->scopeTarget->parent = scope;
+                expression = addPosition(scope, st);
             }
             else if (match(TokenType::MinusMinus) || match(TokenType::PlusPlus)) {
                 auto st = eat();
-                expression = addPosition(new PostfixExpr(expression, st.type), st);
+                auto post = new PostfixExpr();
+                post->parent = parent;
+                post->op = st.type;
+                post->target = expression;
+                post->target->parent = post;
+                expression = addPosition(post, st);
             }
             else if (match(TokenType::Is)) {
                 auto startToken = eat(TokenType::Is);
-                expression = addPosition(new IsExpr(expression, parseTypeExpr()), startToken);
+                auto is = new IsExpr();
+                is->parent = parent;
+                is->typeExpr = parseTypeExpr(is);
+                is->target = expression;
+                is->target->parent = is;
+                expression = addPosition(is, startToken);
             }
             else if (match(TokenType::Colon)) {
                 auto startToken = eat(TokenType::Colon);
-                expression = addPosition(new CastExpr(expression, parseTypeExpr()), startToken);
+                auto cast = new CastExpr();
+                cast->parent = parent;
+                cast->sourceExpr = expression;
+                cast->sourceExpr->parent = cast;
+                cast->targetTypeExpr = parseTypeExpr(cast);
+                expression = addPosition(cast, startToken);
             }
             else if (matchBinary()) {
 				auto op = eat();
@@ -434,10 +493,22 @@ namespace Strela {
                     op.type == TokenType::AsteriskEquals ||
                     op.type == TokenType::SlashEquals
                 ) {
-                    expression = addPosition(new AssignExpr(op.type, expression, parseExpr(myprec)), op);
+                    auto assign = new AssignExpr();
+                    assign->parent = parent;
+                    assign->op = op.type;
+                    assign->left = expression;
+                    assign->left->parent = assign;
+                    assign->right = parseExpr(assign, myprec);
+                    expression = addPosition(assign, op);
                 }
                 else {
-                    expression = addPosition(new BinopExpr(op.type, expression, parseExpr(myprec)), op);
+                    auto binop = new BinopExpr();
+                    binop->parent = parent;
+                    binop->op = op.type;
+                    binop->left = expression;
+                    binop->left->parent = binop;
+                    binop->right = parseExpr(binop, myprec);
+                    expression = addPosition(binop, op);
                 }
             }
             else {
@@ -449,125 +520,163 @@ namespace Strela {
         return expression;
     }
 
-    NewExpr* Parser::parseNewExpr() {
+    NewExpr* Parser::parseNewExpr(Node* parent) {
+        auto newExpr = new NewExpr();
+        newExpr->parent = parent;
+
         auto startToken = eat(TokenType::New);
-        auto typeExpr = parseTypeExpr();
+        newExpr->typeExpr = parseTypeExpr(newExpr);
         
-        std::vector<Expr*> arguments;
         if (eatOptional(TokenType::ParenOpen)) {
             while (!eof() && !match(TokenType::ParenClose)) {
-                arguments.push_back(parseExpr());
+                newExpr->arguments.push_back(parseExpr(newExpr));
                 if (!eatOptional(TokenType::Comma)) {
                     break;
                 }
             }
             eat(TokenType::ParenClose);
         }
-        return addPosition(new NewExpr(typeExpr, arguments), startToken);
+        return addPosition(newExpr, startToken);
     }
 
-    CallExpr* Parser::parseCallExpr(Expr* callTarget) {
+    CallExpr* Parser::parseCallExpr(Node* parent, Expr* callTarget) {
+        auto call = new CallExpr();
+        call->parent = parent;
+        call->callTarget = callTarget;
+
         auto startToken = eat(TokenType::ParenOpen);
-        std::vector<Expr*> arguments;
         while (!eof() && !match(TokenType::ParenClose)) {
-            arguments.push_back(parseExpr());
+            call->arguments.push_back(parseExpr(call));
             if (!eatOptional(TokenType::Comma)) {
                 break;
             }
         }
         eat(TokenType::ParenClose);
-        return addPosition(new CallExpr(callTarget, arguments), startToken);
+        return addPosition(call, startToken);
     }
 
-    SubscriptExpr* Parser::parseSubscriptExpr(Expr* callTarget) {
+    SubscriptExpr* Parser::parseSubscriptExpr(Node* parent, Expr* callTarget) {
+        auto sub = new SubscriptExpr();
+        sub->parent = parent;
+        sub->callTarget = callTarget;
+
         auto startToken = eat(TokenType::BracketOpen);
-        std::vector<Expr*> arguments;
         while (!eof() && !match(TokenType::BracketClose)) {
-            arguments.push_back(parseExpr());
+            sub->arguments.push_back(parseExpr(sub));
             if (!eatOptional(TokenType::Comma)) {
                 break;
             }
         }
         eat(TokenType::BracketClose);
-        return addPosition(new SubscriptExpr(callTarget, arguments), startToken);
+        return addPosition(sub, startToken);
     }
 
-    LitExpr* Parser::parseLitExpr() {
+    LitExpr* Parser::parseLitExpr(Node* parent) {
         if (!(match(TokenType::Integer) || match(TokenType::Float) || match(TokenType::String) || match(TokenType::Boolean) || match(TokenType::Null))) {
             expected("literal");
         }
+        auto lit = new LitExpr();
+        lit->parent = parent;
         auto tok = eat();
-        return addPosition(new LitExpr(tok), tok);
+        lit->token = tok;
+        return addPosition(lit, tok);
     }
 
-    IdExpr* Parser::parseIdExpr() {
+    IdExpr* Parser::parseIdExpr(Node* parent) {
+        auto id = new IdExpr();
+        id->parent = parent;
         auto startToken = eat(TokenType::Identifier);
-        return addPosition(new IdExpr(startToken.value), startToken);
+        id->name = startToken.value;
+        return addPosition(id, startToken);
     }
 
-    Param* Parser::parseParam() {
+    Param* Parser::parseParam(Node* parent) {
+        auto param = new Param();
+        param->parent = parent;
+
         auto startToken = eat(TokenType::Identifier);
+        param->name = startToken.value;
         eat(TokenType::Colon);
-        auto type = parseTypeExpr();
-        return addPosition(new Param(startToken.value, type), startToken);
+        param->typeExpr = parseTypeExpr(param);
+        return addPosition(param, startToken);
     }
 
-    VarDecl* Parser::parseVarDecl() {
+    VarDecl* Parser::parseVarDecl(Node* parent) {
+        auto var = new VarDecl();
+        var->parent = parent;
+
         auto startToken = eat(TokenType::Var);
-        auto name = eat(TokenType::Identifier).value;
-        TypeExpr* type = nullptr;
+        var->name = eat(TokenType::Identifier).value;
 
         if (eatOptional(TokenType::Colon)) {
-            type = parseTypeExpr();
+            var->typeExpr = parseTypeExpr(var);
         }
-
-        Expr* initializer = nullptr;
 
         if (eatOptional(TokenType::Equals)) {
-            initializer = parseExpr();
+            var->initializer = parseExpr(var);
         }
 
-        if (!type && !initializer) {
+        if (!var->typeExpr && !var->initializer) {
             expected("type or initializer expression.");
         }
 
         eat(TokenType::Semicolon);
-        auto vardecl = addPosition(new VarDecl(name, type, initializer), startToken);
+        auto vardecl = addPosition(var, startToken);
         vardecl->index = numVariables++;
         return vardecl;
     }
 
-    FieldDecl* Parser::parseFieldDecl() {
+    FieldDecl* Parser::parseFieldDecl(Node* parent) {
+        auto field = new FieldDecl();
+        field->parent = parent;
+
         auto startToken = eat(TokenType::Var);
-        auto name = eat(TokenType::Identifier).value;
+        field->name = eat(TokenType::Identifier).value;
         eat(TokenType::Colon);
-        auto type = parseTypeExpr();
+        field->typeExpr = parseTypeExpr(field);
         eat(TokenType::Semicolon);
-        return addPosition(new FieldDecl(name, type), startToken);
+        return addPosition(field, startToken);
     }
 
-    ArrayLitExpr* Parser::parseArrayLitExpr() {
+    ArrayLitExpr* Parser::parseArrayLitExpr(Node* parent) {
+        auto arr = new ArrayLitExpr();
+        arr->parent = parent;
+
         auto startToken = eat(TokenType::BracketOpen);
-        std::vector<Expr*> elements;
         while (!eof() && !match(TokenType::BracketClose)) {
-            elements.push_back(parseExpr());
+            arr->elements.push_back(parseExpr(arr));
             if (!eatOptional(TokenType::Comma)) {
                 break;
             }
         }
         eat(TokenType::BracketClose);
-        return addPosition(new ArrayLitExpr(elements), startToken);
+        return addPosition(arr, startToken);
     }
 
-    ClassDecl* Parser::parseClassDecl() {
-        auto startToken = eat(TokenType::Class);
-        auto name = eat(TokenType::Identifier).value;
+    TypeAliasDecl* Parser::parseTypeAliasDecl(Node* parent) {
+        auto alias = new TypeAliasDecl();
+        auto startToken = eat(TokenType::Type);
+        alias->_name = eat(TokenType::Identifier).value;
+        eat(TokenType::Equals);
+        alias->typeExpr = parseTypeExpr(alias);
+        eat(TokenType::Semicolon);
+        return addPosition(alias, startToken);
+    }
 
-        std::vector<GenericParam*> genericParams;
+    ClassDecl* Parser::parseClassDecl(Node* parent) {
+        auto cls = new ClassDecl();
+        cls->parent = parent;
+
+        auto startToken = eat(TokenType::Class);
+        cls->_name = eat(TokenType::Identifier).value;
+
         if (eatOptional(TokenType::LessThan)) {
             while (!eof() && !match(TokenType::GreaterThan)) {
                 auto tok = eat(TokenType::Identifier);
-                genericParams.push_back(addPosition(new GenericParam(tok.value), tok));
+                auto gen = new GenericParam();
+                gen->parent = cls;
+                gen->_name = tok.value;
+                cls->genericParams.push_back(addPosition(gen, tok));
                 if (match(TokenType::Comma)) {
                     eat();
                 }
@@ -575,17 +684,15 @@ namespace Strela {
             eat(TokenType::GreaterThan);
         }
 
-        std::vector<FuncDecl*> methods;
-        std::vector<FieldDecl*> fields;
         eat(TokenType::CurlyOpen);
         while (!eof() && !match(TokenType::CurlyClose)) {
             if (match(TokenType::Function)) {
-                methods.push_back(parseFuncDecl());
+                cls->methods.push_back(parseFuncDecl(cls));
             }
             else if (match(TokenType::Var)) {
-                auto field = parseFieldDecl();
-                field->index = fields.size();
-                fields.push_back(field);
+                auto field = parseFieldDecl(cls);
+                field->index = cls->fields.size();
+                cls->fields.push_back(field);
             }
             else {
                 eat();
@@ -593,61 +700,68 @@ namespace Strela {
             }
         }
         eat(TokenType::CurlyClose);
-        return addPosition(new ClassDecl(name, genericParams, methods, fields), startToken);
+        return addPosition(cls, startToken);
     }
 
-    InterfaceDecl* Parser::parseInterfaceDecl() {
+    InterfaceDecl* Parser::parseInterfaceDecl(Node* parent) {
+        auto iface = new InterfaceDecl();
+        iface->parent = parent;
         auto startToken = eat(TokenType::Interface);
-        auto name = eat(TokenType::Identifier).value;
-        std::vector<InterfaceMethodDecl*> methods;
+        iface->_name = eat(TokenType::Identifier).value;
         eat(TokenType::CurlyOpen);
         while (!eof() && !match(TokenType::CurlyClose)) {
-            auto im = parseInterfaceMethodDecl();
-            im->index = methods.size();
-            methods.push_back(im);
+            auto im = parseInterfaceMethodDecl(iface);
+            im->index = iface->methods.size();
+            iface->methods.push_back(im);
             eat(TokenType::Semicolon);
         }
         eat(TokenType::CurlyClose);
-        return addPosition(new InterfaceDecl(name, methods), startToken);
+        return addPosition(iface, startToken);
     }
 
-    InterfaceMethodDecl* Parser::parseInterfaceMethodDecl() {
+    InterfaceMethodDecl* Parser::parseInterfaceMethodDecl(Node* parent) {
+        auto im = new InterfaceMethodDecl();
+        im->parent = parent;
         auto startToken = eat(TokenType::Function);
-        auto name = eat(TokenType::Identifier).value;
+        im->name = eat(TokenType::Identifier).value;
         eat(TokenType::ParenOpen);
-        std::vector<Param*> parameters;
         while (!eof() && !match(TokenType::ParenClose)) {
-            auto param = parseParam();
-            param->index = parameters.size();
-            parameters.push_back(param);
+            auto param = parseParam(im);
+            param->index = im->params.size();
+            im->params.push_back(param);
             if (!eatOptional(TokenType::Comma)) {
                 break;
             }
         }
         eat(TokenType::ParenClose);
-        eat(TokenType::Colon);
-        auto returnTypeExpr = parseTypeExpr();
+        if (eatOptional(TokenType::Colon)) {
+            im->returnTypeExpr = parseTypeExpr(im);
+        }
         
-        return addPosition(new InterfaceMethodDecl(name, parameters, returnTypeExpr), startToken);
+        return addPosition(im, startToken);
     }
 
-    EnumDecl* Parser::parseEnumDecl() {
+    EnumDecl* Parser::parseEnumDecl(Node* parent) {
+        auto en = new EnumDecl();
+        en->parent = parent;
         auto startToken = eat(TokenType::Enum);
-        auto name = eat(TokenType::Identifier).value;
+        en->_name = eat(TokenType::Identifier).value;
         eat(TokenType::CurlyOpen);
-        std::vector<EnumElement*> elements;
         while (match(TokenType::Identifier)) {
             auto tok = eat(TokenType::Identifier);
-            auto el = addPosition(new EnumElement(tok.value), tok);
-            el->index = elements.size();
-            elements.push_back(el);
+            auto ee = new EnumElement();
+            ee->parent = en;
+            ee->name = tok.value;
+            auto el = addPosition(ee, tok);
+            el->index = en->elements.size();
+            en->elements.push_back(el);
 
             if (!eatOptional(TokenType::Comma)) {
                 break;
             }
         }
         eat(TokenType::CurlyClose);
-        return addPosition(new EnumDecl(name, elements), startToken);
+        return addPosition(en, startToken);
     }
 
     bool Parser::match(TokenType type) {

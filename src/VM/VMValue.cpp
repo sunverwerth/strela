@@ -19,7 +19,7 @@ namespace Strela {
     else if (type == Type::boolean) return VMValue(bool(value.boolean OP other.value.boolean)); \
     else return VMValue();
 
-    VMValue::VMValue(): type(Type::null) {}
+    VMValue::VMValue(): type(Type::null) { value.integer = 0; }
 	VMValue::VMValue(int64_t val) : type(Type::integer) { value.integer = val; }
 	VMValue::VMValue(double val) : type(Type::floating) { value.f64 = val; }
 	VMValue::VMValue(bool val) : type(Type::boolean) { value.boolean = val; }
