@@ -3,7 +3,7 @@
 
 namespace Strela {
     std::string SourceFile::getLine(int line) const {
-        auto sstr = std::stringstream();
+        std::stringstream sstr;
         for (auto& tok: tokens) {
             if (tok.line > line) break;
             if (tok.line == line) sstr << tok.trivia << tok.value;
