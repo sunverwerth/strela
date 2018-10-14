@@ -4,15 +4,14 @@
 #ifndef Strela_Ast_AstEnumElement_h
 #define Strela_Ast_AstEnumElement_h
 
-#include "Stmt.h"
+#include "Node.h"
 
 #include <string>
 
 namespace Strela {    
-    class EnumElement: public Stmt {
+    class EnumElement: public Node {
     public:
-        STRELA_GET_TYPE(Strela::EnumElement, Strela::Stmt);
-        STRELA_IMPL_STMT_VISITOR;
+        STRELA_GET_TYPE(Strela::EnumElement, Strela::Node);
 
     public:
         std::string name;

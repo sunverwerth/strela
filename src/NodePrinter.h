@@ -11,11 +11,34 @@
 #include <iostream>
 
 namespace Strela {
-    class NodePrinter: public IStmtVisitor<void>, public IExprVisitor<void> {
+    class ModDecl;
+    class ClassDecl;
+    class FuncDecl;
+    class EnumDecl;
+    class EnumElement;
+    class InterfaceDecl;
+    class InterfaceMethodDecl;
+    class TypeAliasDecl;
+    class ImportStmt;
+    class Param;
+    class FieldDecl;
+    class GenericParam;
+
+    class NodePrinter: public IStmtVisitor, public IExprVisitor {
     public:
-        void visit(ModDecl&) override;
-        void visit(FuncDecl&) override;
-        void visit(Param&) override;
+        void print(ModDecl&);
+        void print(ClassDecl&);
+        void print(FuncDecl&);
+        void print(EnumDecl&);
+        void print(EnumElement&);
+        void print(InterfaceDecl&);
+        void print(InterfaceMethodDecl&);
+        void print(TypeAliasDecl&);
+        void print(ImportStmt&);
+        void print(Param&);
+        void print(FieldDecl&);
+        void print(GenericParam&);
+        
         void visit(VarDecl&) override;
         void visit(IdExpr&) override;
         void visit(RetStmt&) override;
@@ -24,30 +47,22 @@ namespace Strela {
         void visit(CallExpr&) override;
         void visit(ExprStmt&) override;
         void visit(BinopExpr&) override;
-        void visit(ClassDecl&) override;
         void visit(ScopeExpr&) override;
         void visit(IfStmt&) override;
-        void visit(FieldDecl&) override;
         void visit(NewExpr&) override;
         void visit(AssignExpr&) override;
         void visit(WhileStmt&) override;
         void visit(PostfixExpr&) override;
         void visit(ArrayTypeExpr&) override;
-        void visit(ImportStmt&) override;
         void visit(UnaryExpr&) override;
-        void visit(EnumDecl&) override;
-        void visit(EnumElement&) override;
-        void visit(InterfaceDecl&) override;
-        void visit(InterfaceMethodDecl&) override;
         void visit(ThisExpr&) override;
         void visit(CastExpr&) override;
         void visit(IsExpr&) override;
         void visit(UnionTypeExpr&) override;
         void visit(ArrayLitExpr&) override;
         void visit(SubscriptExpr&) override;
+        void visit(MapLitExpr&) override;
         void visit(NullableTypeExpr&) override;
-        void visit(GenericParam&) override;
-        void visit(TypeAliasDecl&) override;
         void visit(GenericReificationExpr&) override;
 
         void push();
@@ -73,8 +88,9 @@ namespace Strela {
         }
 
     private:
+        void indent();
         int indentation = 0;
-        std::string indent;
+        std::string indentstring;
     };
 }
 #endif

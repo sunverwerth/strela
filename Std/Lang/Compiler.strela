@@ -21,7 +21,7 @@ module Std.Lang.Compiler {
 
         var inFile = new File(args[0], "rb");
         var lexer = new Lexer(inFile);
-        var parser = new Parser(lexer);
+        var parser = new Parser(lexer, null);
         var mod = parser.parseModule();
 
         return 0;

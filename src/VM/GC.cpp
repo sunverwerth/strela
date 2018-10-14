@@ -8,7 +8,7 @@
 
 namespace Strela {
     void* GC::allocObject(const VMType* type) {
-        auto obj = (VMObject*)calloc(1, sizeof(VMObject) + type->objectSize);
+        auto obj = (VMObject*)calloc(sizeof(VMObject) + type->objectSize, 1);
         obj->type = type;
         objects.push_back(obj);
         //std::cout << "Alloc object " << type->name << "\n";
@@ -16,7 +16,7 @@ namespace Strela {
     }
 
     void* GC::allocArray(const VMType* type, uint64_t length) {
-        auto obj = (VMObject*)calloc(1, sizeof(VMObject) + sizeof(uint64_t) + type->arrayType->size * length);
+        auto obj = (VMObject*)calloc(sizeof(VMObject) + sizeof(uint64_t) + type->arrayType->size * length, 1);
         obj->type = type;
         memcpy(obj->data, &length, sizeof(length));
         objects.push_back(obj);
@@ -28,9 +28,13 @@ namespace Strela {
         if (objects.empty()) return;
 
         for (auto&& val: stack) {
-            if (val.type == VMValue::Type::object) {
+            if (val.type == VMValue::Type::object && val.value.object) {
                 mark((VMObject*)val.value.object - 1);
             }
+        }
+        
+        for (auto&& obj: lockList) {
+            mark(obj);
         }
         
         auto it = objects.begin();
@@ -42,11 +46,6 @@ namespace Strela {
             }
             else {
                 //std::cout << "Free " << obj->type->name << "\n";
-                if (obj->type->name == "Tracer") {
-                    for (auto& val: stack) {
-                    }
-                    exit(1);
-                }
                 free(obj);
                 it = objects.erase(it);
             }
@@ -76,6 +75,14 @@ namespace Strela {
                 }
             }
         }
+        else if (type->unionTypes.size()) {
+            uint64_t tag = *(uint64_t*)object->data;
+            void* ref = *(void**)&object->data[8];
+            VMType* refType = type->unionTypes[tag];
+            if (ref && refType->isObject) {
+                mark((VMObject*)ref - 1);
+            }
+        }
         else {
             for (auto&& field: type->fields) {
                 if (field.type == nullptr || !(field.type->isArray || field.type->isObject)) continue;
@@ -84,5 +91,14 @@ namespace Strela {
                 }
             }
         }
+    }
+
+    
+    void GC::lock(void* obj) {
+        lockList.insert((VMObject*)obj - 1);
+    }
+
+    void GC::unlock(void* obj) {
+        lockList.erase((VMObject*)obj - 1);
     }
 }

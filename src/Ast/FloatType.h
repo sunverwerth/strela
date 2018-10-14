@@ -11,7 +11,6 @@ namespace Strela {
     public:
         FloatType(const std::string& name, int bytes): bytes(bytes) { this->_name = name; }
         STRELA_GET_TYPE(Strela::FloatType, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
     public:
         int bytes;

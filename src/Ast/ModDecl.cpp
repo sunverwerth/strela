@@ -5,6 +5,7 @@
 #include "FuncDecl.h"
 #include "ClassDecl.h"
 #include "EnumDecl.h"
+#include "TypeAliasDecl.h"
 
 namespace Strela {
     Node* ModDecl::getMember(const std::string& name) {
@@ -25,6 +26,15 @@ namespace Strela {
         for (auto&& cls: classes) {
             if (cls->_name == name) {
                 return cls;
+            }
+        }
+        return nullptr;
+    }
+
+    TypeAliasDecl* ModDecl::getAlias(const std::string& name) {        
+        for (auto&& alias: typeAliases) {
+            if (alias->_name == name) {
+                return alias;
             }
         }
         return nullptr;

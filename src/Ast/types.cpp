@@ -37,7 +37,7 @@ namespace Strela {
 
     InvalidType InvalidType::instance;
 
-    ClassDecl ClassDecl::String("String");
+    ClassDecl* ClassDecl::String = nullptr;
 
     PointerType PointerType::instance;
 

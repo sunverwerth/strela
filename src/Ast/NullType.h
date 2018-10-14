@@ -11,7 +11,6 @@ namespace Strela {
     public:
         NullType() { _name = "null"; }
         STRELA_GET_TYPE(Strela::NullType, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
     public:
         static NullType instance;

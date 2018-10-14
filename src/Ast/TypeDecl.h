@@ -4,16 +4,16 @@
 #ifndef Strela_Ast_TypeDecl_h
 #define Strela_Ast_TypeDecl_h
 
-#include "Stmt.h"
+#include "Node.h"
 
 #include <string>
 #include <vector>
 
 namespace Strela {
     class FuncDecl;
-    class TypeDecl: public Stmt {
+    class TypeDecl: public Node {
     public:
-        STRELA_GET_TYPE(Strela::TypeDecl, Strela::Stmt);
+        STRELA_GET_TYPE(Strela::TypeDecl, Strela::Node);
         virtual Node* getMember(const std::string& name) { return nullptr; }
         virtual std::vector<Node*> getMethods(const std::string& name) { return {}; }
         std::string getFullName();

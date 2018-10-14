@@ -29,6 +29,7 @@ namespace Strela {
         ImportStmt* parseImportStmt(Node* parent);
         InterfaceDecl* parseInterfaceDecl(Node* parent);
         InterfaceMethodDecl* parseInterfaceMethodDecl(Node* parent);
+        InterfaceFieldDecl* parseInterfaceFieldDecl(Node* parent);
         TypeAliasDecl* parseTypeAliasDecl(Node* parent);
 
         Stmt* parseStmt(Node* parent);
@@ -42,6 +43,7 @@ namespace Strela {
         LitExpr* parseLitExpr(Node* parent);
         CallExpr* parseCallExpr(Node* parent, Expr* callTarget);
         ArrayLitExpr* parseArrayLitExpr(Node* parent);
+        MapLitExpr* parseMapLitExpr(Node* parent);
         SubscriptExpr* parseSubscriptExpr(Node* parent, Expr* callTarget);
 
         Expr* parseTypeExpr(Node* parent);

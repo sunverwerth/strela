@@ -1,0 +1,259 @@
+module Std.JSON {
+    import Std.Collections.List;
+    import Std.Collections.Map;
+    import Std.IO.*;
+
+    export type JsonArray = List<JsonValue>;
+    export type JsonObject = Map<String, JsonValue>;
+	export type JsonValue = float | String | bool | null | JsonArray | JsonObject;
+
+	class JsonParseContext {
+		var i: int;
+
+		function init() {
+			this.i = 0;
+		}
+	}
+
+    function unescape(str: String): String {
+        var ret = new List<u8>;
+        var i: int = 0;
+        var length = str.length();
+        while (i < length) {
+            var ch = str.data[i];
+            if (ch == 92 /*BACKSLASH*/ && i < length - 1) {
+                i = i + 1;
+                ch = str.data[i];
+
+                if (ch == 114) ret.append(13); // CR
+                else if (ch == 110) ret.append(10); // LF
+                else if (ch == 116) ret.append(9); // TAB
+                else ret.append(ch);
+            }
+            else {
+                ret.append(ch);
+            }
+            i = i + 1;
+        }
+        return new String(ret.array, ret.length);
+    }
+
+    function escape(str: String): String {
+        var ret = new List<u8>;
+        var i: int = 0;
+        var length = str.length();
+        while (i < length) {
+            var ch = str.data[i];
+
+            if (ch == 13) { /* CR */
+                ret.append(92);
+                ret.append(114);
+            }
+            else if (ch == 10) { /* LF */
+                ret.append(92);
+                ret.append(110);
+            }
+            else if (ch == 9) { /* TAB */
+                ret.append(92);
+                ret.append(116);
+            }
+            else if (ch == 34) { /* " */
+                ret.append(92);
+                ret.append(34);
+            }
+            else if (ch == 92) { /* \ */
+                ret.append(92);
+                ret.append(92);
+            }
+            else {
+                ret.append(ch);
+            }
+
+            i = i + 1;
+        }
+        return new String(ret.array, ret.length);
+    }
+
+    function isws(str: String): bool {
+		if (str.length() < 1) return false;
+        return str == " " || str == "\t" || str == "\r" || str == "\n";
+    }
+
+    function isdigit(str: String): bool {
+		if (str.length() < 1) return false;
+        return str.data[0] > 47 && str.data[0] < 59;
+    }
+
+    function eatws(msg: String, c: JsonParseContext) {
+        while (isws(msg[c.i])) {
+            c.i = c.i + 1;
+        }
+    }
+
+	export function parse(msg: String): JsonValue {
+		return parse(msg, new JsonParseContext);
+	}
+
+    function parseString(msg: String, c: JsonParseContext): String {
+        c.i = c.i + 1;
+        var start = c.i;
+        while (c.i < msg.length() && msg[c.i] != "\"") {
+            if (msg[c.i] == "\\") {
+                c.i = c.i + 1;
+            }
+            c.i = c.i + 1;
+        }
+        c.i = c.i + 1;
+        return unescape(msg.substr(start, c.i - start - 1));
+    }
+
+    function parseArray(msg: String, c: JsonParseContext): JsonArray {
+        var list = new JsonArray;
+        c.i = c.i + 1;
+        eatws(msg, c);
+        while (c.i < msg.length() && msg[c.i] != "]") {
+            list.append(parse(msg, c));
+            eatws(msg, c);
+            if (msg[c.i] == ",") {
+                c.i = c.i + 1;
+                eatws(msg, c);
+            }
+        }
+        c.i = c.i + 1;
+        return list;
+    }
+
+    function parseObject(msg: String, c: JsonParseContext): JsonObject {
+        var obj = new JsonObject;
+        c.i = c.i + 1;
+        eatws(msg, c);
+        while (c.i < msg.length() && msg[c.i] != "}") {
+            var key = parseString(msg, c);
+            eatws(msg, c);
+            if (msg[c.i] == ":") {
+                c.i = c.i + 1;
+                eatws(msg, c);
+            }
+            var val = parse(msg, c);
+            obj.set(key, val);
+            eatws(msg, c);
+            if (msg[c.i] == ",") {
+                c.i = c.i + 1;
+                eatws(msg, c);
+            }
+        }
+        c.i = c.i + 1;
+        return obj;
+    }
+
+    function parseBool(msg: String, c: JsonParseContext): bool {
+        if (msg[c.i] == "t") {
+            c.i = c.i + 4;
+            return true;
+        }
+        else {
+            c.i = c.i + 5;
+            return false;
+        }
+    }
+
+    function parseNull(msg: String, c: JsonParseContext) {
+        c.i = c.i + 4;
+    }
+
+    function parseNumber(msg: String, c: JsonParseContext): float {
+        var start = c.i;
+
+        if (msg[c.i] == "-") {
+            c.i = c.i + 1;
+        }
+
+        while (isdigit(msg[c.i])) {
+            c.i = c.i + 1;
+        }
+        if (msg[c.i] == ".") {
+            c.i = c.i + 1;
+            while (isdigit(msg[c.i])) {
+                c.i = c.i + 1;
+            }
+        }
+        var num = msg.substr(start, c.i - start);
+        return num.toFloat();
+    }
+
+	function parse(msg: String, c: JsonParseContext): JsonValue {
+		var ch = msg[c.i];
+		if (ch == "\"") {
+			return parseString(msg, c);
+		}
+		else if (ch == "[") {
+			return parseArray(msg, c);
+		}
+		else if (ch == "{") {
+			return parseObject(msg, c);
+		}
+		else if (ch == "t") {
+			return parseBool(msg, c);
+		}
+		else if (ch == "f") {
+			return parseBool(msg, c);
+		}
+		else if (ch == "n") {
+			parseNull(msg, c);
+            return null;
+		}
+        else {
+            return parseNumber(msg, c);
+        }
+	}
+
+    export function serialize(val: JsonValue): String {
+        if (val is float) {
+            return toString(val, 5);
+        }
+        else if (val is String) {
+            return "\"" + escape(val) + "\"";
+        }
+        else if (val is bool) {
+            if (val) {
+                return "true";
+            }
+            else {
+                return "false";
+            }
+        }
+        else if (val is null) {
+            return "null";
+        }
+        else if (val is JsonArray) {
+            var str = "[";
+			var length = val.length;
+            var i: int = 0;
+            while (i < length) {
+                if (i > 0) {
+                    str = str + ",";
+                }
+                str = str + serialize(val[i]);
+                i = i + 1;
+            }
+            str = str + "]";
+            return str;
+        }
+        else if (val is JsonObject) {
+            var str = "{";
+            var i: int = 0;
+            while (i < val.keys.length) {
+                if (i > 0) {
+                    str = str + ",";
+                }
+                str = str + "\"" + escape(val.keys[i]) + "\":" + serialize(val.values[i]);
+                i = i + 1;
+            }
+            str = str + "}";
+            return str;
+        }
+        else {
+            return "";
+        }
+    }
+}

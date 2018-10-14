@@ -4,7 +4,7 @@
 #ifndef Strela_Ast_AstInterfaceMethodDecl_h
 #define Strela_Ast_AstInterfaceMethodDecl_h
 
-#include "Stmt.h"
+#include "Node.h"
 
 #include <string>
 #include <vector>
@@ -17,10 +17,9 @@ namespace Strela {
     class FuncType;
     class TypeDecl;
 
-    class InterfaceMethodDecl: public Stmt {
+    class InterfaceMethodDecl: public Node {
     public:
-        STRELA_GET_TYPE(Strela::InterfaceMethodDecl, Strela::Stmt);
-        STRELA_IMPL_STMT_VISITOR;
+        STRELA_GET_TYPE(Strela::InterfaceMethodDecl, Strela::Node);
 
     public:
         bool isExported = false;

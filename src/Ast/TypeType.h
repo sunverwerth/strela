@@ -11,7 +11,6 @@ namespace Strela {
     public:
         TypeType() { _name = "Type"; }
         STRELA_GET_TYPE(Strela::TypeType, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
     public:
         static TypeType instance;

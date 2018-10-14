@@ -14,7 +14,6 @@ namespace Strela {
     class EnumDecl: public TypeDecl {
     public:
         STRELA_GET_TYPE(Strela::EnumDecl, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
         Node* getMember(const std::string& name) override;
 

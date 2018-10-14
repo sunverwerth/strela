@@ -14,11 +14,19 @@ if not exist "%STRELAPATH%" (
 	echo ### Already exists
 )
  
+echo ### Creating lib folder in %STRELAPATH%
+if not exist "%STRELAPATH%\lib" (
+	mkdir %STRELAPATH%\lib
+	echo ### Done
+) else (
+	echo ### Already exists
+)
+ 
 
 echo ### Copying strela.exe 
 copy Release\strela.exe %STRELAPATH%
 echo ### Done
 
 echo ### Copying standard library
-xcopy /E /I /Y /F Std %STRELAPATH%
+xcopy /E /I /Y /F Std %STRELAPATH%\lib\Std
 echo ### Done

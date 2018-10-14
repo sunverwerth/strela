@@ -9,13 +9,13 @@
 
 #include <string>
 
-#define STRELA_IMPL_STMT_VISITOR void accept(Strela::IStmtVisitor<void>& v) override { return v.visit(*this); }
+#define STRELA_IMPL_STMT_VISITOR void accept(Strela::IStmtVisitor& v) override { v.visit(*this); }
 
 namespace Strela {
     class Stmt: public Node {
     public:
         STRELA_GET_TYPE(Strela::Stmt, Strela::Node);
-        virtual void accept(IStmtVisitor<void>&) = 0;
+        virtual void accept(IStmtVisitor&) = 0;
 
     public:
         bool returns = false;

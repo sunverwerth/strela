@@ -16,8 +16,8 @@ module Std.csockets {
     export external function listen(sock: i32, backlog: i32): i32;
     export external function accept(sock: i32, addr: sockaddr_in, len: Ptr): i32;
     export external function shutdown(sock: i32, how: i32): i32;
-    export external function recv(sock: i32, buffer: String, len: i32, flags: i32): i64;
-    export external function send(sock: i32, buffer: String, len: i32, flags: i32): i64;
+    export external function recv(sock: i32, buffer: String, len: i32, flags: i32): i32;
+    export external function send(sock: i32, buffer: String, len: i32, flags: i32): i32;
     export external function close(sock: i32): i32;
     
     export external function htons(val: u16): u16;

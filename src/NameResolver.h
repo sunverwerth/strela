@@ -13,58 +13,70 @@
 namespace Strela {
     class Scope;
     class Node;
+    class ModDecl;
+    class ClassDecl;
+    class FuncDecl;
+    class Param;
+    class FieldDecl;
+    class ImportStmt;
+    class InterfaceDecl;
+    class InterfaceMethodDecl;
+    class InterfaceFieldDecl;
+    class TypeAliasDecl;
 
-    class NameResolver: public Pass, public IStmtVisitor<void>, public IExprVisitor<void> {
+    class NameResolver: public Pass, public IStmtVisitor, public IExprVisitor {
     public:
         NameResolver(Scope* globals);
+        void resolve(ModDecl&);
+        void resolve(ClassDecl&);
+        void resolve(FuncDecl&);
+        void resolve(Param&);
+        void resolve(ImportStmt&);
+        void resolve(InterfaceDecl&);
+        void resolve(InterfaceMethodDecl&);
+        void resolve(InterfaceFieldDecl&);
+        void resolve(TypeAliasDecl&);
+        void resolve(FieldDecl&);
 
-        void visit(ModDecl&) override;
-        void visit(FuncDecl&) override;
-        void visit(Param&) override;
-        void visit(VarDecl&) override;
-        void visit(IdExpr&) override;
-        void visit(RetStmt&) override;
-        void visit(LitExpr&) override {}
         void visit(BlockStmt&) override;
-        void visit(CallExpr&) override;
         void visit(ExprStmt&) override;
-        void visit(BinopExpr&) override;
-        void visit(ClassDecl&) override;
-        void visit(ScopeExpr&) override;
         void visit(IfStmt&) override;
-        void visit(FieldDecl&) override;
-        void visit(NewExpr&) override;
-        void visit(AssignExpr&) override;
+        void visit(RetStmt&) override;
+        void visit(VarDecl&) override;
         void visit(WhileStmt&) override;
-        void visit(PostfixExpr&) override;
-        void visit(ArrayTypeExpr&) override;
-        void visit(ImportStmt&) override;
-        void visit(UnaryExpr&) override;
-        void visit(EnumDecl&) override {}
-        void visit(EnumElement&) override {}
-        void visit(InterfaceDecl&) override;
-        void visit(InterfaceMethodDecl&) override;
-        void visit(ThisExpr&) override {};
-        void visit(CastExpr&) override;
-        void visit(IsExpr&) override;
-        void visit(UnionTypeExpr&) override;
+
         void visit(ArrayLitExpr&) override;
-        void visit(SubscriptExpr&) override;
-        void visit(NullableTypeExpr&) override;
-        void visit(GenericParam&) override {}
+        void visit(ArrayTypeExpr&) override;
+        void visit(AssignExpr&) override;
+        void visit(BinopExpr&) override;
+        void visit(CallExpr&) override;
+        void visit(CastExpr&) override;
         void visit(GenericReificationExpr&) override;
-        void visit(TypeAliasDecl&) override;
+        void visit(IdExpr&) override;
+        void visit(IsExpr&) override;
+        void visit(LitExpr&) override {}
+        void visit(MapLitExpr&) override;
+        void visit(NewExpr&) override;
+        void visit(NullableTypeExpr&) override;
+        void visit(PostfixExpr&) override;
+        void visit(ScopeExpr&) override;
+        void visit(SubscriptExpr&) override;
+        void visit(ThisExpr&) override {};
+        void visit(UnaryExpr&) override;
+        void visit(UnionTypeExpr&) override;
 
         int resolveGenerics(ModDecl&);
 
         template<typename T> void visitChildren(T& children) {
             for (auto&& child: children) {
-                child->accept(*this);
+                visitChild(child);
             }
         }
 
         template<typename T> void visitChild(T& child) {
-            child->accept(*this);
+            if (child) {
+                child->accept(*this);
+            }
         }
         
     private:

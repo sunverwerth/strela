@@ -20,6 +20,9 @@ module Operators {
 
         i++; println(i);
         i--; println(i);
+
+        println(i % 5);
+        println(i % 31);
         return 0;
     }
 }

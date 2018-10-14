@@ -11,7 +11,6 @@ namespace Strela {
     public:
         VoidType() { _name = "void"; }
         STRELA_GET_TYPE(Strela::VoidType, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
     public:
         static VoidType instance;

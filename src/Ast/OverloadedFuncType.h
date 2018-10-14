@@ -11,7 +11,6 @@ namespace Strela {
     public:
         OverloadedFuncType() { _name = "$overloaded"; }
         STRELA_GET_TYPE(Strela::OverloadedFuncType, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
     public:
         static OverloadedFuncType instance;

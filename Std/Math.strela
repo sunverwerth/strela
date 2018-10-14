@@ -5,8 +5,8 @@ module Std.Math {
     import Std.cstdio.*;
 
     export function frand(): f64 {
-        return (rand():f64 / 2147483647:f64) - 0.5;
-        //return (rand():f64 / 65535:f64) - 0.5;
+        return (rand() as f64 / 2147483647 as f64) - 0.5;
+        //return (rand() as f64 / 65535 as f64) - 0.5;
     }
 
     export function clamp(f: f64): f64 {

@@ -2,8 +2,8 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 #include "VMValue.h"
+#include "VMObject.h"
 
-#include <cstring>
 #include <string>
 
 namespace Strela {
@@ -23,48 +23,29 @@ namespace Strela {
 	VMValue::VMValue(int64_t val) : type(Type::integer) { value.integer = val; }
 	VMValue::VMValue(double val) : type(Type::floating) { value.f64 = val; }
 	VMValue::VMValue(bool val) : type(Type::boolean) { value.boolean = val; }
-	VMValue::VMValue(const char* val) : type(Type::string) { value.string = val; }
 	VMValue::VMValue(void* val) : type(Type::object) { value.object = val; }
 
     VMValue VMValue::operator==(const VMValue& other) const {
-        if (type == Type::string && other.type == Type::string) {
-            return VMValue(strcmp(value.string, other.value.string) == 0);
-        }
         VMVALUE_OP_LOG(==);
     }
 
     VMValue VMValue::operator!=(const VMValue& other) const {
-        if (type == Type::string && other.type == Type::string) {
-            return VMValue(strcmp(value.string, other.value.string) != 0);
-        }
         VMVALUE_OP_LOG(!=);
     }
 
     VMValue VMValue::operator<(const VMValue& other) const {
-        if (type == Type::string && other.type == Type::string) {
-            return VMValue(strcmp(value.string, other.value.string) < 0);
-        }
         VMVALUE_OP_LOG(<);
     }
 
     VMValue VMValue::operator>(const VMValue& other) const {
-        if (type == Type::string && other.type == Type::string) {
-            return VMValue(strcmp(value.string, other.value.string) > 0);
-        }
         VMVALUE_OP_LOG(>);
     }
 
     VMValue VMValue::operator<=(const VMValue& other) const {
-        if (type == Type::string && other.type == Type::string) {
-            return VMValue(strcmp(value.string, other.value.string) <= 0);
-        }
         VMVALUE_OP_LOG(<=);
     }
 
     VMValue VMValue::operator>=(const VMValue& other) const {
-        if (type == Type::string && other.type == Type::string) {
-            return VMValue(strcmp(value.string, other.value.string) >= 0);
-        }
         VMVALUE_OP_LOG(>=);
     }
 
@@ -78,23 +59,6 @@ namespace Strela {
 
     
     VMValue VMValue::operator+(const VMValue& other) const {
-        if (type == Type::string && other.type == Type::string) {
-            auto len1 = strlen(value.string);
-            auto len2 = strlen(other.value.string);
-            auto str = new char[len1 + len2 + 1];
-            str[len1 + len2] = 0;
-            memcpy(&str[0], value.string, len1);
-            memcpy(&str[len1], other.value.string, len2);
-            return VMValue(str);
-        }
-        if (type == Type::string && other.type == Type::integer) {
-            auto len1 = strlen(value.string);
-            auto str = new char[len1 + 1 + 1];
-            str[len1 + 1] = 0;
-            memcpy(&str[0], value.string, len1);
-            str[len1] = other.value.integer;
-            return VMValue(str);
-        }
         VMVALUE_OP(+);
     }
 
@@ -119,7 +83,6 @@ namespace Strela {
 		else if (type == Type::floating) return value.f64 != 0;
 		else if (type == Type::boolean) return value.boolean;
         else if (type == Type::null) return false;
-        else if (type == Type::string) return true;
         else if (type == Type::object) return value.object != nullptr;
 		else return false;
 	}
@@ -131,12 +94,9 @@ namespace Strela {
 		else if (type == Type::floating) return value.f64 == other.value.f64;
 		else if (type == Type::boolean) return value.boolean == other.value.boolean;
         else if (type == Type::null) return true;
-        else if (type == Type::string) return !strcmp(value.string, other.value.string);
         else if (type == Type::object) return value.object == other.value.object;
 		else return false;
     }
-
-    std::string escape(const std::string&);
 
     std::string VMValue::dump() const {
         switch (type) {
@@ -145,9 +105,16 @@ namespace Strela {
             case Type::floating: return "float: " + std::to_string(value.f64);
             case Type::null: return "null";
             case Type::object: return "[object]";
-            case Type::string: return "\"" + escape(value.string) + "\"";
         }
     }
+
+    struct StringConst {
+        bool marked;
+        VMType* type;
+        uint64_t* str;
+        uint64_t len;
+        char chars[];
+    };
 
     std::ostream& operator<<(std::ostream& str, const VMValue& v) {
         if (v.type == VMValue::Type::integer) {
@@ -162,11 +129,12 @@ namespace Strela {
             str.write("b", 1);
             str.write((const char*)&v.value.boolean, 1);
         }
-        else if (v.type == VMValue::Type::string) {
+        else if (v.type == VMValue::Type::object) {
             str.write("s", 1);
+            /*StringConst* string = v.value.object;
             uint64_t len = strlen(v.value.string);
             str.write((const char*)&len, 8);
-            str.write(v.value.string, len);
+            str.write(v.value.string, len);*/
         }
         else if (v.type == VMValue::Type::null) {
             str.write("n", 1);
@@ -194,11 +162,25 @@ namespace Strela {
         else if (t == 's') {
             uint64_t len;
             str.read((char*)&len, 8);
-            char* string = new char[len + 1];
-            string[len] = 0;
-            str.read(string, len);
-            v.type = VMValue::Type::string;
-            v.value.string = string;
+
+            struct StringConst {
+                bool marked;
+                VMType* type;
+                uint64_t* str;
+                uint64_t len;
+                char chars[];
+            };
+
+            StringConst* string = (StringConst*)calloc(1, sizeof(StringConst) + len + 1 );
+            
+            str.read(string->chars, len);
+            string->chars[len] = 0;
+            string->marked = true;
+            string->type = nullptr;
+            string->str = &string->len;
+
+            v.type = VMValue::Type::object;
+            v.value.object = string;
         }
         else if (t == 'n') {
             v.type = VMValue::Type::null;

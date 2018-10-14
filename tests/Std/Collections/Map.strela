@@ -18,6 +18,17 @@ module Tests.Collections.Map {
         println(map["fourty two"]);
         print("thirteen = ");
         println(map["thirteen"]);
+
+        var map2: Map<String, String> = {
+            "US": "United States",
+            "GB": "Great Britain",
+            "DE": "Deutschland"
+        };
+
+        println(map2["US"]);
+        println(map2["GB"]);
+        println(map2["DE"]);
+        
         return 0;
     }
 }

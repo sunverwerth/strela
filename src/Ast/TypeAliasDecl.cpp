@@ -3,10 +3,10 @@
 
 namespace Strela {
 	Node* TypeAliasDecl::getMember(const std::string& name) {
-		return typeExpr->type->getMember(name);
+		return typeExpr->typeValue->getMember(name);
 	}
 
 	std::vector<Node*> TypeAliasDecl::getMethods(const std::string& name) {
-		return typeExpr->type->getMethods(name);
+		return typeExpr->typeValue->getMethods(name);
 	}
 }

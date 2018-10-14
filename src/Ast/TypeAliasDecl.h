@@ -12,12 +12,13 @@ namespace Strela {
     class TypeAliasDecl: public TypeDecl {
     public:
         STRELA_GET_TYPE(Strela::TypeAliasDecl, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
+        
 		Node* getMember(const std::string& name) override;
 		std::vector<Node*> getMethods(const std::string& name) override;
 
     public:
         Expr* typeExpr = nullptr;
+        bool isExported = false;
     };
 }
 

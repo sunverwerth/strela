@@ -4,209 +4,703 @@
 module Std.Lang.Compiler.Ast {
     import Std.Collections.List;
     import Lexer.Token;
-    
-    export interface Statement {}
+    import Lexer.Position;
 
-    export class EmptyStatement {}
+	export interface Node {
+		var start: Position;
+		var end: Position;
+		//var prev: Node?;
+		//var parent: Node?;
+	}
 
-    export class MissingStatement {}
+    export interface Statement {
+        var start: Position;
+        var end: Position;
+    }
 
-    export interface Expression {}
+    export class EmptyStatement {
+        function init(start: Position, end: Position) {
+			this.start = start;
+			this.end = end;
+        }
 
-    export class MissingExpression {}
+		var start: Position;
+		var end: Position;
+	}
+
+    export class MissingStatement {
+        function init(start: Position, end: Position) {
+			this.start = start;
+			this.end = end;
+        }
+
+		var start: Position;
+		var end: Position;
+	}
+
+    export interface Expression {
+        var start: Position;
+        var end: Position;
+    }
+
+    export class MissingExpression {
+        function init(start: Position, end: Position) {
+			this.start = start;
+			this.end = end;
+        }
+
+		var start: Position;
+		var end: Position;
+	}
+
+    export interface TypeExpression {
+        var start: Position;
+        var end: Position;
+		function getName(): String;
+    }
+
+    export class MissingTypeExpression {
+        function init(start: Position, end: Position) {
+			this.start = start;
+			this.end = end;
+        }
+
+		function getName(): String {
+			return "<missing type expression>";
+		}
+
+		var start: Position;
+		var end: Position;
+	}
+
 
     export class Identifier {
-        function init(t: Token) {
+        function init(start: Position, end: Position, t: Token) {
+			this.start = start;
+			this.end = end;
             this.token = t;
         }
 
+		var start: Position;
+		var end: Position;
         var token: Token;
     }
 
 
     export class QualifiedIdentifier {
-        function init() {
-            this.ids = new List<Identifier>;
+        function init(start: Position, end: Position, ids: List<Identifier>) {
+			this.start = start;
+			this.end = end;
+            this.ids = ids;
         }
 
+		var start: Position;
+		var end: Position;
         var ids: List<Identifier>;
     }
 
     export class WildcardIdentifier {
-        function init(ids: List<Identifier>) {
+        function init(start: Position, end: Position, ids: List<Identifier>, isWildcard: bool) {
+			this.start = start;
+			this.end = end;
             this.ids = ids;
+            this.isWildcard = isWildcard;
         }
 
+		var start: Position;
+		var end: Position;
+        var isWildcard: bool;
         var ids: List<Identifier>;
     }
 
     export class ModuleDecl {
-        function init() {
-            this.name = new List<Identifier>;
-            this.requires = new List<RequireDirective>;
-            this.imports = new List<ImportDirective>;
-            this.exports = new List<ExportDirective>;
-            this.classes = new List<ClassDecl>;
-            this.interfaces = new List<InterfaceDecl>;
-            this.enums = new List<EnumDecl>;
-            this.functions = new List<FunctionDecl>;
+        function init(
+			trivia: String,
+			start: Position,
+			end: Position,
+			name: List<Identifier>,
+			imports: List<ImportDirective>,
+			exports: List<ExportDirective>,
+			classes: List<ClassDecl>,
+			interfaces: List<InterfaceDecl>,
+			enums: List<EnumDecl>,
+			functions: List<FunctionDecl>
+		) {
+			this.trivia = trivia;
+			this.start = start;
+			this.end = end;
+            this.name = name;
+            this.imports = imports;
+            this.exports = exports;
+            this.classes = classes;
+            this.interfaces = interfaces;
+            this.enums = enums;
+            this.functions = functions;
         }
 
+		var trivia: String;
+		var start: Position;
+		var end: Position;
         var name: List<Identifier>;
-        var requires: List<RequireDirective>;
         var imports: List<ImportDirective>;
         var exports: List<ExportDirective>;
-        var entryd: EntryDirective?;
         var classes: List<ClassDecl>;
         var interfaces: List<InterfaceDecl>;
         var enums: List<EnumDecl>;
         var functions: List<FunctionDecl>;
     }
 
+    export class ExpressionStatement {
+        function init(start: Position, end: Position, expr: Expression) {
+			this.start = start;
+			this.end = end;
+            this.expression = expr;
+        }
+
+		var start: Position;
+		var end: Position;
+        var expression: Expression;
+    }
+
     export class ReturnStatement {
-        function init(expr: Expression?) {
+        function init(start: Position, end: Position, expr: Expression?) {
+			this.start = start;
+			this.end = end;
             this.expr = expr;
         }
 
+		var start: Position;
+		var end: Position;
         var expr: Expression?;
     }
 
+    export class IfStatement {
+        function init(start: Position, end: Position, expr: Expression, trueBranch: Statement, falseBranch: Statement?) {
+			this.start = start;
+			this.end = end;
+            this.expression = expr;
+            this.trueBranch = trueBranch;
+            this.falseBranch = falseBranch;
+        }
+
+		var start: Position;
+		var end: Position;
+        var expression: Expression;
+        var trueBranch: Statement;
+        var falseBranch: Statement?;
+    }
+
+    export class WhileStatement {
+        function init(start: Position, end: Position, expr: Expression, statement: Statement) {
+			this.start = start;
+			this.end = end;
+            this.expression = expr;
+            this.statement = statement;
+        }
+
+		var start: Position;
+		var end: Position;
+        var expression: Expression;
+        var statement: Statement;
+    }
+
     export class ImportDirective {
-        function init(imports: List<WildcardIdentifier>) {
+        function init(start: Position, end: Position, imports: List<WildcardIdentifier>) {
+			this.start = start;
+			this.end = end;
             this.imports = imports;
         }
 
+		var start: Position;
+		var end: Position;
         var imports: List<WildcardIdentifier>;
     }
 
     export class ExportDirective {
-        function init(exports: List<Identifier>) {
+        function init(start: Position, end: Position, exports: List<Identifier>) {
+			this.start = start;
+			this.end = end;
             this.exports = exports;
         }
 
+		var start: Position;
+		var end: Position;
         var exports: List<Identifier>;
     }
 
-    export class RequireDirective {
-        function init(requires: List<Identifier>) {
-            this.requires = requires;
-        }
-
-        var requires: List<Identifier>;
-    }
-
-    export class EntryDirective {
-        function init(name: Identifier) {
-            this.name = name;
-        }
-
-        var name: Identifier;
-    }
-
     export class FunctionDecl {
-        function init(name: Identifier, params: List<Parameter>, returnType: TypeRef?, body: Block) {
+        function init(trivia: String, start: Position, end: Position, name: Identifier, params: List<Parameter>, returnType: TypeExpression?, body: Block) {
+			this.trivia = trivia;
+			this.start = start;
+			this.end = end;
             this.name = name;
             this.params = params;
             this.returnType = returnType;
             this.body = body;
         }
 
+		var trivia: String;
+        var start: Position;
+        var end: Position;
+
         var name: Identifier;
-        var returnType: TypeRef?;
+        var returnType: TypeExpression?;
         var params: List<Parameter>;
         var body: Block;
     }
 
     export class Block {
-        function init(stmts: List<Statement>) {
+        function init(start: Position, end: Position, stmts: List<Statement>) {
+			this.start = start;
+			this.end = end;
             this.stmts = stmts;
         }
 
+		var start: Position;
+		var end: Position;
         var stmts: List<Statement>;
     }
 
+	export class AssignmentExpression {
+		function init(start: Position, end: Position, assignee: Expression, value: Expression, op: Token) {
+			this.start = start;
+			this.end = end;
+			this.assignee = assignee;
+			this.value = value;
+			this.op = op;
+		}
+
+		var start: Position;
+		var end: Position;
+		var assignee: Expression;
+		var value: Expression;
+		var op: Token;
+	}
+
+	export class ThisExpression {
+		function init(start: Position, end: Position) {
+			this.start = start;
+			this.end = end;
+		}
+
+		var start: Position;
+		var end: Position;
+	}
+
+	export class ArrayLiteralExpression {
+		function init(start: Position, end: Position, elements: List<Expression>) {
+			this.start = start;
+			this.end = end;
+			this.elements = elements;
+		}
+
+		var start: Position;
+		var end: Position;
+		var elements: List<Expression>;
+	}
+
+	export class ObjectLiteralExpression {
+		function init(start: Position, end: Position, keys: List<Expression>, values: List<Expression>) {
+			this.start = start;
+			this.end = end;
+			this.keys = keys;
+			this.values = values;
+		}
+
+		var start: Position;
+		var end: Position;
+		var keys: List<Expression>;
+		var values: List<Expression>;
+	}
+
+    export class IntLiteralExpression {
+        function init(start: Position, end: Position, val: Token) {
+			this.start = start;
+			this.end = end;
+            this.value = val;
+        }
+
+		var start: Position;
+		var end: Position;
+        var value: Token;
+    }
+
+    export class StringLiteralExpression {
+        function init(start: Position, end: Position, val: Token) {
+			this.start = start;
+			this.end = end;
+            this.value = val;
+        }
+
+		var start: Position;
+		var end: Position;
+        var value: Token;
+    }
+
+    export class FloatLiteralExpression {
+        function init(start: Position, end: Position, val: Token) {
+			this.start = start;
+			this.end = end;
+            this.value = val;
+        }
+
+		var start: Position;
+		var end: Position;
+        var value: Token;
+    }
+
+	export class NewExpression {
+		function init(start: Position, end: Position) {
+			this.start = start;
+			this.end = end;
+		}
+
+		var start: Position;
+		var end: Position;
+	}
+
+	export class SubscriptExpression {
+		function init(start: Position, end: Position, target: Expression, args: List<Expression>) {
+			this.start = start;
+			this.end = end;
+			this.target = target;
+			this.args = args;
+		}
+
+		var start: Position;
+		var end: Position;
+		var target: Expression;
+		var args: List<Expression>;
+	}
+
+	export class BinopExpression {
+		function init(start: Position, end: Position, left: Expression, right: Expression, op: Token) {
+			this.start = start;
+			this.end = end;
+			this.left = left;
+			this.right = right;
+			this.op = op;
+		}
+
+		var start: Position;
+		var end: Position;
+		var left: Expression;
+		var right: Expression;
+		var op: Token;
+	}
+
+	export class PostfixExpression {
+		function init(start: Position, end: Position, target: Expression, op: Token) {
+			this.start = start;
+			this.end = end;
+			this.target = target;
+			this.op = op;
+		}
+
+		var start: Position;
+		var end: Position;
+		var target: Expression;
+		var op: Token;
+	}
+
+	export class PrefixExpression {
+		function init(start: Position, end: Position, target: Expression, op: Token) {
+			this.start = start;
+			this.end = end;
+			this.target = target;
+			this.op = op;
+		}
+
+		var start: Position;
+		var end: Position;
+		var target: Expression;
+		var op: Token;
+	}
+
+	export class ScopeExpression {
+		function init(start: Position, end: Position, target: Expression, name: Identifier) {
+			this.start = start;
+			this.end = end;
+			this.target = target;
+			this.name = name;
+		}
+
+		var start: Position;
+		var end: Position;
+		var target: Expression;
+		var name: Identifier;
+	}
+
+    export class IdentifierExpression {
+        function init(start: Position, end: Position, name: Token) {
+			this.start = start;
+			this.end = end;
+            this.name = name;
+        }
+
+		var start: Position;
+		var end: Position;
+        var name: Token;
+    }
+
+    export class IdentifierTypeExpression {
+        function init(start: Position, end: Position, name: Token) {
+			this.start = start;
+			this.end = end;
+            this.name = name;
+        }
+
+		function getName(): String {
+			return this.name.value;
+		}
+
+		var start: Position;
+		var end: Position;
+        var name: Token;
+    }
+
+	export class GenericTypeExpression {
+		function init(start: Position, end: Position) {
+			this.start = start;
+			this.end = end;
+		}
+
+		function getName(): String {
+			return "Generic<>";
+		}
+
+		var start: Position;
+		var end: Position;
+	}
+
+	export class NullableTypeExpression {
+		function init(start: Position, end: Position) {
+			this.start = start;
+			this.end = end;
+		}
+
+		function getName(): String {
+			return "Nullable?";
+		}
+
+		var start: Position;
+		var end: Position;
+	}
+
+    export class ArrayTypeExpression {
+        function init(start: Position, end: Position, baseType: TypeExpression, length: int?) {
+			this.start = start;
+			this.end = end;
+            this.baseType = baseType;
+            this.length = length;
+        }
+
+		function getName(): String {
+			var l = this.length;
+			if (l is null) {
+				return this.baseType.getName() + "[]";
+			}
+			else {
+				return this.baseType.getName() + "[" + toString(l) + "]";
+			}
+		}
+
+		var start: Position;
+		var end: Position;
+        var baseType: TypeExpression;
+        var length: int?;
+    }
+
+    export class CallExpression {
+        function init(start: Position, end: Position, target: Expression, args: List<Expression>) {
+			this.start = start;
+			this.end = end;
+            this.target = target;
+            this.arguments = args;
+        }
+
+		var start: Position;
+		var end: Position;
+        var target: Expression;
+        var arguments: List<Expression>;
+    }
+
+	export class IsExpression {
+		function init(start: Position, end: Position) {
+			this.start = start;
+			this.end = end;
+		}
+
+		var start: Position;
+		var end: Position;
+	}
+
+	export class CastExpression {
+		function init(start: Position, end: Position) {
+			this.start = start;
+			this.end = end;
+		}
+
+		var start: Position;
+		var end: Position;
+	}
+
     export class Parameter {
-        function init(name: Identifier, _type: TypeRef) {
+        function init(start: Position, end: Position, name: Identifier, _type: TypeExpression) {
+			this.start = start;
+			this.end = end;
             this.name = name;
             this._type = _type;
         }
 
+		var start: Position;
+		var end: Position;
         var name: Identifier;
-        var _type: TypeRef;
+        var _type: TypeExpression;
     }
 
     export class ClassDecl {
-        function init(name: Identifier, methods: List<ClassMethodDecl>, fields: List<ClassFieldDecl>) {
+        function init(trivia: String, start: Position, end: Position, name: Identifier, genericParams: List<Identifier>?, methods: List<ClassMethodDecl>, fields: List<ClassFieldDecl>) {
+			this.trivia = trivia;
+			this.start = start;
+			this.end = end;
             this.name = name;
+			this.genericParams = genericParams;
             this.methods = methods;
             this.fields = fields;
         }
 
+		var trivia: String;
+		var start: Position;
+		var end: Position;
         var name: Identifier;
+		var genericParams: List<Identifier>?;
         var methods: List<ClassMethodDecl>;
         var fields: List<ClassFieldDecl>;
     }
 
     export class ClassMethodDecl {
-        function init(fn: FunctionDecl) {
+        function init(start: Position, end: Position, fn: FunctionDecl) {
+			this.start = start;
+			this.end = end;
             this.fn = fn;
         }
 
+		var start: Position;
+		var end: Position;
         var fn: FunctionDecl;
     }
 
     export class ClassFieldDecl {
-        function init(variable: VarDecl) {
+        function init(start: Position, end: Position, variable: VarDecl) {
+			this.start = start;
+			this.end = end;
             this.variable = variable;
         }
 
+		var start: Position;
+		var end: Position;
         var variable: VarDecl;
     }
 
     export class VarDecl {
-        function init(name: Identifier, _type: TypeRef) {
+        function init(start: Position, end: Position, name: Identifier, _type: TypeExpression?, initializer: Expression?) {
+			this.start = start;
+			this.end = end;
             this.name = name;
             this._type = _type;
+			this.initializer = initializer;
         }
 
+		var start: Position;
+		var end: Position;
         var name: Identifier;
-        var _type: TypeRef;
-    }
-
-    export class TypeRef {
-        function init(name: Identifier) {
-            this.name = name;
-        }
-
-        var name: Identifier;
+        var _type: TypeExpression?;
+		var initializer: Expression?;
     }
 
     export class InterfaceDecl {
+		function init(
+			trivia: String,
+			start: Position,
+			end: Position,
+			name: Identifier,
+			methods: List<InterfaceMethod>,
+			fields: List<InterfaceField>
+		) {
+			this.trivia = trivia;
+			this.start = start;
+			this.end = end;
+			this.name = name;
+			this.methods = methods;
+			this.fields = fields;
+		}
+
+		var trivia: String;
+		var start: Position;
+		var end: Position;
         var name: Identifier;
-        var methods: List<InterfaceMember>;
+        var methods: List<InterfaceMethod>;
+        var fields: List<InterfaceField>;
     }
 
-    export class InterfaceMember {
+	export class InterfaceField {
+		function init(trivia: String, start: Position, end: Position, name: Identifier, _type: TypeExpression) {
+			this.trivia = trivia;
+			this.start = start;
+			this.end = end;
+			this.name = name;
+			this._type = _type;
+		}
+
+		var trivia: String;
+		var start: Position;
+		var end: Position;
+		var name: Identifier;
+		var _type: TypeExpression;
+	}
+
+    export class InterfaceMethod {
+		function init(start: Position, end: Position, name: Identifier, params: List<Parameter>, returnType: TypeExpression?) {
+			this.start = start;
+			this.end = end;
+			this.name = name;
+			this.params = params;
+			this.returnType = returnType;
+		}
+
+		var start: Position;
+		var end: Position;
         var name: Identifier;
-        var returnType: TypeRef;
         var params: List<Parameter>;
+        var returnType: TypeExpression?;
     }
-    
+
     export class EnumDecl {
-        function init(n: Identifier, el: List<EnumElement>) {
+        function init(trivia: String, start: Position, end: Position, n: Identifier, el: List<EnumElement>) {
+			this.trivia = trivia;
+			this.start = start;
+			this.end = end;
             this.name = n;
             this.elements = el;
         }
 
+		var trivia: String;
+		var start: Position;
+		var end: Position;
         var name: Identifier;
         var elements: List<EnumElement>;
     }
-    
+
     export class EnumElement {
-        function init(n: Identifier) {
+        function init(start: Position, end: Position, n: Identifier) {
+			this.start = start;
+			this.end = end;
             this.name = n;
         }
 
+		var start: Position;
+		var end: Position;
         var name: Identifier;
-    }    
+    }
 }

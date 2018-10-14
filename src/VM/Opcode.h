@@ -53,7 +53,6 @@ namespace Strela {
         X(JmpIf, 0, null) \
         X(JmpIfNot, 0, null) \
         X(CmpEQ, 0, null) \
-        X(CmpEQS, 0, null) \
         X(CmpNE, 0, null) \
         X(CmpLTI, 0, null) \
         X(CmpLTF32, 0, null) \
@@ -76,6 +75,7 @@ namespace Strela {
         X(DivI, 0, null) \
         X(DivF32, 0, null) \
         X(DivF64, 0, null) \
+        X(ModI, 0, null) \
         X(New, 2, integer) \
         X(Array, 0, null) \
         X(Null, 0, null) \
@@ -98,12 +98,11 @@ namespace Strela {
         X(F64tF32, 0, null) \
         X(F32tF64, 0, null) \
         X(Peek, 1, integer) \
-        X(ConcatSS, 0, null) \
-        X(ConcatSI, 0, null) \
         X(Mov8, 0, null) \
         X(Mov16, 0, null) \
         X(Mov32, 0, null) \
         X(Mov64, 0, null) \
+        X(CmpType, 8, integer) \
     
     #define AS_ENUM(X, A, T) X,
     enum class Opcode: unsigned char {

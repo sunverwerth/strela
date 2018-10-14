@@ -20,8 +20,16 @@
 #include <fstream>
 #include <iomanip>
 #include <algorithm>
+#include <cstring>
 
 using namespace Strela;
+
+namespace Strela {
+	int g_timeout = -1;
+	std::string g_homePath;
+	std::string g_searchPath;
+	unsigned short g_debugPort = 0;
+}
 
 void error(const std::string& msg) {
     std::cerr << "\033[1;31m" << msg << "\033[0m\n";
@@ -29,6 +37,11 @@ void error(const std::string& msg) {
 
 void error(const Strela::Node* n, const std::string& msg) {
     std::cerr << "\033[1;31m" << n->source->filename << ":" << n->line << ":" << n->column << " " << msg << "\033[0m\n";
+}
+
+void bail() {
+    error("Aborting due to previous errors.");
+    exit(1);
 }
 
 void help() {
@@ -62,21 +75,65 @@ Scope* makeGlobalScope() {
     globals->add("f32", &FloatType::f32);
     globals->add("f64", &FloatType::f64);
     globals->add("null", &NullType::instance);
-    globals->add("String", &ClassDecl::String);
     globals->add("Ptr", &PointerType::instance);
+
+    std::string fileName;
+    if (g_searchPath.size() && std::ifstream(Strela::g_searchPath + "/Std/core.strela")) {
+        fileName = Strela::g_searchPath + "/Std/core.strela";
+    }
+    else if (std::ifstream(Strela::g_homePath + "/.strela/lib/Std/core.strela")) {
+        fileName = Strela::g_homePath + "/.strela/lib/Std/core.strela";
+    }
+    else if (std::ifstream("/usr/local/lib/strela/Std/core.strela")) {
+        fileName = "/usr/local/lib/strela/Std/core.strela";
+    }
+
+    if (fileName.empty()) {
+        error("Unable to locate core library.");
+        bail();
+    }
+
+    std::ifstream sourceFile(fileName, std::ios::binary);
+    Lexer lexer(sourceFile);
+    auto source = new SourceFile(fileName, lexer.tokenize());
+    if (lexer.hadErrors()) bail();
+    Parser parser(*source);
+    auto module = parser.parseModDecl();
+    if (parser.hadErrors()) bail();
+
+    module->_name = "";
+    module->filename = fileName;
+
+    ClassDecl::String = module->getClass("String");
+
+    NameResolver resolver(globals);
+    resolver.resolve(*module);
+
+    TypeChecker checker;
+    checker.check(*module);
+
+    for (auto& cls: module->classes) {
+        if (cls->isExported) {
+            globals->add(cls->_name, cls);
+        }
+    }
+
+    for (auto& fun: module->functions) {
+        if (fun->isExported) {
+            globals->add(fun->name, fun);
+        }
+    }
 
     return globals;
 }
 
-#include <cstring>
-
-namespace Strela {
-    int g_timeout = -1;
-    std::string g_homePath;
-    std::string g_searchPath;
-    unsigned short g_debugPort = 0;
+std::string normalizePath(const std::string& path) {
+    if (path.empty()) return "./";
+    if (path.back() != '/' && path.back() != '\\') {
+        return path + "/";
+    }
+    return path;
 }
-
 
 std::string getImportFile(const std::string& baseFilename, ImportStmt* import) {
 
@@ -96,7 +153,7 @@ std::string getImportFile(const std::string& baseFilename, ImportStmt* import) {
     
     std::ifstream file;
 
-    std::string relativeBase;
+    std::string relativeBase("./");
     auto lastSlash = baseFilename.rfind('/');
     if (lastSlash == std::string::npos) lastSlash = baseFilename.rfind('\\');
     if (lastSlash != std::string::npos) {
@@ -115,8 +172,8 @@ std::string getImportFile(const std::string& baseFilename, ImportStmt* import) {
     }
 
     // home
-    tries.push_back({Strela::g_homePath + "/.strela/lib/" + import->getFullName("/") + ".strela", true});
-    if (!import->all) tries.push_back({ Strela::g_homePath + "/.strela/lib/" + import->getBaseName("/") + ".strela", false});
+    tries.push_back({Strela::g_homePath + ".strela/lib/" + import->getFullName("/") + ".strela", true});
+    if (!import->all) tries.push_back({ Strela::g_homePath + ".strela/lib/" + import->getBaseName("/") + ".strela", false});
     
     // global
     tries.push_back({"/usr/local/lib/strela/" + import->getFullName("/") + ".strela", true});
@@ -133,18 +190,14 @@ std::string getImportFile(const std::string& baseFilename, ImportStmt* import) {
     return "";
 }
 
-void bail() {
-    std::cerr << "Aborting due to previous errors.\n";
-    exit(1);
-}
-
 int main(int argc, char** argv) {
 
     #ifdef _WIN32
-    Strela::g_homePath = std::string(getenv("HOMEDRIVE")) + getenv("HOMEPATH");
+    g_homePath = std::string(getenv("HOMEDRIVE")) + getenv("HOMEPATH");
     #else
-    Strela::g_homePath = getenv("HOME");
+    g_homePath = getenv("HOME");
     #endif
+    g_homePath = normalizePath(g_homePath);
 
     std::string fileName;
     std::string byteCodePath;
@@ -160,6 +213,7 @@ int main(int argc, char** argv) {
         }
         else if (!strcmp(argv[i], "--search")) {
             g_searchPath = argv[++i];
+            g_searchPath = normalizePath(g_searchPath);
         }
         else if (!strcmp(argv[i], "--write-bytecode")) {
             byteCodePath = argv[++i];
@@ -209,9 +263,11 @@ int main(int argc, char** argv) {
 
             if (pretty) {
                 NodePrinter printer;
-                module->accept(printer);
+                printer.print(*module);
                 return 0;
             }
+
+            auto globals = makeGlobalScope();
 
             std::map<std::string, ModDecl*> modules {
                 { module->getFullName(), module },
@@ -258,12 +314,10 @@ int main(int argc, char** argv) {
                 }
             }
 
-            auto globals = makeGlobalScope();
-
             //std::cout << "Resolving names...\n";
             for (auto&& it: modules) {
                 NameResolver resolver(globals);
-                it.second->accept(resolver);
+                resolver.resolve(*it.second);
                 errors |= resolver.hadErrors();
             }
 
@@ -285,7 +339,7 @@ int main(int argc, char** argv) {
             //std::cout << "Running type checker...\n";
             for (auto&& it: modules) {
                 TypeChecker typeChecker;
-                it.second->accept(typeChecker);
+                typeChecker.check(*it.second);
                 errors |= typeChecker.hadErrors();
             }
             
@@ -293,7 +347,7 @@ int main(int argc, char** argv) {
 
             //std::cout << "Compiling bytecode...\n";
             ByteCodeCompiler compiler(chunk);
-            module->accept(compiler);
+            compiler.compile(*module);
             if (compiler.hadErrors()) bail();
 
             if (!byteCodePath.empty()) {

@@ -12,7 +12,6 @@ namespace Strela {
     class UnionType: public TypeDecl {
     public:
         STRELA_GET_TYPE(Strela::UnionType, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
         static UnionType* get(TypeDecl* left, TypeDecl* right);
         TypeDecl* getComplementaryType(TypeDecl* t);

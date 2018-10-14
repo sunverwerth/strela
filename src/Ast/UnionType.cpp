@@ -3,6 +3,8 @@
 
 #include "UnionType.h"
 #include "../exceptions.h"
+#include "TypeAliasDecl.h"
+#include "Expr.h"
 
 namespace Strela {
     std::set<TypeDecl*> mergeTypes(TypeDecl* left, TypeDecl* right) {
@@ -34,16 +36,35 @@ namespace Strela {
     }
     
     int UnionType::getTypeTag(TypeDecl* t) {
+        if (auto alias = t->as<TypeAliasDecl>()) {
+            t = alias->typeExpr->typeValue;
+        }
+
         int tag = 0;
         for (auto&& type: containedTypes) {
             if (type == t) return tag;
+            if (auto alias = type->as<TypeAliasDecl>()) {
+                if (alias->typeExpr->typeValue == t) {
+                    return tag;
+                }
+            }
             ++tag;
         }
         return -1; // TODO: error handling
     }
 
     bool UnionType::containsType(TypeDecl* t) {
-        return containedTypes.find(t) != containedTypes.end();
+        for (auto& ct: containedTypes) {
+            if (ct == t) {
+                return true;
+            }
+            if (auto alias = ct->as<TypeAliasDecl>()) {
+                if (alias->typeExpr->typeValue == t) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     TypeDecl* UnionType::getComplementaryType(TypeDecl* t) {

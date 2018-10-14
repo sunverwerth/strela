@@ -12,6 +12,7 @@ namespace Strela {
         X(Amp) \
         X(AmpAmp) \
         X(AmpEquals) \
+        X(As) \
         X(Asterisk) \
         X(AsteriskEquals) \
         X(Boolean) \
@@ -86,10 +87,11 @@ namespace Strela {
     struct Token {
     public:
         Token() = default;
-        Token(TokenType type, const std::string& value, int line, int column, int index): type(type), value(value), line(line), column(column), index(index) {}
+        Token(TokenType type, const std::string& trivia, const std::string& value, int line, int column, int index): type(type), trivia(trivia), value(value), line(line), column(column), index(index) {}
     public:
         TokenType type;
         std::string value;
+        std::string trivia;
         int line;
         int column;
         int index;

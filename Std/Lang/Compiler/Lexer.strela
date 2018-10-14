@@ -2,7 +2,7 @@
 // This code is licensed under MIT license (See LICENSE for details)
 
 module Std.Lang.Compiler.Lexer {
-    import Std.IO.File;
+    import Std.IO.*;
     import Std.Collections.Map;
 
     export enum TokenType {
@@ -10,8 +10,7 @@ module Std.Lang.Compiler.Lexer {
         Module,
         Import,
         Export,
-        Require,
-        Entry,
+        External,
         Class,
         Interface,
         Enum,
@@ -23,6 +22,8 @@ module Std.Lang.Compiler.Lexer {
         Return,
         New,
         This,
+		Is,
+		As,
         Identifier,
         StringLiteral,
         IntLiteral,
@@ -42,6 +43,7 @@ module Std.Lang.Compiler.Lexer {
         Whitespace,
         Comment,
         Asterisk,
+		AsteriskEquals,
         Equals,
         EqualsEquals,
         ExclEquals,
@@ -50,11 +52,15 @@ module Std.Lang.Compiler.Lexer {
         Pipe,
         PipePipe,
         Slash,
+		SlashEquals,
         Plus,
+		PlusEquals,
         PlusPlus,
         Minus,
+		MinusEquals,
         MinusMinus,
         Percent,
+		PercentEquals,
         LessThan,
         GreaterThan,
         LessThanEquals,
@@ -63,308 +69,279 @@ module Std.Lang.Compiler.Lexer {
         Missing
     }
 
+    export class Position {
+        function init(row: int, column: int) {
+            this.row = row;
+            this.column = column;
+        }
+
+        var row: int;
+        var column: int;
+    }
+
     export class Token {
         var _type: TokenType;
         var value: String;
         var file: File;
-        var row: u32;
-        var column: u32;
+        var position: Position;
 
-        function init(file: File, tt: TokenType, val: String) {
+        function init(file: File, tt: TokenType, val: String, position: Position) {
             this.file = file;
-            _type = tt;
-            value = val;
+            this._type = tt;
+            this.value = val;
+            this.position = position;
         }
     }
 
     function isWs(ch: String): bool {
+		if (ch.length() < 1) return false;
         return ch == " " || ch == "\t" || ch == "\r" || ch == "\n";
     }
 
     function isNum(ch: String): bool {
-        return
-            ch == "0" ||
-            ch == "1" ||
-            ch == "2" ||
-            ch == "3" ||
-            ch == "4" ||
-            ch == "5" ||
-            ch == "6" ||
-            ch == "7" ||
-            ch == "8" ||
-            ch == "9";
+		if (ch.length() < 1) return false;
+        return ch.data[0] > 47 && ch.data[0] < 58;
     }
 
     function isAl(ch: String): bool {
-        return ch == "a" || ch == "b" || ch == "c" || ch == "d" || ch == "e" || ch == "f" || ch == "g" || ch == "h" || ch == "i" || ch == "j" || ch == "k" || ch == "l" || ch == "m" || ch == "n" || ch == "o" || ch == "p" || ch == "q" || ch == "r" || ch == "s" || ch == "t" || ch == "u" || ch == "v" || ch == "w" || ch == "x" || ch == "y" || ch == "z" ||
-        ch == "A" || ch == "B" || ch == "C" || ch == "D" || ch == "E" || ch == "F" || ch == "G" || ch == "H" || ch == "I" || ch == "J" || ch == "K" || ch == "L" || ch == "M" || ch == "N" || ch == "O" || ch == "P" || ch == "Q" || ch == "R" || ch == "S" || ch == "T" || ch == "U" || ch == "V" || ch == "W" || ch == "X" || ch == "Y" || ch == "Z";
+		if (ch.length() < 1) return false;
+        return (ch.data[0] > 64 && ch.data[0] < 91)
+        || (ch.data[0] > 96 && ch.data[0] < 123);
     }
 
     function isAlNum(ch: String): bool {
+		if (ch.length() < 1) return false;
         return isAl(ch) || isNum(ch);
     }
 
     export class Lexer {
         function init(f: File) {
-            file = f;
-            ch = file.getc();
-            str = new String();
+            this.file = f;
+            this.ch = this.get();
+            this.str = new String();
+            this.newline = false;
+            this.row = 1;
+            this.column = 1;
 
-            singleChars = new Map<String, TokenType>;
-            singleChars.set("+", TokenType.Plus);
-            singleChars.set("-", TokenType.Minus);
-            singleChars.set("*", TokenType.Asterisk);
-            singleChars.set("/", TokenType.Slash);
-            singleChars.set("(", TokenType.ParenOpen);
-            singleChars.set(")", TokenType.ParenClose);
-            singleChars.set("<", TokenType.LessThan);
-            singleChars.set(">", TokenType.GreaterThan);
-            singleChars.set("{", TokenType.CurlyOpen);
-            singleChars.set("}", TokenType.CurlyClose);
-            singleChars.set("[", TokenType.BracketOpen);
-            singleChars.set("]", TokenType.BracketClose);
-            singleChars.set(",", TokenType.Comma);
-            singleChars.set(";", TokenType.Semicolon);
-            singleChars.set(".", TokenType.Period);
+            this.singleChars = new Map<String, TokenType>;
+            this.singleChars.set("-", TokenType.Minus);
+            this.singleChars.set(",", TokenType.Comma);
+            this.singleChars.set(";", TokenType.Semicolon);
+            this.singleChars.set(":", TokenType.Colon);
+            this.singleChars.set("!", TokenType.ExclamationMark);
+            this.singleChars.set("?", TokenType.QuestionMark);
+            this.singleChars.set(".", TokenType.Period);
+            this.singleChars.set("(", TokenType.ParenOpen);
+            this.singleChars.set(")", TokenType.ParenClose);
+            this.singleChars.set("[", TokenType.BracketOpen);
+            this.singleChars.set("]", TokenType.BracketClose);
+            this.singleChars.set("{", TokenType.CurlyOpen);
+            this.singleChars.set("}", TokenType.CurlyClose);
+            this.singleChars.set("*", TokenType.Asterisk);
+            this.singleChars.set("/", TokenType.Slash);
+            this.singleChars.set("&", TokenType.Amp);
+            this.singleChars.set("%", TokenType.Percent);
+            this.singleChars.set("+", TokenType.Plus);
+            this.singleChars.set("<", TokenType.LessThan);
+            this.singleChars.set("=", TokenType.Equals);
+            this.singleChars.set(">", TokenType.GreaterThan);
+            this.singleChars.set("|", TokenType.Pipe);
+
+            this.twoChars = new Map<String, TokenType>;
+            this.twoChars.set("--", TokenType.MinusMinus);
+            this.twoChars.set("!=", TokenType.ExclEquals);
+            this.twoChars.set("&&", TokenType.AmpAmp);
+            this.twoChars.set("++", TokenType.PlusPlus);
+            this.twoChars.set("<=", TokenType.LessThanEquals);
+            this.twoChars.set("==", TokenType.EqualsEquals);
+            this.twoChars.set(">=", TokenType.GreaterThanEquals);
+            this.twoChars.set("||", TokenType.PipePipe);
+
+            this.twoChars.set("+=", TokenType.PlusEquals);
+            this.twoChars.set("-=", TokenType.MinusEquals);
+            this.twoChars.set("*=", TokenType.AsteriskEquals);
+            this.twoChars.set("/=", TokenType.SlashEquals);
+            this.twoChars.set("%=", TokenType.PercentEquals);
+
+            this.keywords = new Map<String, TokenType>;
+            this.keywords.set("module", TokenType.Module);
+            this.keywords.set("import", TokenType.Import);
+            this.keywords.set("export", TokenType.Export);
+            this.keywords.set("external", TokenType.External);
+            this.keywords.set("class", TokenType.Class);
+            this.keywords.set("interface", TokenType.Interface);
+            this.keywords.set("enum", TokenType.Enum);
+            this.keywords.set("function", TokenType.Function);
+            this.keywords.set("var", TokenType.Var);
+            this.keywords.set("if", TokenType.If);
+            this.keywords.set("else", TokenType.Else);
+            this.keywords.set("while", TokenType.While);
+            this.keywords.set("return", TokenType.Return);
+            this.keywords.set("new", TokenType.New);
+            this.keywords.set("this", TokenType.This);
+			this.keywords.set("is", TokenType.Is);
+			this.keywords.set("as", TokenType.As);
         }
 
         function hasNext(): bool {
-            return !file.isEof();
+            return !this.file.isEof();
+        }
+
+        function get(): String {
+            var ch = this.file.getc();
+
+            if (ch == "\n") {
+                this.row = this.row + 1;
+                this.column = 0;
+            }
+            else {
+                this.column = this.column + 1;
+            }
+
+            return ch;
         }
 
         function next(): Token {
-            str = "";
-            if (isWs(ch)) {
-                return whitespace();
+            this.position = new Position(this.row - 1, this.column - 1);
+            this.str = "";
+            if (isWs(this.ch)) {
+                return this.whitespace();
             }
-            else if (ch == "\"") {
-                return string();
+            else if (this.ch == "\"") {
+                return this.string();
             }
-            else if (ch == "/") {
-                if (file.peek() == "/") {
-                    return lineComment();
+            else if (this.ch == "/") {
+                if (this.file.peek() == "/") {
+                    return this.lineComment();
                 }
-                else if (file.peek() == "*") {
-                    return blockComment();
+                else if (this.file.peek() == "*") {
+                    return this.blockComment();
                 }
                 else {
-                    ch = file.getc();
-                    return new Token(file, TokenType.Slash, str);
+                    this.ch = this.get();
+                    return new Token(this.file, TokenType.Slash, this.str, this.position);
                 }
             }
-            else if (isAl(ch) || ch == "_") {
-                return idOrKeyword();
+            else if (isAl(this.ch) || this.ch == "_") {
+                return this.idOrKeyword();
             }
-            else if (isNum(ch)) {
-                return number();
+            else if (isNum(this.ch)) {
+                return this.number();
             }
-            else if (ch == "<") {
-                ch = file.getc();
-                if (ch == "=") {
-                    ch = file.getc();
-                    return new Token(file, TokenType.LessThanEquals, "<=");
-                }
-                else {
-                    return new Token(file, TokenType.LessThan, "<");
-                }
-            }
-            else if (ch == ">") {
-                ch = file.getc();
-                if (ch == "=") {
-                    ch = file.getc();
-                    return new Token(file, TokenType.GreaterThanEquals, ">=");
-                }
-                else {
-                    return new Token(file, TokenType.GreaterThan, ">");
-                }
-            }
-            else if (ch == "=") {
-                ch = file.getc();
-                if (ch == "=") {
-                    ch = file.getc();
-                    return new Token(file, TokenType.EqualsEquals, "==");
-                }
-                else {
-                    return new Token(file, TokenType.Equals, "=");
-                }
-            }
-            else if (ch == "+") {
-                ch = file.getc();
-                if (ch == "+") {
-                    ch = file.getc();
-                    return new Token(file, TokenType.PlusPlus, "++");
-                }
-                else {
-                    return new Token(file, TokenType.Plus, "+");
-                }
-            }
-            else if (ch == "-") {
-                ch = file.getc();
-                if (ch == "-") {
-                    ch = file.getc();
-                    return new Token(file, TokenType.MinusMinus, "--");
-                }
-                else {
-                    return new Token(file, TokenType.Minus, "-");
-                }
-            }
-            else if (ch == "&") {
-                ch = file.getc();
-                if (ch == "&") {
-                    ch = file.getc();
-                    return new Token(file, TokenType.AmpAmp, "&&");
-                }
-                else {
-                    return new Token(file, TokenType.Amp, "&");
-                }
-            }
-            else if (ch == "|") {
-                ch = file.getc();
-                if (ch == "|") {
-                    ch = file.getc();
-                    return new Token(file, TokenType.PipePipe, "||");
-                }
-                else {
-                    return new Token(file, TokenType.Pipe, "|");
-                }
-            }
-            else if (ch == "!") {
-                ch = file.getc();
-                if (ch == "=") {
-                    ch = file.getc();
-                    return new Token(file, TokenType.ExclEquals, "!=");
-                }
-                else {
-                    return new Token(file, TokenType.ExclamationMark, "!");
-                }
-            }
-            else if (ch == "(") { var old = ch; ch = file.getc(); return new Token(file, TokenType.ParenOpen, old); }
-            else if (ch == ")") { var old = ch; ch = file.getc(); return new Token(file, TokenType.ParenClose, old); }
-            else if (ch == "[") { var old = ch; ch = file.getc(); return new Token(file, TokenType.BracketOpen, old); }
-            else if (ch == "]") { var old = ch; ch = file.getc(); return new Token(file, TokenType.BracketClose, old); }
-            else if (ch == "{") { var old = ch; ch = file.getc(); return new Token(file, TokenType.CurlyOpen, old); }
-            else if (ch == "}") { var old = ch; ch = file.getc(); return new Token(file, TokenType.CurlyClose, old); }
-            else if (ch == ".") { var old = ch; ch = file.getc(); return new Token(file, TokenType.Period, old); }
-            else if (ch == ",") { var old = ch; ch = file.getc(); return new Token(file, TokenType.Comma, old); }
-            else if (ch == ":") { var old = ch; ch = file.getc(); return new Token(file, TokenType.Colon, old); }
-            else if (ch == ";") { var old = ch; ch = file.getc(); return new Token(file, TokenType.Semicolon, old); }
-            else if (ch == "?") { var old = ch; ch = file.getc(); return new Token(file, TokenType.QuestionMark, old); }
-            else if (ch == "*") { var old = ch; ch = file.getc(); return new Token(file, TokenType.Asterisk, old); }
-            else if (ch == "/") { var old = ch; ch = file.getc(); return new Token(file, TokenType.Slash, old); }
-            else if (ch == "%") { var old = ch; ch = file.getc(); return new Token(file, TokenType.Percent, old); }
             else {
-                if (singleChars.has(ch)) {
-                    var _type = singleChars[ch];
-                    var old = ch;
-                    ch = file.getc();
-                    return new Token(file, _type, old);
+                var two = this.ch + this.file.peek();
+                if (this.twoChars.has(two)) {
+                    var tok = new Token(this.file, this.twoChars[two], two, this.position);
+                    this.get();
+                    this.ch = this.get();
+                    return tok;
+                }
+                else if (this.singleChars.has(this.ch)) {
+                    var tok = new Token(this.file, this.singleChars[this.ch], this.ch, this.position);
+                    this.ch = this.get();
+                    return tok;
                 }
                 else {
-                    var old = ch;
-                    ch = file.getc();
-                    return new Token(file, TokenType.Invalid, old);
+                    var tok = new Token(this.file, TokenType.Invalid, this.ch, this.position);
+                    this.ch = this.get();
+                    return tok;
                 }
             }
         }
 
         function string(): Token {
-            str += "\"";
-            ch = file.getc();
+            this.str += "\"";
+            this.ch = this.get();
             var escaped = false;
-            while(!(ch == "\"" && !escaped)) {
-                str += ch;
-                escaped = ch == "\\" && !escaped;
-                ch = file.getc();
+            while(!(this.ch == "\"" && !escaped) && !this.file.isEof()) {
+                this.str += this.ch;
+                escaped = this.ch == "\\" && !escaped;
+                this.ch = this.get();
             }
-            str += "\"";
-            ch = file.getc();
-            return new Token(file, TokenType.StringLiteral, str);
+            this.str += "\"";
+            this.ch = this.get();
+            return new Token(this.file, TokenType.StringLiteral, this.str, this.position);
         }
 
         function lineComment(): Token {
-            ch = file.getc(); // "/"
-            ch = file.getc(); // first char of comment
-            str = "//";
-            while (!(ch == "\r" || ch == "\n") && !file.isEof()) {
-                str += ch;
-                ch = file.getc();                
+            this.ch = this.get(); // "/"
+            this.ch = this.get(); // first char of comment
+            this.str = "//";
+            while (!(this.ch == "\r" || this.ch == "\n") && !this.file.isEof()) {
+                this.str += this.ch;
+                this.ch = this.get();
             }
-            return new Token(file, TokenType.Comment, str);
+            return new Token(this.file, TokenType.Comment, this.str, this.position);
         }
 
         function blockComment(): Token {
-            ch = file.getc(); // "*"
-            ch = file.getc(); // first char of comment
-            str = "/*";
-            while (!(ch == "*" && file.peek() == "/") && !file.isEof()) {
-                str += ch;
-                ch = file.getc();                
+            this.ch = this.get(); // "*"
+            this.ch = this.get(); // first char of comment
+            this.str = "/*";
+            while (!(this.ch == "*" && this.file.peek() == "/") && !this.file.isEof()) {
+                this.str += this.ch;
+                this.ch = this.get();
             }
-            file.getc();
-            ch = file.getc();
-            str += "*/";
-            return new Token(file, TokenType.Comment, str);
+            this.get();
+            this.ch = this.get();
+            this.str += "*/";
+            return new Token(this.file, TokenType.Comment, this.str, this.position);
         }
 
         function number(): Token {
-            str += ch;
-            ch = file.getc();
-            while(isNum(ch)) {
-                str += ch;
-                ch = file.getc();
+            this.str += this.ch;
+            this.ch = this.get();
+            while(isNum(this.ch)) {
+                this.str += this.ch;
+                this.ch = this.get();
             }
 
-            if (ch == ".") {
-                str += ".";
-                ch = file.getc();
-                while(isNum(ch)) {
-                    str += ch;
-                    ch = file.getc();
+            if (this.ch == ".") {
+                this.str += ".";
+                this.ch = this.get();
+                while(isNum(this.ch)) {
+                    this.str += this.ch;
+                    this.ch = this.get();
                 }
-                return new Token(file, TokenType.FloatLiteral, str);
+                return new Token(this.file, TokenType.FloatLiteral, this.str, this.position);
             }
-            return new Token(file, TokenType.IntLiteral, str);
+            return new Token(this.file, TokenType.IntLiteral, this.str, this.position);
         }
 
         function whitespace(): Token {
-            while(isWs(ch)) {
-                str += ch;
-                ch = file.getc();
+            while(isWs(this.ch)) {
+                this.str += this.ch;
+                this.ch = this.get();
             }
-            return new Token(file, TokenType.Whitespace, str);
+            return new Token(this.file, TokenType.Whitespace, this.str, this.position);
         }
 
         function idOrKeyword(): Token {
-            str += ch;
-            ch = file.getc();
-            while((isAlNum(ch) || ch == "_")) {
-                str += ch;
-                ch = file.getc();
+            this.str += this.ch;
+            this.ch = this.get();
+            while((isAlNum(this.ch) || this.ch == "_")) {
+                this.str += this.ch;
+                this.ch = this.get();
             }
 
-            if (str == "module") return new Token(file, TokenType.Module, str);
-            else if (str == "import") return new Token(file, TokenType.Import, str);
-            else if (str == "export") return new Token(file, TokenType.Export, str);
-            else if (str == "entry") return new Token(file, TokenType.Entry, str);
-            else if (str == "require") return new Token(file, TokenType.Require, str);
-            else if (str == "class") return new Token(file, TokenType.Class, str);
-            else if (str == "interface") return new Token(file, TokenType.Interface, str);
-            else if (str == "enum") return new Token(file, TokenType.Enum, str);
-            else if (str == "function") return new Token(file, TokenType.Function, str);
-            else if (str == "var") return new Token(file, TokenType.Var, str);
-            else if (str == "if") return new Token(file, TokenType.If, str);
-            else if (str == "else") return new Token(file, TokenType.Else, str);
-            else if (str == "while") return new Token(file, TokenType.While, str);
-            else if (str == "return") return new Token(file, TokenType.Return, str);
-            else if (str == "new") return new Token(file, TokenType.New, str);
-            else if (str == "this") return new Token(file, TokenType.This, str);
-            else return new Token(file, TokenType.Identifier, str);
+            if (this.keywords.has(this.str)) {
+                return new Token(this.file, this.keywords[this.str], this.str, this.position);
+            }
+            else {
+                return new Token(this.file, TokenType.Identifier, this.str, this.position);
+            }
         }
 
         var str: String;
         var ch: String;
         var file: File;
+        var row: int;
+        var column: int;
+        var newline: bool;
+        var position: Position;
 
         var singleChars: Map<String, TokenType>;
+        var twoChars: Map<String, TokenType>;
+        var keywords: Map<String, TokenType>;
     }
 }

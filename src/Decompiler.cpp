@@ -3,6 +3,8 @@
 
 #include "Decompiler.h"
 #include "VM/ByteCodeChunk.h"
+#include "VM/VMObject.h"
+#include "SourceFile.h"
 
 #include <iostream>
 #include <iomanip>
@@ -17,9 +19,10 @@ namespace Strela {
         if (c.type == VMValue::Type::integer) std::cout << "int(" << c.value.integer << ")";
         else if (c.type == VMValue::Type::floating) std::cout << "float(" << c.value.f64 << ")";
         else if (c.type == VMValue::Type::boolean) std::cout << (c.value.boolean ? "true" : "false");
-        else if (c.type == VMValue::Type::string) std::cout << "\"" << escape(c.value.string) << "\"";
         else if (c.type == VMValue::Type::null) std::cout << "null";
-        else if (c.type == VMValue::Type::object) std::cout << "(object)";
+        else if (c.type == VMValue::Type::object) {
+            std::cout << "\"" << escape((const char*)c.value.object) << "\"";
+        }
         else std::cout << "???";
     }
 
@@ -37,6 +40,7 @@ namespace Strela {
             if (function != chunk.functions.end()) {
                 std::cout << "\n; " << function->second.name << "\n";
             }
+
             size_t opStart = i;
             auto op = (Opcode)chunk.opcodes[i];
             auto info = opcodeInfo[(int)op];

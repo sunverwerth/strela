@@ -21,10 +21,10 @@ namespace Strela {
     class ModDecl: public TypeDecl {
     public:
         STRELA_GET_TYPE(Strela::ModDecl, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
         Node* getMember(const std::string& name) override;
         ClassDecl* getClass(const std::string& name);
+        TypeAliasDecl* getAlias(const std::string& name);
         EnumDecl* getEnum(const std::string& name);
         std::vector<FuncDecl*> getFunctions(const std::string& name);
         void addFunction(FuncDecl* func);

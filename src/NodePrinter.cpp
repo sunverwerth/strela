@@ -7,85 +7,100 @@
 #include <iostream>
 
 namespace Strela {
-    void NodePrinter::visit(ModDecl& n) {
+    void NodePrinter::print(ModDecl& n) {
         std::cout << "module " << n._name << " {\n";
         push();
         for (auto&& en: n.enums) {
-            std::cout << indent;
-            visitChild(en);
+            indent();
+            print(*en);
         }
         for (auto&& cls: n.classes) {
-            std::cout << indent;
-            visitChild(cls);
+            indent();
+            print(*cls);
         }
         for (auto&& ta: n.typeAliases) {
-            std::cout << indent;
-            visitChild(ta);
+            indent();
+            print(*ta);
         }
         for (auto&& fun: n.functions) {
-            std::cout << indent;
-            visitChild(fun);
+            indent();
+            print(*fun);
         }
         pop();
         std::cout << "}\n";
     }
 
-    void NodePrinter::visit(ClassDecl& n) {
-        std::cout << "\n" << indent;
+    void NodePrinter::print(ClassDecl& n) {
+        std::cout << "\n";
+        indent();
         if (n.isExported) {
             std::cout << "export ";
         }
         std::cout << "class " << n._name;
         if (!n.genericParams.empty()) {
             std::cout << "<";
-            list(n.genericParams, ", ");
+            for (auto&& child: n.genericParams) {
+                print(*child);
+                if (&child != &n.genericParams.back()) {
+                    std::cout << ", ";
+                }
+            }
             std::cout << ">";
         }
         std::cout << " {\n";
         push();
         for (auto&& field: n.fields) {
-            std::cout << indent;
-            visitChild(field);
+            indent();
+            print(*field);
         }
         for (auto&& fun: n.methods) {
-            std::cout << indent;
-            visitChild(fun);
+            indent();
+            print(*fun);
         }
         pop();
-        std::cout << indent << "}\n";
+        indent();
+        std::cout << "}\n";
     }
 
-    void NodePrinter::visit(FuncDecl& n) {
-        std::cout << "\n" << indent;
+    void NodePrinter::print(FuncDecl& n) {
+        std::cout << "\n";
+        indent();
         if (n.isExported) {
             std::cout << "export ";
         }
         std::cout << "function " << n.name << "(";
-        list(n.params, ", ");
+        for (auto&& part: n.params) {
+            std::cout << part;
+            if (&part != &n.params.back()) {
+                std::cout << ", ";
+            }
+        }
         std::cout << "): ";
         visitChild(n.returnTypeExpr);
         std::cout << " {\n";
         push();
         for (auto&& stmt: n.stmts) {
-            std::cout << indent;
+            indent();
             visitChild(stmt);
         }
         pop();
-        std::cout << indent << "}\n";
+        indent();
+        std::cout << "}\n";
     }
 
     void NodePrinter::visit(BlockStmt& n) {
         std::cout << "{\n";
         push();
         for (auto&& stmt: n.stmts) {
-            std::cout << indent;
+            indent();
             visitChild(stmt);
         }
         pop();
-        std::cout << indent << "}\n";
+        indent();
+        std::cout << "}\n";
     }
 
-    void NodePrinter::visit(Param& n) {
+    void NodePrinter::print(Param& n) {
         std::cout << n.name << ": ";
         visitChild(n.typeExpr);
     }
@@ -158,12 +173,13 @@ namespace Strela {
         std::cout << ") ";
         visitChild(n.trueBranch);
         if (n.falseBranch) {
-            std::cout << indent << "else ";
+            indent();
+            std::cout << "else ";
             visitChild(n.falseBranch);
         }
     }
 
-    void NodePrinter::visit(FieldDecl& n) {
+    void NodePrinter::print(FieldDecl& n) {
         std::cout << "var " << n.name << ": ";
         visitChild(n.typeExpr);
         std::cout << ";\n";
@@ -202,7 +218,7 @@ namespace Strela {
         std::cout << "[]";
     }
 
-    void NodePrinter::visit(ImportStmt& n) {
+    void NodePrinter::print(ImportStmt& n) {
         std::cout << "import ";
         for (auto&& part: n.parts) {
             std::cout << part;
@@ -219,37 +235,44 @@ namespace Strela {
         visitChild(n.target);
     }
 
-    void NodePrinter::visit(EnumDecl& n) {
+    void NodePrinter::print(EnumDecl& n) {
         std::cout << (n.isExported ? "export " : "") << "enum {\n";
         push();
         for (auto&& el: n.elements) {
-            std::cout << indent;
-            visitChild(el);
+            indent();
+            print(*el);
         }
         pop();
-        std::cout << indent <<  "}\n";
+        indent();
+        std::cout <<  "}\n";
     }
 
-    void NodePrinter::visit(InterfaceDecl& n) {
+    void NodePrinter::print(InterfaceDecl& n) {
         std::cout << (n.isExported ? "export " : "") << "interface {\n";
         push();
         for (auto&& m: n.methods) {
-            std::cout << indent;
-            visitChild(m);
+            indent();
+            print(*m);
         }
         pop();
-        std::cout << indent << "}\n";
+        indent();
+        std::cout << "}\n";
     }
 
-    void NodePrinter::visit(InterfaceMethodDecl& n) {
+    void NodePrinter::print(InterfaceMethodDecl& n) {
         std::cout << "function " << n.name << "(";
-        list(n.params, ", ");
+        for (auto&& part: n.params) {
+            std::cout << part;
+            if (&part != &n.params.back()) {
+                std::cout << ", ";
+            }
+        }
         std::cout << "): ";
         visitChild(n.returnTypeExpr);
         std::cout << ";\n";
     }
 
-    void NodePrinter::visit(EnumElement& n) {
+    void NodePrinter::print(EnumElement& n) {
         std::cout << n.name << ",\n";
     }
 
@@ -282,6 +305,20 @@ namespace Strela {
         std::cout << "]";
     }
 
+    void NodePrinter::visit(MapLitExpr& n) {
+        std::cout << "{\n";
+        push();
+        for (size_t i = 0; i < n.keys.size(); ++i) {
+            indent();
+            n.keys[i]->accept(*this);
+            std::cout << ": ";
+            n.values[i]->accept(*this);
+            std::cout << ",\n";
+        }
+        pop();
+        std::cout << "}";
+    }
+
     void NodePrinter::visit(SubscriptExpr& n) {
         std::cout << "[";
         list(n.arguments, ", ");
@@ -293,7 +330,7 @@ namespace Strela {
         std::cout << "?";
     }
 
-    void NodePrinter::visit(GenericParam& n) {
+    void NodePrinter::print(GenericParam& n) {
         std::cout << n._name;
     }
 
@@ -304,20 +341,24 @@ namespace Strela {
         std::cout << ">";
     }
 
-    void NodePrinter::visit(TypeAliasDecl& n) {
+    void NodePrinter::print(TypeAliasDecl& n) {
         std::cout << "type " << n._name << " = ";
         visitChild(n.typeExpr);
         std::cout << ";\n";
     }
 
+    void NodePrinter::indent() {
+        std::cout << indentstring;
+    }
+
     void NodePrinter::push() {
         ++indentation;
-        indent = std::string(indentation * 4, ' ');
+        indentstring = std::string(indentation * 4, ' ');
     }
 
     void NodePrinter::pop() {
         --indentation;
-        indent = std::string(indentation * 4, ' ');
+        indentstring = std::string(indentation * 4, ' ');
     }
 
 }

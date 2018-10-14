@@ -37,6 +37,9 @@ namespace Strela {
 
         template<typename T> T read();
 
+		void checkRead(const VMValue& val, int64_t offset);
+		void checkWrite(const VMValue& val, int64_t offset);
+
     public:
 		enum {
 			RUNNING,

@@ -7,100 +7,199 @@ module Std.Lang.Compiler.Parser {
     import Lexer.Lexer;
     import Lexer.TokenType;
     import Lexer.Token;
+    import Lexer.Position;
     import Ast.*;
     import Std.IO.println;
     import Std.IO.print;
 
+	/**
+	 * Interface for gathering parse errors
+	 */
+    export interface ErrorReporter {
+        function error(file: File, row: u32, column: u32, msg: String);
+    }
+
+	/**
+	 * Prints errors to stdout
+	 */
+    class DefaultErrorReporter {
+        function error(file: File, row: u32, column: u32, msg: String) {
+            print("\e[1;31m");
+            print(file.name);
+            print(":");
+            print(row+1);
+            print(":");
+            print(column+1);
+            print(" Error: ");
+            print(msg);
+            println("\e[0m");
+        }
+    }
+
     export class Parser {
-        function init(l: Lexer) {
-            lexer = l;
-            eat();
+        function init(l: Lexer, report: ErrorReporter?) {
+            if (report is ErrorReporter) {
+                this.report = report;
+            }
+            else {
+                this.report = new DefaultErrorReporter;
+            }
+            this.lexer = l;
+			this.eat();
         }
 
         function parseModule(): ModuleDecl {
-            var mod = new ModuleDecl();
+			var trivia = this.trivia;
+			var start = this.getPosition();
+            this.eat(TokenType.Module);
+            var name = this.parseIdentifierList(TokenType.Period);
+            this.eat(TokenType.CurlyOpen);
 
-            eat(TokenType.Module);
-            mod.name = parseIdentifierList(TokenType.Period);
-            eat(TokenType.CurlyOpen);
+			var imports = new List<ImportDirective>;
+			var exports = new List<ExportDirective>;
+			var classes = new List<ClassDecl>;
+			var interfaces = new List<InterfaceDecl>;
+			var enums = new List<EnumDecl>;
+			var functions = new List<FunctionDecl>;
 
-            while(matches([
-                TokenType.Import,
-                TokenType.Export,
-                TokenType.Require,
-                TokenType.Entry,
-                TokenType.Class,
-                TokenType.Interface,
-                TokenType.Enum,
-                TokenType.Function
-            ])) {
-                if (matches(TokenType.Import)) {
-                    mod.imports.append(parseImport());
+            while(this.lexer.hasNext() && !this.match(TokenType.CurlyClose)) {
+                var exportNext = this.eatOptional(TokenType.Export);
+                var externalNext = this.eatOptional(TokenType.External);
+
+                if (this.match(TokenType.Import)) {
+                    imports.append(this.parseImport());
                 }
-                else if (matches(TokenType.Export)) {
-                    mod.exports.append(parseExport());
+                else if (this.match(TokenType.Export)) {
+                    exports.append(this.parseExport());
                 }
-                else if (matches(TokenType.Require)) {
-                    mod.requires.append(parseRequire());
+                else if (this.match(TokenType.Class)) {
+                    classes.append(this.parseClass());
                 }
-                else if (matches(TokenType.Entry)) {
-                    mod.entryd = parseEntry();
+                else if (this.match(TokenType.Interface)) {
+                    interfaces.append(this.parseInterface());
                 }
-                else if (matches(TokenType.Class)) {
-                    mod.classes.append(parseClass());
+                else if (this.match(TokenType.Enum)) {
+                    enums.append(this.parseEnum());
                 }
-                else if (matches(TokenType.Interface)) {
-                    mod.interfaces.append(parseInterface());
-                }
-                else if (matches(TokenType.Enum)) {
-                    mod.enums.append(parseEnum());
-                }
-                else if (matches(TokenType.Function)) {
-                    mod.functions.append(parseFunction());
+                else if (this.match(TokenType.Function)) {
+                    functions.append(this.parseFunction());
                 }
                 else {
-                    println("Unexpected " + token.value);
-                    eat();
+                    this.expected("Module level declaration");
+                    this.eat();
                 }
             }
 
-            eat(TokenType.CurlyClose);
+			var end = this.getPosition();
+            this.eat(TokenType.CurlyClose);
 
-            return mod;
+            return new ModuleDecl(
+				trivia,
+				start,
+				end,
+				name,
+				imports,
+				exports,
+				classes,
+				interfaces,
+				enums,
+				functions
+			);
         }
 
+		function parseArrayLiteral(): ArrayLiteralExpression {
+			var start = this.getPosition();
+			this.eat(TokenType.BracketOpen);
+			var elements = this.parseExpressionList(TokenType.Comma);
+			var end = this.getPosition();
+			this.eat(TokenType.BracketClose);
+			return new ArrayLiteralExpression(start, end, elements);
+		}
+
+		function parseObjectLiteral(): ObjectLiteralExpression {
+			var start = this.getPosition();
+			this.eat(TokenType.CurlyOpen);
+			var keys = new List<Expression>;
+			var values = new List<Expression>;
+			while (this.lexer.hasNext() && !this.match(TokenType.CurlyClose)) {
+				keys.append(this.parseExpression());
+				this.eat(TokenType.Colon);
+				values.append(this.parseExpression());
+				this.eatOptional(TokenType.Comma);
+			}
+			var end = this.getPosition();
+			this.eat(TokenType.CurlyClose);
+			return new ObjectLiteralExpression(start, end, keys, values);
+		}
+
         function parseImport(): ImportDirective {
-            eat();
-            var imports = parseWildcardIdentifierList(TokenType.Comma);
-            eat();
-            return new ImportDirective(imports);
+			var start = this.getPosition();
+            this.eat();
+            var imports = this.parseWildcardIdentifierList(TokenType.Comma);
+			var end = this.getPosition();
+            this.eat(TokenType.Semicolon);
+            return new ImportDirective(start, end, imports);
         }
 
         function parseWildcardIdentifier(): WildcardIdentifier {
-            return new WildcardIdentifier(parseIdentifierList(TokenType.Period));
+			var start = this.getPosition();
+            var parts = this.parseIdentifierList(TokenType.Period);
+			var end = this.getPosition();
+            if (this.match(TokenType.Asterisk)) {
+				end = this.getPosition();
+                this.eat();
+                return new WildcardIdentifier(start, end, parts, true);
+            }
+            else {
+                return new WildcardIdentifier(start, end, parts, false);
+            }
         }
 
         function parseIdentifier(): Identifier {
-            return new Identifier(eat(TokenType.Identifier));
+			var start = this.getPosition();
+			var end = this.getPosition();
+            return new Identifier(start, end, this.eat(TokenType.Identifier));
         }
 
         function parseIdentifierList(separator: TokenType): List<Identifier> {
             var ids = new List<Identifier>;
-            while (matches(TokenType.Identifier)) {
-                ids.append(parseIdentifier());
-                if (matches(separator)) {
-                    eat();
+            while (this.match(TokenType.Identifier)) {
+                ids.append(this.parseIdentifier());
+                if (this.match(separator)) {
+                    this.eat();
                 }
             }
             return ids;
         }
 
+        function parseEnumElementList(separator: TokenType): List<EnumElement> {
+            var elements = new List<EnumElement>;
+            while (this.match(TokenType.Identifier)) {
+                elements.append(this.parseEnumElement());
+                if (this.match(separator)) {
+                    this.eat();
+                }
+            }
+            return elements;
+        }
+
+        function parseExpressionList(separator: TokenType): List<Expression> {
+            var exprs = new List<Expression>;
+            while (this.matchExpression()) {
+                exprs.append(this.parseExpression());
+                if (this.match(separator)) {
+                    this.eat();
+                }
+            }
+            return exprs;
+        }
+
         function parseWildcardIdentifierList(separator: TokenType): List<WildcardIdentifier> {
             var list = new List<WildcardIdentifier>;
-            while (matches(TokenType.Identifier)) {
-                list.append(parseWildcardIdentifier());
-                if (matches(separator)) {
-                    eat();
+            while (this.match(TokenType.Identifier)) {
+                list.append(this.parseWildcardIdentifier());
+                if (this.match(separator)) {
+                    this.eat();
                 }
             }
             return list;
@@ -108,10 +207,10 @@ module Std.Lang.Compiler.Parser {
 
         function parseParameterList(separator: TokenType): List<Parameter> {
             var params = new List<Parameter>;
-            while (matches(TokenType.Identifier)) {
-                params.append(parseParameter());
-                if (matches(separator)) {
-                    eat();
+            while (this.match(TokenType.Identifier)) {
+                params.append(this.parseParameter());
+                if (this.match(separator)) {
+                    this.eat();
                 }
                 else {
                     return params;
@@ -120,168 +219,591 @@ module Std.Lang.Compiler.Parser {
             return params;
         }
 
+        function parseTypeExpressionList(separator: TokenType): List<TypeExpression> {
+            var exprs = new List<TypeExpression>;
+            while (this.matchTypeExpression()) {
+                exprs.append(this.parseTypeExpression());
+                if (this.match(separator)) {
+                    this.eat();
+                }
+            }
+            return exprs;
+        }
         function parseExport(): ExportDirective {
-            eat(TokenType.Export);
-            var ids = parseIdentifierList(TokenType.Comma);
-            eat(TokenType.Semicolon);
-            return new ExportDirective(ids);
-        }
-
-        function parseRequire(): RequireDirective {
-            eat(TokenType.Require);
-            var ids = parseIdentifierList(TokenType.Comma);
-            eat(TokenType.Semicolon);
-            return new RequireDirective(ids);
-        }
-
-        function parseEntry(): EntryDirective {
-            eat(TokenType.Entry);
-            var id = parseIdentifier();
-            eat(TokenType.Semicolon);
-            return new EntryDirective(id);
+			var start = this.getPosition();
+            this.eat(TokenType.Export);
+            var ids = this.parseIdentifierList(TokenType.Comma);
+			var end = this.getPosition();
+            this.eat(TokenType.Semicolon);
+            return new ExportDirective(start, end, ids);
         }
 
         function parseClass(): ClassDecl {
-            eat(TokenType.Class);
-            var name = parseIdentifier();
-            eat(TokenType.CurlyOpen);
+			var start = this.getPosition();
+			var trivia = this.trivia;
+            this.eat(TokenType.Class);
+            var name = this.parseIdentifier();
+
+			var genericParams: List<Identifier>? = null;
+			if (this.eatOptional(TokenType.LessThan)) {
+				genericParams = this.parseIdentifierList(TokenType.Comma);
+				this.eat(TokenType.GreaterThan);
+			}
+
+            this.eat(TokenType.CurlyOpen);
             var methods = new List<ClassMethodDecl>;
             var fields = new List<ClassFieldDecl>;
-            while (lexer.hasNext() && !matches(TokenType.CurlyClose)) {
-                if (matches(TokenType.Function)) {
-                    methods.append(parseClassMethod());
+            while (this.lexer.hasNext() && !this.match(TokenType.CurlyClose)) {
+                if (this.match(TokenType.Function)) {
+                    methods.append(this.parseClassMethod());
                 }
-                else if (matches(TokenType.Var)) {
-                    fields.append(parseClassField());
+                else if (this.match(TokenType.Var)) {
+                    fields.append(this.parseClassField());
                 }
                 else {
-                    skip();
+                    this.skip();
                 }
             }
-            eat(TokenType.CurlyClose);
-            return new ClassDecl(name, methods, fields);
+			var end = this.getPosition();
+            this.eat(TokenType.CurlyClose);
+
+            return new ClassDecl(trivia, start, end, name, genericParams, methods, fields);
         }
 
         function parseInterface(): InterfaceDecl {
-            eat();
-            return new InterfaceDecl();
+			var trivia = this.trivia;
+			var start = this.getPosition();
+            this.eat(TokenType.Interface);
+			var name = this.parseIdentifier();
+			this.eat(TokenType.CurlyOpen);
+			var methods = new List<InterfaceMethod>;
+			var fields = new List<InterfaceField>;
+			while (this.lexer.hasNext() && !this.match(TokenType.CurlyClose)) {
+				if (this.match(TokenType.Function)) {
+					methods.append(this.parseInterfaceMethod());
+				}
+				else if (this.match(TokenType.Var)) {
+					fields.append(this.parseInterfaceField());
+				}
+			}
+			var end = this.getPosition();
+			this.eat(TokenType.CurlyClose);
+            return new InterfaceDecl(trivia, start, end, name, methods, fields);
         }
+
+		function parseInterfaceMethod(): InterfaceMethod {
+            var start = this.getPosition();
+            this.eat(TokenType.Function);
+            var name = this.parseIdentifier();
+            this.eat(TokenType.ParenOpen);
+            var params = this.parseParameterList(TokenType.Comma);
+            this.eat(TokenType.ParenClose);
+            var returnType: TypeExpression? = null;
+            if (this.eatOptional(TokenType.Colon)) {
+                returnType = this.parseTypeExpression();
+            }
+            var end = this.getPosition();
+			this.eat(TokenType.Semicolon);
+			return new InterfaceMethod(start, end, name, params, returnType);
+		}
+
+		function parseInterfaceField(): InterfaceField {
+			var trivia = this.trivia;
+            var start = this.getPosition();
+            this.eat(TokenType.Var);
+            var name = this.parseIdentifier();
+            this.eat(TokenType.Colon);
+            var _type = this.parseTypeExpression();
+            var end = this.getPosition();
+            this.eat(TokenType.Semicolon);
+			return new InterfaceField(trivia, start, end, name, _type);
+		}
 
         function parseEnum(): EnumDecl {
-            eat(TokenType.Enum);
-            var name = parseIdentifier();
-            var elements = new List<EnumElement>;
-            eat(TokenType.CurlyOpen);
-            eat(TokenType.CurlyClose);
-            return new EnumDecl(name, elements);
+			var trivia = this.trivia;
+			var start = this.getPosition();
+            this.eat(TokenType.Enum);
+            var name = this.parseIdentifier();
+            this.eat(TokenType.CurlyOpen);
+            var elements = this.parseEnumElementList(TokenType.Comma);
+			var end = this.getPosition();
+            this.eat(TokenType.CurlyClose);
+            return new EnumDecl(trivia, start, end, name, elements);
         }
 
+		function parseEnumElement(): EnumElement {
+			var start = this.getPosition();
+			var end = this.getPosition();
+			var name = this.parseIdentifier();
+			return new EnumElement(start, end, name);
+		}
+
         function parseFunction(): FunctionDecl {
-            eat(TokenType.Function);
-            var name = parseIdentifier();
-            eat(TokenType.ParenOpen);
-            var params = parseParameterList(TokenType.Comma);
-            eat(TokenType.ParenClose);
-            var returnType: TypeRef? = null;
-            if (matches(TokenType.Colon)) {
-                eat();
-                returnType = parseTypeRef();
+            var start = this.getPosition();
+			var trivia = this.trivia;
+            this.eat(TokenType.Function);
+            var name = this.parseIdentifier();
+            this.eat(TokenType.ParenOpen);
+            var params = this.parseParameterList(TokenType.Comma);
+            this.eat(TokenType.ParenClose);
+            var returnType: TypeExpression? = null;
+            if (this.eatOptional(TokenType.Colon)) {
+                returnType = this.parseTypeExpression();
             }
-            var block = parseBlock();
-            return new FunctionDecl(name, params, returnType, block);
+            var block = this.parseBlock();
+            var end = this.getPosition();
+            return new FunctionDecl(trivia, start, end, name, params, returnType, block);
         }
 
         function parseBlock(): Block {
-            eat(TokenType.CurlyOpen);
+            var start = this.getPosition();
+			this.eat(TokenType.CurlyOpen);
             var stmts = new List<Statement>;
-            while (matchesStatement()) {
-                stmts.append(parseStatement());
+            while (this.matchStatement()) {
+                stmts.append(this.parseStatement());
             }
-            eat(TokenType.CurlyClose);
-            return new Block(stmts);
+            var end = this.getPosition();
+			this.eat(TokenType.CurlyClose);
+            return new Block(start, end, stmts);
+        }
+
+        function parseExpressionStatement(): ExpressionStatement {
+            var start = this.getPosition();
+			var expr = this.parseExpression();
+			var end = this.getPosition();
+            this.eat(TokenType.Semicolon);
+            return new ExpressionStatement(start, end, expr);
         }
 
         function parseExpression(): Expression {
-            eat();
-            return new MissingExpression;
+            var expr: Expression;
+			var start = this.getPosition();
+            if (this.match(TokenType.IntLiteral)) {
+				var end = this.getPosition();
+                expr = new IntLiteralExpression(start, end, this.eat());
+            }
+            else if (this.match(TokenType.FloatLiteral)) {
+				var end = this.getPosition();
+                expr = new FloatLiteralExpression(start, end, this.eat());
+            }
+            else if (this.match(TokenType.StringLiteral)) {
+				var end = this.getPosition();
+                expr = new StringLiteralExpression(start, end, this.eat());
+            }
+			else if (this.match(TokenType.This)) {
+				var end = this.getPosition();
+				this.eat();
+				expr = new ThisExpression(start, end);
+			}
+			else if (this.match(TokenType.New)) {
+				expr = this.parseNewExpression();
+			}
+            else if (this.match(TokenType.Identifier)) {
+                var end = this.getPosition();
+                expr = new IdentifierExpression(start, end, this.eat());
+            }
+            else if (this.match(TokenType.ParenOpen)) {
+                this.eat();
+                expr = this.parseExpression();
+				expr.start = start;
+				expr.end = this.getPosition();
+                this.eat(TokenType.ParenClose);
+            }
+            else if (this.match(TokenType.CurlyOpen)) {
+                expr = this.parseObjectLiteral();
+            }
+            else if (this.match(TokenType.BracketOpen)) {
+                expr = this.parseArrayLiteral();
+            }
+			else if (this.matchPrefix()) {
+				var op = this.eat();
+				var inner = this.parseExpression();
+				expr = new PrefixExpression(start, inner.end, inner, op);
+			}
+            else {
+				var end = this.getPosition();
+                this.skip();
+                expr = new MissingExpression(start, end);
+            }
+
+            while (this.matchSecondaryExpression()) {
+				if (this.matchBinop()) {
+					expr = this.parseBinopExpression(expr);
+				}
+				else if (this.matchPostfix()) {
+					expr = this.parsePostfixExpression(expr);
+				}
+				else if (this.matchAssignment()) {
+					expr = this.parseAssignmentExpression(expr);
+				}
+                else if (this.match(TokenType.ParenOpen)) {
+                    expr = this.parseCallExpression(expr);
+                }
+                else if (this.match(TokenType.Period)) {
+                    expr = this.parseScopeExpression(expr);
+                }
+				else if (this.match(TokenType.Is)) {
+					expr = this.parseIsExpression(expr);
+				}
+				else if (this.match(TokenType.As)) {
+					expr = this.parseCastExpression(expr);
+				}
+				else if (this.match(TokenType.BracketOpen)) {
+					expr = this.parseSubscriptExpression(expr);
+				}
+                else {
+                    this.expected("Secondary expression");
+                    this.eat();
+                }
+            }
+
+            return expr;
+        }
+
+		function parseSubscriptExpression(left: Expression): SubscriptExpression {
+			var start = this.getPosition();
+			this.eat(TokenType.BracketOpen);
+			var args = this.parseExpressionList(TokenType.Comma);
+			var end = this.getPosition();
+			this.eat(TokenType.BracketClose);
+			return new SubscriptExpression(start, end, left, args);
+		}
+
+		function parseIsExpression(left: Expression): IsExpression {
+			this.eat(TokenType.Is);
+			var _type = this.parseTypeExpression();
+			return new IsExpression(left.start, _type.end);
+		}
+
+		function parseCastExpression(left: Expression): CastExpression {
+			this.eat(TokenType.As);
+			var _type = this.parseTypeExpression();
+			return new CastExpression(left.start, _type.end);
+		}
+
+		function parseNewExpression(): NewExpression {
+			var start = this.getPosition();
+			this.eat(TokenType.New);
+			var _type = this.parseTypeExpression();
+			var end = _type.end;
+			var args: List<Expression>? = null;
+			if (this.eatOptional(TokenType.ParenOpen)) {
+				args = this.parseExpressionList(TokenType.Comma);
+	            end = this.getPosition();
+				this.eat(TokenType.ParenClose);
+			}
+			return new NewExpression(start, end);
+		}
+
+		function parseBinopExpression(left: Expression): BinopExpression {
+			var op = this.eat();
+			var right = this.parseExpression();
+			return new BinopExpression(left.start, right.end, left, right, op);
+		}
+
+		function parsePostfixExpression(left: Expression): PostfixExpression {
+			var end = this.getPosition();
+			var op = this.eat();
+			return new PostfixExpression(left.start, end, left, op);
+		}
+
+		function parseAssignmentExpression(assignee: Expression): AssignmentExpression {
+			var op = this.eat();
+			var right = this.parseExpression();
+			return new AssignmentExpression(assignee.start, right.end, assignee, right, op);
+		}
+
+		function parseScopeExpression(target: Expression): ScopeExpression {
+			this.eat(TokenType.Period);
+			var end = this.getPosition();
+			var name = this.parseIdentifier();
+			return new ScopeExpression(target.start, end, target, name);
+		}
+
+        function parseCallExpression(target: Expression): CallExpression {
+            this.eat(TokenType.ParenOpen);
+            var args = this.parseExpressionList(TokenType.Comma);
+			var end = this.getPosition();
+            this.eat(TokenType.ParenClose);
+            return new CallExpression(target.start, end, target, args);
+        }
+
+        function parseTypeExpression(): TypeExpression {
+			var start = this.getPosition();
+            var expr: TypeExpression;
+            if (this.match(TokenType.Identifier)) {
+                expr = new IdentifierTypeExpression(start, this.getPosition(), this.eat());
+            }
+            else {
+                expr = new MissingTypeExpression(start, this.getPosition());
+                this.skip();
+            }
+
+            while (this.matchSecondaryTypeExpression()) {
+                if (this.match(TokenType.BracketOpen)) {
+                    expr = this.parseArrayTypeExpression(expr);
+                }
+                else if (this.match(TokenType.LessThan)) {
+                    expr = this.parseGenericTypeExpression(expr);
+                }
+				else if (this.match(TokenType.QuestionMark)) {
+					expr = this.parseNullableTypeExpression(expr);
+				}
+                else {
+                    this.expected("Secondary type expression");
+                    this.skip();
+                }
+            }
+
+            return expr;
+        }
+
+		function parseNullableTypeExpression(base: TypeExpression): NullableTypeExpression {
+			var end = this.getPosition();
+			this.eat(TokenType.QuestionMark);
+			return new NullableTypeExpression(base.start, end);
+		}
+
+		function parseGenericTypeExpression(base: TypeExpression): GenericTypeExpression {
+			this.eat(TokenType.LessThan);
+			var args = this.parseTypeExpressionList(TokenType.Comma);
+			var end = this.getPosition();
+			this.eat(TokenType.GreaterThan);
+			return new GenericTypeExpression(base.start, end);
+		}
+
+        function parseArrayTypeExpression(base: TypeExpression): ArrayTypeExpression {
+            this.eat(TokenType.BracketOpen);
+            var length: int? = null;
+            if (this.match(TokenType.IntLiteral)) {
+                length = this.eat().value.toInt();
+            }
+			var end = this.getPosition();
+            this.eat(TokenType.BracketClose);
+            return new ArrayTypeExpression(base.start, end, base, length);
         }
 
         function parseStatement(): Statement {
-            if (matches(TokenType.Semicolon)) {
-                eat();
-                return new EmptyStatement;
+            if (this.match(TokenType.Semicolon)) {
+       			var start = this.getPosition();
+				this.eat();
+                return new EmptyStatement(start, start);
             }
-            else if (matches(TokenType.Return)) {
-                return parseReturnStatement();
+			else if (this.match(TokenType.CurlyOpen)) {
+				return this.parseBlock();
+			}
+            else if (this.match(TokenType.Return)) {
+                return this.parseReturnStatement();
             }
-            else if (matches(TokenType.Var)) {
-                return parseVarDecl();
+            else if (this.match(TokenType.Var)) {
+                return this.parseVarDecl();
+            }
+            else if (this.match(TokenType.If)) {
+                return this.parseIfStatement();
+            }
+            else if (this.match(TokenType.While)) {
+                return this.parseWhileStatement();
+            }
+            else if (this.matchExpression()) {
+                return this.parseExpressionStatement();
             }
             else {
-                return new MissingStatement;
+				var start = this.getPosition();
+                this.eat();
+                return new MissingStatement(start, start);
             }
         }
 
         function parseReturnStatement(): ReturnStatement {
-            eat(TokenType.Return);
+			var start = this.getPosition();
+            this.eat(TokenType.Return);
             var expr: Expression? = null;
-            if (matchesExpression()) {
-                expr = parseExpression();
+            if (this.matchExpression()) {
+                var nnexpr = this.parseExpression();
+                expr = nnexpr;
             }
-            return new ReturnStatement(expr);
+			var end = this.getPosition();
+			this.eat(TokenType.Semicolon);
+            return new ReturnStatement(start, end, expr);
         }
 
         function parseClassMethod(): ClassMethodDecl {
-            return new ClassMethodDecl(parseFunction());
+			var start = this.getPosition();
+			var fun = this.parseFunction();
+            return new ClassMethodDecl(start, fun.end, fun);
         }
 
         function parseClassField(): ClassFieldDecl {
-            return new ClassFieldDecl(parseVarDecl());
-        }
-
-        function parseTypeRef(): TypeRef {
-            return new TypeRef(parseIdentifier());
+			var start = this.getPosition();
+			var varDecl = this.parseVarDecl();
+            return new ClassFieldDecl(start, varDecl.end, varDecl);
         }
 
         function parseVarDecl(): VarDecl {
-            eat(TokenType.Var);
-            var name = parseIdentifier();
-            eat(TokenType.Colon);
-            var _type = parseTypeRef();
-            eat(TokenType.Semicolon);
-            return new VarDecl(name, _type);
+			var start = this.getPosition();
+            this.eat(TokenType.Var);
+            var name = this.parseIdentifier();
+
+			var _type: TypeExpression? = null;
+			if (this.eatOptional(TokenType.Colon)) {
+            	_type = this.parseTypeExpression();
+			}
+
+			var initializer: Expression? = null;
+			if (this.eatOptional(TokenType.Equals)) {
+				initializer = this.parseExpression();
+			}
+
+			var end = this.getPosition();
+			this.eat(TokenType.Semicolon);
+
+            return new VarDecl(start, end, name, _type, initializer);
+        }
+
+        function parseIfStatement(): IfStatement {
+            var start = this.getPosition();
+			this.eat(TokenType.If);
+            this.eat(TokenType.ParenOpen);
+            var expr = this.parseExpression();
+            this.eat(TokenType.ParenClose);
+            var trueBranch = this.parseStatement();
+			var end = trueBranch.end;
+            var falseBranch: Statement? = null;
+            if (this.eatOptional(TokenType.Else)) {
+                var nnstmt = this.parseStatement();
+                falseBranch = nnstmt;
+				end = nnstmt.end;
+            }
+
+            return new IfStatement(start, end, expr, trueBranch, falseBranch);
+        }
+
+        function parseWhileStatement(): WhileStatement {
+            var start = this.getPosition();
+			this.eat(TokenType.While);
+            this.eat(TokenType.ParenOpen);
+            var expr = this.parseExpression();
+            this.eat(TokenType.ParenClose);
+            var statement = this.parseStatement();
+
+            return new WhileStatement(start, statement.end, expr, statement);
         }
 
         function parseParameter(): Parameter {
-            var name = parseIdentifier();
-            eat(TokenType.Colon);
-            var _type = parseTypeRef();
-            return new Parameter(name, _type);
+            var start = this.getPosition();
+			var name = this.parseIdentifier();
+            this.eat(TokenType.Colon);
+            var _type = this.parseTypeExpression();
+            return new Parameter(start, _type.end, name, _type);
         }
 
-        function matchesStatement(): bool {
-            return matches([
-                TokenType.Identifier,
+		function matchTypeExpression(): bool {
+			return this.match(TokenType.Identifier);
+		}
+
+        function matchStatement(): bool {
+            return this.match([
                 TokenType.Semicolon,
                 TokenType.Return,
-                TokenType.Var
+                TokenType.Var,
+				TokenType.If,
+				TokenType.While
+            ]) || this.matchExpression();
+        }
+
+        function matchExpression(): bool {
+            return this.match([
+				TokenType.New,
+				TokenType.This,
+                TokenType.Identifier,
+                TokenType.ParenOpen,
+                TokenType.StringLiteral,
+                TokenType.IntLiteral,
+                TokenType.FloatLiteral,
+				TokenType.BracketOpen,
+				TokenType.CurlyOpen
+            ]) || this.matchPrefix();
+        }
+
+		function matchBinop(): bool {
+            return this.match([
+                TokenType.Plus,
+                TokenType.Minus,
+                TokenType.Asterisk,
+                TokenType.Slash,
+                TokenType.Percent,
+				TokenType.EqualsEquals,
+				TokenType.ExclEquals,
+				TokenType.LessThan,
+				TokenType.LessThanEquals,
+				TokenType.GreaterThan,
+				TokenType.GreaterThanEquals,
+				TokenType.Pipe,
+				TokenType.Amp,
+				TokenType.PipePipe,
+				TokenType.AmpAmp
+            ]);
+		}
+
+		function matchPrefix(): bool {
+			return this.match([
+				TokenType.ExclamationMark,
+				TokenType.Minus,
+				TokenType.MinusMinus,
+				TokenType.PlusPlus
+			]);
+		}
+
+		function matchPostfix(): bool {
+			return this.match([
+				TokenType.PlusPlus,
+				TokenType.MinusMinus
+			]);
+		}
+
+		function matchAssignment(): bool {
+            return this.match([
+                TokenType.Equals,
+                TokenType.PlusEquals,
+                TokenType.MinusEquals,
+                TokenType.AsteriskEquals,
+                TokenType.SlashEquals,
+				TokenType.PercentEquals
+            ]);
+		}
+
+        function matchSecondaryExpression(): bool {
+            return this.match([
+                TokenType.ParenOpen,
+				TokenType.Period,
+				TokenType.Is,
+				TokenType.As,
+				TokenType.BracketOpen
+            ]) || this.matchBinop() || this.matchAssignment() || this.matchPostfix();
+        }
+
+        function matchSecondaryTypeExpression(): bool {
+            return this.match([
+                TokenType.BracketOpen,
+				TokenType.LessThan,
+				TokenType.QuestionMark
             ]);
         }
 
-        function matchesExpression(): bool {
-            return matches([
-                TokenType.Identifier
-            ]);
+		/**
+		 * Match exact token type
+		 */
+        function match(_type: TokenType): bool {
+            return this.token._type == _type;
         }
 
-        function matches(_type: TokenType): bool {
-            return token._type == _type;
-        }
-
-        function matches(types: TokenType[]): bool {
+		/**
+		 * Match any of the token types
+		 */
+        function match(types: TokenType[]): bool {
             var i: i32 = 0;
             while(i < types.length) {
-                if (matches(types[i])) {
+                if (this.match(types[i])) {
                     return true;
                 }
                 i = i + 1;
@@ -289,48 +811,75 @@ module Std.Lang.Compiler.Parser {
             return false;
         }
 
+		/**
+		 * Eat token
+		 */
         function eat(): Token {
-            var oldtoken = token;
-            token = lexer.next();
-            while (matches(TokenType.Comment) || matches(TokenType.Whitespace)) {
-                token = lexer.next();
+			var oldtoken = this.token;
+            this.token = this.lexer.next();
+			this.trivia = "";
+            while (this.match(TokenType.Comment) || this.match(TokenType.Whitespace)) {
+				this.trivia = this.trivia + this.token.value;
+                this.token = this.lexer.next();
             }
             return oldtoken;
         }
 
+		/**
+		 * Eat token of specified type.
+		 * Returns a skipped token if types mismatch.
+		 */
         function eat(_type: TokenType): Token {
-            if (matches(_type)) {
-                return eat();
+            if (this.match(_type)) {
+                return this.eat();
             }
             else {
-                return skip();
+                return this.skip();
             }
         }
 
+		/**
+		 * Eats token if type matches.
+		 * Returns whether the token was consumed.
+		 */
+        function eatOptional(_type: TokenType): bool {
+            if (this.match(_type)) {
+                this.eat();
+                return true;
+            }
+            return false;
+        }
+
+        function getPosition(): Position {
+            return this.token.position;
+        }
+
         function skip(): Token {
-            error(token.file, token.row, token.column, "Unexpected token \"" + token.value + "\"");
-            eat();
-            return new Token(lexer.file, TokenType.Missing, "");
+            this.error(this.token.file, this.token.position.row, this.token.position.column, "Unexpected token \"" + this.token.value + "\"");
+            this.eat();
+            return new Token(this.lexer.file, TokenType.Missing, "", this.token.position);
         }
 
         /**
          * Eats tokens until given _type is found
          */
         function sync(t: TokenType) {
-            while (!matches(t) && lexer.hasNext()) {
-                token = lexer.next();
+            while (!this.match(t) && this.lexer.hasNext()) {
+                this.eat();
             }
         }
 
+        function expected(expected: String) {
+            this.error(this.lexer.file, this.token.position.row, this.token.position.column, "Unexpected token \"" + this.token.value + "\", expected " + expected + ".");
+        }
+
         function error(file: File, row: u32, column: u32, msg: String) {
-            print(file.name + ":");
-            print(row+1);
-            print(":");
-            print(column+1);
-            println(" \e[31;mError:\e[0;m " + msg);
+            this.report.error(file, row, column, msg);
         }
 
         var lexer: Lexer;
         var token: Token;
+        var report: ErrorReporter;
+		var trivia: String;
     }
 }

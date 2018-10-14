@@ -12,19 +12,19 @@ module Examples.Ray {
         var file: File;
         
         function init(name: String, width: int, height: int) {
-            file = new File(name, "wb");
-            file.write(0: u8); // no id
-            file.write(0: u8); // no palette
-            file.write(2: u8); // 24 bit rgb
-            file.write(0: u16); // palette begin
-            file.write(0: u16); // palette length
-            file.write(0: u8); // palette entry size
-            file.write(0: u16); // x begin
-            file.write(0: u16); // y begin
-            file.write(width: u16); // width
-            file.write(height: u16); // height
-            file.write(24: u8); // bpp
-            file.write(32: u8); // attrib bits (32 = top to bottom)
+            this.file = new File(name, "wb");
+            this.file.write(0 as u8); // no id
+            this.file.write(0 as u8); // no palette
+            this.file.write(2 as u8); // 24 bit rgb
+            this.file.write(0 as u16); // palette begin
+            this.file.write(0 as u16); // palette length
+            this.file.write(0 as u8); // palette entry size
+            this.file.write(0 as u16); // x begin
+            this.file.write(0 as u16); // y begin
+            this.file.write(width as u16); // width
+            this.file.write(height as u16); // height
+            this.file.write(24 as u8); // bpp
+            this.file.write(32 as u8); // attrib bits (32 = top to bottom)
         }
 
         function pixel(color: Vec) {
@@ -44,9 +44,9 @@ module Examples.Ray {
             else if (color.z < 0.0) b = 0;
             else b = color.z * 255;
 
-            file.write(b);
-            file.write(g);
-            file.write(r);
+            this.file.write(b);
+            this.file.write(g);
+            this.file.write(r);
         }
     }
 
@@ -74,19 +74,19 @@ module Examples.Ray {
         }
 
         function trace(ray: Ray, hit: Hit) {
-            var pn = normal;
+            var pn = this.normal;
 
-            var d = (position - ray.origin).dot(pn) / ray.direction.dot(pn);
+            var d = (this.position - ray.origin).dot(pn) / ray.direction.dot(pn);
             if (d > 0.0 && d < hit.distance) {
                 hit.distance = d;
                 hit.position = ray.origin + ray.direction * d;
                 hit.normal = pn;
-                hit.material = material;
+                hit.material = this.material;
             }
         }
 
         function isBehind(p: Vec): bool {
-            return (position - p).dot(normal) > 0.0;
+            return (this.position - p).dot(this.normal) > 0.0;
         }
     }
 
@@ -102,10 +102,10 @@ module Examples.Ray {
         }
 
         function trace(ray: Ray, hit: Hit) {
-            var oc = ray.origin - center;
+            var oc = ray.origin - this.center;
 
             var a = ray.direction.dot(oc);
-            a = a * a - oc.dot(oc) + radius * radius;
+            a = a * a - oc.dot(oc) + this.radius * this.radius;
 
             if (a > 0.0) {
                 var d = -ray.direction.dot(oc) - sqrt(a);
@@ -113,8 +113,8 @@ module Examples.Ray {
                 if (d > 0.0 && d < hit.distance) {
                     hit.distance = d;
                     hit.position = ray.origin + ray.direction * d;
-                    hit.normal = (hit.position - center) / radius;
-                    hit.material = material;
+                    hit.normal = (hit.position - this.center) / this.radius;
+                    hit.material = this.material;
                 }
             }
         }
@@ -125,25 +125,25 @@ module Examples.Ray {
         var material: Material;
 
         function init() {
-            planes = new List<Plane>;
+            this.planes = new List<Plane>;
         }
 
         function trace(ray: Ray, hit: Hit) {
             var i = 0;
             var myhit = new Hit;
             myhit.distance = hit.distance;
-            while (i < planes.length) {
-                planes[i].trace(ray, myhit);
+            while (i < this.planes.length) {
+                this.planes[i].trace(ray, myhit);
                 if (myhit.distance < hit.distance) {
                     var count = 1;
                     var j = 0;
-                    while (j < planes.length) {
-                        if (j != i && planes[j].isBehind(myhit.position)) {
+                    while (j < this.planes.length) {
+                        if (j != i && this.planes[j].isBehind(myhit.position)) {
                             count++;
                         }
                         j++;
                     }
-                    if (count == planes.length) {
+                    if (count == this.planes.length) {
                         hit.distance = myhit.distance;
                         hit.position = myhit.position;
                         hit.normal = myhit.normal;
@@ -182,24 +182,24 @@ module Examples.Ray {
         var height: int;
 
         function init() {
-            polyhedrons = new List<Polyhedron>;
+            this.polyhedrons = new List<Polyhedron>;
 
-            planes = new List<Plane>();
-            planes.append(new Plane(new Vec(-20, 0, 20), (new Vec(1, 0, -1)).normalized(), new Material(new Vec(0, 0, 0), 0.05, 0.75) ));
+            this.planes = new List<Plane>();
+            this.planes.append(new Plane(new Vec(-20, 0, 20), (new Vec(1, 0, -1)).normalized(), new Material(new Vec(0, 0, 0), 0.05, 0.75) ));
 
-            spheres = new List<Sphere>();
-            spheres.append(new Sphere(new Vec(5, 5, 5), 5, new Material(new Vec(0, 0, 0), 0.0, 1.0)));
-            spheres.append(new Sphere(new Vec(5, -5, 10), 5, new Material(new Vec(1, 0, 0), 0.0, 0.8)));
-            spheres.append(new Sphere(new Vec(-6, 6, 15), 5, new Material(new Vec(0, 1, 0), 0.1, 0.6)));
-            spheres.append(new Sphere(new Vec(-6, -5, 20), 5, new Material(new Vec(0, 0, 1), 0.0, 0.4)));
+            this.spheres = new List<Sphere>();
+            this.spheres.append(new Sphere(new Vec(5, 5, 5), 5, new Material(new Vec(0, 0, 0), 0.0, 1.0)));
+            this.spheres.append(new Sphere(new Vec(5, -5, 10), 5, new Material(new Vec(1, 0, 0), 0.0, 0.8)));
+            this.spheres.append(new Sphere(new Vec(-6, 6, 15), 5, new Material(new Vec(0, 1, 0), 0.1, 0.6)));
+            this.spheres.append(new Sphere(new Vec(-6, -5, 20), 5, new Material(new Vec(0, 0, 1), 0.0, 0.4)));
             
-            width = 640;
-            height = 480;
-            file = new TGA("out.tga", width, height);
+            this.width = 64;
+            this.height = 48;
+            this.file = new TGA("out.tga", this.width, this.height);
             print("Initialized image with ");
-            print(width);
+            print(this.width);
             print("x");
-            print(height);
+            print(this.height);
             println(" pixels.");
         }
 
@@ -208,23 +208,23 @@ module Examples.Ray {
             hit.distance = 100000.0;
 
             var i = 0;
-            var numObj = spheres.length;
+            var numObj = this.spheres.length;
             while (i < numObj) {
-                spheres[i].trace(ray, hit);
+                this.spheres[i].trace(ray, hit);
                 i++;
             }
 
             i = 0;
-            numObj = planes.length;
+            numObj = this.planes.length;
             while (i < numObj) {
-                planes[i].trace(ray, hit);
+                this.planes[i].trace(ray, hit);
                 i++;
             }
 
             i = 0;
-            numObj = polyhedrons.length;
+            numObj = this.polyhedrons.length;
             while (i < numObj) {
-                polyhedrons[i].trace(ray, hit);
+                this.polyhedrons[i].trace(ray, hit);
                 i++;
             }
 
@@ -234,7 +234,7 @@ module Examples.Ray {
                     var rough = mat.roughness;
                     var n2 = (hit.normal + new Vec(frand()*rough, frand()*rough, frand()*rough)).normalized();
                     var r = reflect(ray.direction, n2);
-                    return lerp(mat.color * clamp(n2.y), trace(new Ray(hit.position + r * 0.0001, r), recurse + 1), mat.reflectivity);
+                    return lerp(mat.color * clamp(n2.y), this.trace(new Ray(hit.position + r * 0.0001, r), recurse + 1), mat.reflectivity);
                 }
                 else {
                     return mat.color * clamp(hit.normal.y);
@@ -257,11 +257,11 @@ module Examples.Ray {
             var dir = new Vec;
             var origin = new Vec(0, 0, 0);
 
-            var hw = width * 0.5;
-            var hh = height * 0.5;
+            var hw = this.width * 0.5;
+            var hh = this.height * 0.5;
 
-            while (y < height) {
-                while (x < width) {
+            while (y < this.height) {
+                while (x < this.width) {
                     var color = new Vec(0, 0, 0);
                     
                     var num: i32 = 0;
@@ -272,9 +272,9 @@ module Examples.Ray {
                         while (ix < 3) {
                             dir.x = x + ix * 0.4 - hw;
                             dir.y = -(y + iy * 0.4 - hh);
-                            dir.z = width * 0.3;
+                            dir.z = this.width * 0.3;
                             dir.normalize();
-                            color = color + trace(new Ray(origin, dir), 0);
+                            color = color + this.trace(new Ray(origin, dir), 0);
                             num++;
                             ix++;
                         }
@@ -282,7 +282,7 @@ module Examples.Ray {
                         iy++;
                     }
 
-                    file.pixel(color * (1.0 / num));
+                    this.file.pixel(color * (1.0 / num));
                     x++;
                 }
                 x = 0;

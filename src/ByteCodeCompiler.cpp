@@ -19,6 +19,10 @@ namespace Strela {
     }
 
     VMType* ByteCodeCompiler::mapType(TypeDecl* type) {
+        if (auto alias = type->as<TypeAliasDecl>()) {
+            type = alias->typeExpr->typeValue;
+        }
+
         auto it = typeMap.find(type);
         if (it != typeMap.end()) return it->second;
         
@@ -29,14 +33,14 @@ namespace Strela {
 
         vmtype->name = type->getFullName();
         
-        vmtype->isObject = (type->as<ClassDecl>() || type->as<InterfaceDecl>() || type->as<UnionType>()) && type != &ClassDecl::String;
+        vmtype->isObject = (type->as<ClassDecl>() || type->as<InterfaceDecl>() || type->as<UnionType>());
         vmtype->isArray = type->as<ArrayType>();
         vmtype->isEnum = type->as<EnumDecl>();
 
         if (vmtype->isArray) {
             vmtype->objectAlignment = 8;
             vmtype->size = 8;
-            vmtype->alignment = 8;;
+            vmtype->alignment = 8;
             vmtype->arrayType = mapType(type->as<ArrayType>()->baseType);
             vmtype->fields.push_back({
                 "length",
@@ -70,10 +74,11 @@ namespace Strela {
                 vmtype->objectAlignment = alignment;
             }
             else if (auto iface = type->as<InterfaceDecl>()) {
-                vmtype->size = 8;;
-                vmtype->alignment = 8;;
-                vmtype->objectSize = 8 + iface->methods.size() * 8;
+                vmtype->size = 8;
+                vmtype->alignment = 8;
+                vmtype->objectSize = 8 + (iface->methods.size() + iface->fields.size())* 8;
                 vmtype->objectAlignment = 8;
+                vmtype->fields.push_back({"_ref", mapType(ClassDecl::String), 0});
             }
             else if (auto un = type->as<UnionType>()) {
                 vmtype->size = 8;
@@ -82,6 +87,9 @@ namespace Strela {
                 vmtype->objectAlignment = 8;
                 vmtype->fields.push_back({"_tag", mapType(&IntType::u64), 0});
                 vmtype->fields.push_back({"_ref", mapType(&IntType::u64), 8});
+                for(auto& ut: un->containedTypes) {
+                    vmtype->unionTypes.push_back(mapType(ut));
+                }
             }
         }
         else if (auto intt = type->as<IntType>()) {
@@ -104,13 +112,13 @@ namespace Strela {
             vmtype->size = 8;
             vmtype->alignment = 8;
         }
-        else if (type == &ClassDecl::String) {
-            vmtype->size = 8;
-            vmtype->alignment = 8;
-        }
         else if (type == &PointerType::instance) {
             vmtype->size = 8;
             vmtype->alignment = 8;
+        }
+        else if (type == &BoolType::instance) {
+            vmtype->size = 1;
+            vmtype->alignment = 1;
         }
         
         return vmtype;
@@ -123,10 +131,14 @@ namespace Strela {
         functionFixups.push_back({address, function, immediate});
     }
 
-    void ByteCodeCompiler::visit(ModDecl& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
-        visitChildren(n.functions);
-        visitChildren(n.classes);
+    void ByteCodeCompiler::compile(ModDecl& n) {
+        if (n.source) chunk.setLine(n.source, n.line);
+        for (auto& fun: n.functions) {
+            compile(*fun);
+        }
+        for (auto& cls: n.classes) {
+            compile(*cls);
+        }
 
         // fixup function pointers
         while (!functionFixups.empty()) {
@@ -135,7 +147,7 @@ namespace Strela {
 
             if (fixup.function->opcodeStart == 0xdeadbeef) {
                 _class = fixup.function->parent ? fixup.function->parent->as<ClassDecl>() : nullptr;
-                fixup.function->accept(*this);
+                compile(*fixup.function);
             }
 
             if (fixup.immediate) {
@@ -159,23 +171,27 @@ namespace Strela {
         chunk.main = mainFunc->opcodeStart;
     }
 
-    void ByteCodeCompiler::visit(ClassDecl& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+    void ByteCodeCompiler::compile(ClassDecl& n) {
+        if (n.source) chunk.setLine(n.source, n.line);
         auto oldclass = _class;
         _class = &n;
         if (!n.genericParams.empty() && n.genericArguments.empty()) {
-            visitChildren(n.reifiedClasses);
+            for (auto& cls: n.reifiedClasses) {
+                compile(*cls);
+            }
         }
         else {
-            visitChildren(n.methods);
+            for (auto& method: n.methods) {
+                compile(*method);
+            }
         }
         _class = oldclass;
     }
 
     FunctionInfo* fi;
 
-    void ByteCodeCompiler::visit(FuncDecl& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+    void ByteCodeCompiler::compile(FuncDecl& n) {
+        if (n.source) chunk.setLine(n.source, n.line);
         auto oldfunc = function;
         function = &n;
 
@@ -203,7 +219,9 @@ namespace Strela {
             chunk.addOp<uint8_t>(Opcode::Grow, n.numVariables);
         }
 
-        visitChildren(n.params);
+        for (auto& param: n.params) {
+            compile(*param);
+        }
         visitChildren(n.stmts);
 
         if (n.isExternal) {
@@ -221,7 +239,7 @@ namespace Strela {
             }*/
         }
         else if (!n.returns) {
-			if (n.source) chunk.setLine(n.source->filename, n.lineend);
+			if (n.source) chunk.setLine(n.source, n.lineend);
             chunk.addOp(Opcode::ReturnVoid);
         }
 
@@ -230,7 +248,7 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(VarDecl& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         mapType(n.declType);
         if (n.initializer) {
             n.initializer->accept(*this);
@@ -239,18 +257,18 @@ namespace Strela {
         fi->variables.push_back({ int(function->params.size() + (_class ? 1 : 0) + n.index), n.name, mapType(n.declType) });
     }
 
-    void ByteCodeCompiler::visit(FieldDecl& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+    void ByteCodeCompiler::compile(FieldDecl& n) {
+        if (n.source) chunk.setLine(n.source, n.line);
         mapType(n.declType);
     }
 
-    void ByteCodeCompiler::visit(Param& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+    void ByteCodeCompiler::compile(Param& n) {
+        if (n.source) chunk.setLine(n.source, n.line);
         mapType(n.declType);
     }
 
     void ByteCodeCompiler::visit(IdExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         if (auto fun = n.node->as<FuncDecl>()) {
             if (fun->isExternal) {
                 auto index = chunk.addForeignFunction(*fun);
@@ -291,7 +309,7 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(ExprStmt& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         visitChild(n.expression);
         if (n.expression->type != &VoidType::instance && !n.expression->as<AssignExpr>() && !n.expression->as<PostfixExpr>()) {
             chunk.addOp(Opcode::Pop);
@@ -299,14 +317,13 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(CallExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         if (n.callTarget->node && n.callTarget->node->as<FuncDecl>() && n.callTarget->context) {
             visitChild(n.callTarget->context);
         }
 
-        visitChildren(n.arguments);
-
         if (!n.callTarget->context && n.callTarget->node && n.callTarget->node->as<FuncDecl>() && n.callTarget->node->as<FuncDecl>()->name == "print") {
+            visitChildren(n.arguments);
             auto t = n.arguments.front()->type;
             if (t->as<IntType>()) {
                 chunk.addOp(Opcode::PrintI);
@@ -320,7 +337,7 @@ namespace Strela {
             else if (t == &NullType::instance) {
                 chunk.addOp(Opcode::PrintN);
             }
-            else if (t == &ClassDecl::String) {
+            else if (t == ClassDecl::String) {
                 chunk.addOp(Opcode::PrintS);
             }
             else if (t->as<ClassDecl>()) {
@@ -335,16 +352,22 @@ namespace Strela {
         }
         else {
             if (n.callTarget->node && n.callTarget->node->as<FuncDecl>() && n.callTarget->node->as<FuncDecl>()->isExternal) {
+                visitChildren(n.arguments);
                 visitChild(n.callTarget);
                 chunk.addOp(Opcode::NativeCall);
             }
             else {
                 if (n.callTarget->node && n.callTarget->node->as<FuncDecl>()) {
+                    visitChildren(n.arguments);
                     auto ind = chunk.addOp<uint32_t, uint8_t>(Opcode::CallImm, 0xffffffff, n.callTarget->type->as<FuncType>()->paramTypes.size() + (n.callTarget->context ? 1 : 0));
                     addFixup(ind, n.callTarget->node->as<FuncDecl>(), true);
                 }
                 else {
                     visitChild(n.callTarget);
+                    for (auto& arg: n.arguments) {
+                        visitChild(arg);
+                        chunk.addOp(Opcode::Swap);
+                    }
                     chunk.addOp<uint8_t>(Opcode::Call, n.callTarget->type->as<FuncType>()->paramTypes.size() + (n.callTarget->context ? 1 : 0));
                 }
             }
@@ -352,7 +375,7 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(RetStmt& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         if (n.expression) {
             visitChild(n.expression);
             chunk.addOp(Opcode::Return);
@@ -363,7 +386,7 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(LitExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         int index = 0;
         if (auto intt = n.type->as<IntType>()) {
             auto val = n.token.intVal();
@@ -405,8 +428,8 @@ namespace Strela {
         else if (n.type == &BoolType::instance) {
             chunk.addOp<uint8_t>(Opcode::U8, (n.token.boolVal() ? 1 : 0));
         }
-        else if (n.type == &ClassDecl::String) {
-            index = chunk.addConstant(VMValue(n.token.value.c_str()));
+        else if (n.type == ClassDecl::String) {
+            index = chunk.addConstant(VMValue((void*)n.token.value.c_str()));
             chunk.addOp<uint16_t>(Opcode::Const, index);
         }
         else if (n.type == &NullType::instance) {
@@ -416,17 +439,30 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(IsExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         visitChild(n.target);
-        chunk.addOp<uint8_t>(Opcode::Ptr64, 0);
-        chunk.addOp<int64_t>(Opcode::I64, n.typeTag);
-        chunk.addOp(Opcode::CmpEQ);
+        if (n.implementation) {
+            chunk.addOp<uint8_t>(Opcode::ObjPtr64, 0);
+            chunk.addOp<uint64_t>(Opcode::CmpType, mapType(n.implementation->_class)->index);
+        }
+        else {
+            chunk.addOp<uint8_t>(Opcode::Ptr64, 0);
+            chunk.addOp<int64_t>(Opcode::I64, n.typeTag);
+            chunk.addOp(Opcode::CmpEQ);
+        }
     }
 
     void ByteCodeCompiler::visit(CastExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         auto totype = n.targetType;
         auto fromtype = n.sourceExpr->type;
+
+        if (auto toalias = totype->as<TypeAliasDecl>()) {
+            totype = toalias->typeExpr->typeValue;
+        }
+        if (auto fromalias = fromtype->as<TypeAliasDecl>()) {
+            fromtype = fromalias->typeExpr->typeValue;
+        }
 
         if (fromtype == totype) {
             visitChild(n.sourceExpr);
@@ -450,6 +486,12 @@ namespace Strela {
                 chunk.addOp<uint8_t>(Opcode::Peek, 1);
                 chunk.addOp<uint8_t>(Opcode::StorePtr64, i * 8 + 8);
             }
+            auto cls = mapType(fromclass);
+            for(size_t i = 0; i < toiface->fields.size(); ++i) {
+                chunk.addOp<uint8_t>(Opcode::U8, cls->fields[n.implementation->classFields[i]->index].offset);
+                chunk.addOp<uint8_t>(Opcode::Peek, 1);
+                chunk.addOp<uint8_t>(Opcode::StorePtr64, (i + toiface->methods.size()) * 8 + 8);
+            }
         }
         else if (tounion) {
             auto tag = tounion->getTypeTag(fromtype);
@@ -467,7 +509,19 @@ namespace Strela {
         }
         else if (fromunion) {
             visitChild(n.sourceExpr);
-            chunk.addOp<uint8_t>(Opcode::ObjPtr64, 8);
+            auto tt = mapType(totype);
+            if (tt->isObject || tt->isArray) {
+                chunk.addOp<uint8_t>(Opcode::ObjPtr64, 8);
+            }
+            else {
+                switch (tt->size) {
+                    case 1: chunk.addOp<uint8_t>(Opcode::Ptr8, 8); break;
+                    case 2: chunk.addOp<uint8_t>(Opcode::Ptr16, 8); break;
+                    case 4: chunk.addOp<uint8_t>(Opcode::Ptr32, 8); break;
+                    case 8: chunk.addOp<uint8_t>(Opcode::Ptr64, 8); break;
+                    default: error(n, "Invalid field size.");
+                }
+            }
         }
         else if (fromtype == &FloatType::f32 && totype->as<IntType>()) {
             if (auto lit = n.sourceExpr->as<LitExpr>()) {
@@ -529,19 +583,18 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(BlockStmt& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         visitChildren(n.stmts);
-		if (n.source) chunk.setLine(n.source->filename, n.lineend);
+		if (n.source) chunk.setLine(n.source, n.lineend);
 	}
 
     void ByteCodeCompiler::visit(BinopExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         if (n.function) {
             visitChild(n.left);
             visitChild(n.right);
-            auto index = chunk.addOp<uint16_t>(Opcode::Const, 255);
-            addFixup(index, n.function, false);
-            chunk.addOp<uint8_t>(Opcode::Call, 2);
+            auto index = chunk.addOp<uint32_t, uint8_t>(Opcode::CallImm, 0xffffffff, 2);
+            addFixup(index, n.function, true);
             return;
         }
 
@@ -576,15 +629,7 @@ namespace Strela {
             visitChild(n.right);
             switch (n.op) {
                 case TokenType::Plus:
-                if (n.left->type == &ClassDecl::String) {
-                    if (n.right->type == &ClassDecl::String) {
-                        chunk.addOp(Opcode::ConcatSS);
-                    }
-                    else {
-                        chunk.addOp(Opcode::ConcatSI);
-                    }
-                }
-                else if (n.left->type->as<IntType>()) {
+                if (n.left->type->as<IntType>()) {
                     chunk.addOp(Opcode::AddI);
                 }
                 else if (n.left->type == &FloatType::f32) {
@@ -597,6 +642,7 @@ namespace Strela {
                     error(n, "Plus: Invalid op");
                 }
                 break;
+
                 case TokenType::Minus:
                 if (n.left->type->as<IntType>()) {
                     chunk.addOp(Opcode::SubI);
@@ -611,6 +657,7 @@ namespace Strela {
                     error(n, "Minus: Invalid op");
                 }
                 break;
+
                 case TokenType::Asterisk:
                 if (n.left->type->as<IntType>()) {
                     chunk.addOp(Opcode::MulI);
@@ -625,6 +672,7 @@ namespace Strela {
                     error(n, "Mul: Invalid op");
                 }
                 break;
+
                 case TokenType::Slash:
                 if (n.left->type->as<IntType>()) {
                     chunk.addOp(Opcode::DivI);
@@ -639,17 +687,20 @@ namespace Strela {
                     error(n, "Div: Invalid op");
                 }
                 break;
-                case TokenType::EqualsEquals:
-                if (n.left->type == &ClassDecl::String && n.right->type == &ClassDecl::String) {
-                    chunk.addOp(Opcode::CmpEQS);
-                }
-                else {
+
+                case TokenType::Percent:
+                chunk.addOp(Opcode::ModI);
+                break;
+
+                case TokenType::EqualsEquals: {
                     chunk.addOp(Opcode::CmpEQ);
                 }
                 break;
+
                 case TokenType::ExclamationMarkEquals:
                 chunk.addOp(Opcode::CmpNE);
                 break;
+
                 case TokenType::LessThan:
                 if (n.left->type->as<IntType>()) {
                     chunk.addOp(Opcode::CmpLTI);
@@ -664,9 +715,11 @@ namespace Strela {
                     error(n, "Invalid op");
                 }
                 break;
+
                 case TokenType::LessThanEquals:
                 chunk.addOp(Opcode::CmpLTE);
                 break;
+
                 case TokenType::GreaterThan:
                 if (n.left->type->as<IntType>()) {
                     chunk.addOp(Opcode::CmpGTI);
@@ -681,9 +734,11 @@ namespace Strela {
                     error(n, "Invalid op");
                 }
                 break;
+
                 case TokenType::GreaterThanEquals:
                 chunk.addOp(Opcode::CmpGTE);
                 break;
+
                 default:
                 error(n, "Invalid binary operator");
             }
@@ -691,9 +746,11 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(ScopeExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         if (auto fun = n.node->as<FuncDecl>()) {
-            visitChild(n.scopeTarget);
+            if (n.scopeTarget->type != &TypeType::instance) {
+                visitChild(n.scopeTarget);
+            }
             if (fun->isExternal) {
                 auto index = chunk.addForeignFunction(*fun);
                 chunk.addOp<uint64_t>(Opcode::I64, index);
@@ -710,6 +767,29 @@ namespace Strela {
             chunk.addOp(Opcode::Swap);
             chunk.addOp<uint8_t>(Opcode::ObjPtr64, 0);
             chunk.addOp(Opcode::Swap);
+        }
+        else if (auto ifd = n.node->as<InterfaceFieldDecl>()) {
+            auto iface = n.scopeTarget->type->as<InterfaceDecl>();
+            visitChild(n.scopeTarget);
+            chunk.addOp(Opcode::Repeat);
+            chunk.addOp<uint8_t>(Opcode::ObjPtr64, 0);
+            chunk.addOp(Opcode::Swap);
+            size_t offset = 8 + (iface->methods.size() + ifd->index) * 8;
+            chunk.addOp<uint8_t>(Opcode::Ptr64, offset);
+            chunk.addOp(Opcode::Swap);
+
+            auto fieldtype = mapType(ifd->declType);
+            if (fieldtype->isObject || fieldtype->isArray) {
+                chunk.addOp<uint8_t>(Opcode::ObjPtrInd64, 0);
+            }
+            else {
+                switch (fieldtype->size) {
+                    case 1: chunk.addOp<uint8_t>(Opcode::PtrInd8, 0); break;
+                    case 2: chunk.addOp<uint8_t>(Opcode::PtrInd16, 0); break;
+                    case 4: chunk.addOp<uint8_t>(Opcode::PtrInd32, 0); break;
+                    case 8: chunk.addOp<uint8_t>(Opcode::PtrInd64, 0); break;
+                }
+            }
         }
         else if (auto field = n.node->as<FieldDecl>()) {
             auto t = mapType(n.scopeTarget->type);
@@ -735,7 +815,7 @@ namespace Strela {
             }
             else {
                 visitChild(n.scopeTarget);
-                chunk.addOp<uint8_t>(op, t->fields[field->index].offset);
+                chunk.addOp<uint8_t>((ft->isObject || ft->isArray) ? Opcode::ObjPtr64 : op, t->fields[field->index].offset);
             }
         }
         else if (auto ee = n.node->as<EnumElement>()) {
@@ -745,13 +825,41 @@ namespace Strela {
             error(n, "Invalid scope expr");
         }
     }
+    
+    void ByteCodeCompiler::visit(MapLitExpr& n) {
+        if (n.source) chunk.setLine(n.source, n.line);
+
+        chunk.addOp<uint16_t>(Opcode::New, mapType(n.type)->index);
+        chunk.addOp(Opcode::Repeat);
+
+        ArrayLitExpr keys;
+        keys.type = n.constructor->params[0]->declType;
+        keys.elements = n.keys;
+        keys.accept(*this);
+
+        ArrayLitExpr values;
+        values.type = n.constructor->params[1]->declType;
+        values.elements = n.values;
+        values.accept(*this);
+
+        auto addr = chunk.addOp<uint32_t, uint8_t>(Opcode::CallImm, 0xffffffff, 3);
+        addFixup(addr, n.constructor, true);
+    }
 
     void ByteCodeCompiler::visit(ArrayLitExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
-        chunk.addOp<uint64_t>(Opcode::U64, mapType(n.type)->index);
+        if (n.source) chunk.setLine(n.source, n.line);
+
+        TypeDecl* arrType = n.type;
+        if (n.constructor) {
+            chunk.addOp<uint16_t>(Opcode::New, mapType(n.type)->index);
+            chunk.addOp(Opcode::Repeat);
+            arrType = n.constructor->declType->paramTypes.front();
+        }
+
+        chunk.addOp<uint64_t>(Opcode::U64, mapType(arrType)->index);
         chunk.addOp<uint64_t>(Opcode::U64, n.elements.size());
         chunk.addOp(Opcode::Array);
-        auto t = mapType(n.type->as<ArrayType>()->baseType);
+        auto t = mapType(arrType->as<ArrayType>()->baseType);
         Opcode op;
         switch (t->size) {
             case 1: op = Opcode::StorePtr8; break;
@@ -766,16 +874,20 @@ namespace Strela {
             chunk.addOp<uint8_t>(op, i);
             i += t->size;
         }
+
+        if (n.constructor) {
+            auto addr = chunk.addOp<uint32_t, uint8_t>(Opcode::CallImm, 0xffffffff, 2);
+            addFixup(addr, n.constructor, true);
+        }
     }
 
     void ByteCodeCompiler::visit(SubscriptExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         if (n.subscriptFunction) {
             visitChild(n.callTarget);
             visitChildren(n.arguments);
-            auto index = chunk.addOp<uint16_t>(Opcode::Const, 255);
-            addFixup(index, n.subscriptFunction, false);
-            chunk.addOp<uint8_t>(Opcode::Call, n.arguments.size() + 1);
+            auto index = chunk.addOp<uint32_t, uint8_t>(Opcode::CallImm, 0xffffffff, n.arguments.size() + 1);
+            addFixup(index, n.subscriptFunction, true);
         }
         else {
             auto fieldSize = mapType(n.callTarget->type)->arrayType->size;
@@ -801,7 +913,7 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(IfStmt& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         visitChild(n.condition);
         auto pos = chunk.addOp<uint16_t>(Opcode::Const, 0);
         chunk.addOp(Opcode::JmpIfNot);
@@ -824,7 +936,7 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(NewExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         if (auto clstype = n.type->as<ClassDecl>()) {
             chunk.addOp<uint16_t>(Opcode::New, mapType(clstype)->index);
             if (n.initMethod) {
@@ -842,7 +954,7 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(AssignExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         visitChild(n.right);
         if (!n.parent->as<ExprStmt>()) {
             chunk.addOp(Opcode::Repeat);
@@ -901,7 +1013,7 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(WhileStmt& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         auto startPos = chunk.opcodes.size();
         visitChild(n.condition);
         auto pos = chunk.addOp<uint16_t>(Opcode::Const, 0);
@@ -914,7 +1026,7 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(PostfixExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         visitChild(n.target);
         if (!n.parent->as<ExprStmt>()) {
             chunk.addOp(Opcode::Repeat);
@@ -960,7 +1072,7 @@ namespace Strela {
     }
 
     void ByteCodeCompiler::visit(UnaryExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         visitChild(n.target);
         switch (n.op) {
             case TokenType::Minus:
@@ -992,13 +1104,8 @@ namespace Strela {
         }
     }
 
-    void ByteCodeCompiler::visit(EnumDecl& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
-        visitChildren(n.elements);
-    }
-
     void ByteCodeCompiler::visit(ThisExpr& n) {
-        if (n.source) chunk.setLine(n.source->filename, n.line);
+        if (n.source) chunk.setLine(n.source, n.line);
         chunk.addOp<uint8_t>(Opcode::Var, 0);
     }
 }

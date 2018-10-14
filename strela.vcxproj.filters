@@ -252,6 +252,9 @@
     <ClInclude Include="src\Ast\TypeAliasDecl.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\Ast\MapLitExpr.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Ast\ArrayType.cpp">
@@ -339,6 +342,12 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="src\Ast\TypeAliasDecl.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SourceFile.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Ast\TypeDecl.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

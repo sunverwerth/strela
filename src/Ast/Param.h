@@ -4,7 +4,8 @@
 #ifndef Strela_Ast_AstParam_h
 #define Strela_Ast_AstParam_h
 
-#include "Stmt.h"
+#include "Node.h"
+#include "InvalidType.h"
 
 #include <string>
 
@@ -12,16 +13,15 @@ namespace Strela {
     class Expr;
     class TypeDecl;
     
-    class Param: public Stmt {
+    class Param: public Node {
     public:
-        STRELA_GET_TYPE(Strela::Param, Strela::Stmt);
-        STRELA_IMPL_STMT_VISITOR;
+        STRELA_GET_TYPE(Strela::Param, Strela::Node);
 
     public:
         int index = 0;
         std::string name;
         Expr* typeExpr = nullptr;
-        TypeDecl* declType = nullptr;
+        TypeDecl* declType = &InvalidType::instance;
     };
 }
 

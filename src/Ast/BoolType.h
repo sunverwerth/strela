@@ -11,7 +11,6 @@ namespace Strela {
     public:
         BoolType() { _name = "bool"; }
         STRELA_GET_TYPE(Strela::BoolType, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
     public:
         static BoolType instance;

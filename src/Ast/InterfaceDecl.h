@@ -10,19 +10,24 @@
 #include <vector>
 
 namespace Strela {
+    class InterfaceDecl;
     class InterfaceMethodDecl;
+    class InterfaceFieldDecl;
+    class ClassDecl;
+    class FuncDecl;
+    class FieldDecl;
 
     class Implementation {
     public:
         InterfaceDecl* interface;
         ClassDecl* _class;
         std::vector<FuncDecl*> classMethods;
+        std::vector<FieldDecl*> classFields;
     };
     
     class InterfaceDecl: public TypeDecl {
     public:
         STRELA_GET_TYPE(Strela::InterfaceDecl, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
         Node* getMember(const std::string& name) override;
         std::vector<Node*> getMethods(const std::string& name) override;
@@ -30,6 +35,7 @@ namespace Strela {
     public:
         bool isExported = false;
         std::vector<InterfaceMethodDecl*> methods;
+        std::vector<InterfaceFieldDecl*> fields;
 
         std::map<ClassDecl*, Implementation*> implementations;
     };

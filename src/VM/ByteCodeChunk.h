@@ -23,6 +23,7 @@
 namespace Strela {
     class TypeDecl;
     class FuncDecl;
+    class SourceFile;
 
     class ForeignFunction {
     public:
@@ -64,11 +65,11 @@ namespace Strela {
         std::vector<ForeignFunction> foreignFunctions;
         std::vector<VMType*> types;
         size_t main;
-        std::vector<std::string> files;
+        std::vector<const SourceFile*> files;
         std::vector<SourceLine> lines;
 
-		SourceLine* getLine(size_t address);
-        void setLine(const std::string& file, size_t line);
+		const SourceLine* getLine(size_t address) const;
+        void setLine(const SourceFile* file, size_t line);
         void addFunction(size_t address, const FunctionInfo& func);
         int addConstant(VMValue c);
         int addForeignFunction(FuncDecl& n);

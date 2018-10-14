@@ -1,26 +1,25 @@
 // Copyright (c) 2018 Stephan Unverwerth
 // This code is licensed under MIT license (See LICENSE for details)
 
-#ifndef Strela_Ast_AstVarDecl_h
-#define Strela_Ast_AstVarDecl_h
+#ifndef Strela_Ast_AstInterfaceFieldDecl_h
+#define Strela_Ast_AstInterfaceFieldDecl_h
 
-#include "Stmt.h"
+#include "Node.h"
 #include "InvalidType.h"
 
 #include <string>
 
 namespace Strela {
     class Expr;
-    
-    class VarDecl: public Stmt {
+    class TypeDecl;
+
+    class InterfaceFieldDecl: public Node {
     public:
-        STRELA_GET_TYPE(Strela::VarDecl, Strela::Stmt);
-        STRELA_IMPL_STMT_VISITOR;
+        STRELA_GET_TYPE(Strela::InterfaceFieldDecl, Strela::Node);
 
     public:
         std::string name;
         Expr* typeExpr = nullptr;
-        Expr* initializer = nullptr;
         TypeDecl* declType = &InvalidType::instance;
 
         int index = 0;

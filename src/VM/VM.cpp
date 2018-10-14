@@ -13,6 +13,7 @@
 #include "../Ast/IntType.h"
 #include "../Ast/PointerType.h"
 #include "../Ast/VoidType.h"
+#include "../SourceFile.h"
 
 #include <sstream>
 #include <cstring>
@@ -74,10 +75,54 @@ namespace Strela {
         return &ffi_type_pointer;
     }
 
+	void VM::checkRead(const VMValue& val, int64_t offset) {
+		if (val.type != VMValue::Type::object) {
+			std::cerr << "Accessing non-object as object.\n";
+			std::cerr << printCallStack();
+			exit(1);
+		}
+
+		auto obj = val.value.object;
+		if (!obj) {
+			std::cerr << "Null pointer access\n";
+			std::cerr << printCallStack();
+			exit(1);
+		}
+
+		auto vmobject = (VMObject*)obj - 1;
+		if (vmobject->type->isArray) {
+			auto length = *(uint64_t*)obj;
+			if (offset < 0 || offset > length * vmobject->type->arrayType->size + 8) {
+				std::cerr << "Array access out of bounds.\n";
+				std::cerr << printCallStack();
+				exit(1);
+			}
+		}
+		else if (vmobject->type->isObject) {
+			auto length = vmobject->type->objectSize;
+			if (offset < 0 || offset > length) {
+				std::cerr << "Object access out of bounds.\n";
+				std::cerr << printCallStack();
+				exit(1);
+			}
+		}
+	}
+
+	void VM::checkWrite(const VMValue& val, int64_t offset) {
+		checkRead(val, offset);
+	}
+
+#ifdef _WIN32
+	#include <WinSock2.h>
+#endif
+
     VM::VM(ByteCodeChunk& chunk, const std::vector<std::string>& arguments): chunk(chunk), status(RUNNING) {
 #ifdef _WIN32
 		auto mod = LoadLibrary("msvcrt.dll");
 		auto sockmod = LoadLibrary("ws2_32.dll");
+		auto kernmod = LoadLibrary("kernel32.dll");
+		WSADATA wsadata{ 0 };
+		WSAStartup(MAKEWORD(2, 2), &wsadata);
 #endif
 
 		for (auto& ff: chunk.foreignFunctions) {
@@ -96,6 +141,9 @@ namespace Strela {
 			if (!ff.ptr) {
 				ff.ptr = ForeignFunction::callback(GetProcAddress(sockmod, ff.name.c_str()));
 			}
+			if (!ff.ptr) {
+				ff.ptr = ForeignFunction::callback(GetProcAddress(kernmod, ff.name.c_str()));
+			}
 #else
 			ff.ptr = ForeignFunction::callback(dlsym(RTLD_DEFAULT, ff.name.c_str()));
 #endif
@@ -106,21 +154,55 @@ namespace Strela {
 			}
 		}
 
-        ip = chunk.main;
-        bp = 0;
         VMType* arrtype = nullptr;
+        VMType* strtype = nullptr;
+        VMType* u8type = nullptr;
         for (auto&& type: chunk.types) {
-            if (type->name == "String[]") {
+            if (type->name == "String") {
+                strtype = type;
+            }
+            else if (type->name == "String[]") {
                 arrtype = type;
-                break;
+            }
+            else if (type->name == "u8[]") {
+                u8type = type;
             }
         }
+
+		// init string constants
+		for (auto& constant: chunk.constants) {
+            if (constant.type == VMValue::Type::object) {
+                auto len = strlen((char*)constant.value.object);
+                auto string = gc.allocObject(strtype);
+                gc.lock(string);
+                auto arr = gc.allocArray(u8type, len + 1);
+
+                memcpy((char*)arr + 8, constant.value.object, len);
+                ((char*)arr)[len + 8] = 0;
+
+                *(void**)string = arr;
+
+                constant.value.object = string;
+            }
+		}
+
+        ip = chunk.main;
+        bp = 0;
+
 		auto arr = gc.allocArray(arrtype, arguments.size());
 		auto data = (char*)arr;
 		data += 8;
 		for (int i = 0; i < arguments.size(); ++i) {
-			*(uint64_t*)data = (uint64_t)arguments[i].c_str();
-			//*(const char**)((char*)arr + sizeof(char*) * i) = arguments[i].c_str();
+			auto len = arguments[i].length();
+			auto string = gc.allocObject(strtype);
+			auto arr = gc.allocArray(u8type, len + 1);
+
+			memcpy((char*)arr + 8, arguments[i].c_str(), len);
+			((char*)arr)[len + 8] = 0;
+
+			*(void**)string = arr;
+			*(void**)data = string;
+
 			data += 8;
 		}
 		push(VMValue(arr));
@@ -235,41 +317,39 @@ namespace Strela {
 				break;
 			}
 			case Opcode::F32tI64: {
-				float f;
-				auto val = pop();
-				val.value.f64 = val.value.f32;
-				push(val);
+				auto& back = stack.back();
+				back.value.integer = back.value.f32;
+				back.type = VMValue::Type::integer;
 				break;
 			}
 			case Opcode::F64tI64: {
-				push(VMValue((int64_t)pop().value.f64));
+				auto& back = stack.back();
+				back.value.integer = back.value.f64;
+				back.type = VMValue::Type::integer;
 				break;
 			}
 			case Opcode::I64tF32: {
-				auto val = pop();
-				val.type = VMValue::Type::floating;
-				val.value.f32 = val.value.integer;
-				push(val);
+				auto& back = stack.back();
+				back.value.integer = 0;
+				back.value.f32 = back.value.integer;
+				back.type = VMValue::Type::floating;
 				break;
 			}
 			case Opcode::I64tF64: {
-				push(VMValue((double)pop().value.integer));
+				auto& back = stack.back();
+				back.value.f64 = back.value.integer;
+				back.type = VMValue::Type::floating;
 				break;
 			}
 			case Opcode::F64tF32: {
-				auto val = pop();
-				float f = (float)val.value.f64;
-				val.value.f64 = 0;
-				memcpy(&val, &f, sizeof(float));
-				push(val);
+				auto& back = stack.back();
+				back.value.integer = 0;
+				back.value.f32 = back.value.f64;
 				break;
 			}
 			case Opcode::F32tF64: {
-				auto val = pop();
-				float f;
-				memcpy(&f, &val, sizeof(float));
-				val.value.f64 = f;
-				push(val);
+				auto& back = stack.back();
+				back.value.f64 = back.value.f32;
 				break;
 			}
 			case Opcode::NativeCall: {
@@ -293,6 +373,12 @@ namespace Strela {
 				for (size_t i = 0; i < ff.argTypes.size(); ++i) {
 					if (originalArgs[i].type == VMValue::Type::object) {
 						void* aptr = originalArgs[i].value.object;
+                        if (aptr) {
+                            auto obj = (VMObject*)aptr - 1;
+                            if (obj->type->name == "String") {
+                                aptr = *(uint64_t**)(obj + 1) + 1;
+                            }
+                        }
 						VMValue arg((int64_t)0);
 						memcpy(&arg.value.integer, &aptr, sizeof(void*));
 						args.push_back(arg);
@@ -352,140 +438,137 @@ namespace Strela {
 			}
 			case Opcode::AddI: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.integer += r.value.integer;
-				push(l);
 				break;
 			}
 			case Opcode::AddF32: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.f32 += r.value.f32;
-				push(l);
 				break;
 			}
 			case Opcode::AddF64: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.f64 += r.value.f64;
-				push(l);
 				break;
 			}
 			case Opcode::SubI: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.integer -= r.value.integer;
-				push(l);
 				break;
 			}
 			case Opcode::SubF32: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.f32 -= r.value.f32;
-				push(l);
 				break;
 			}
 			case Opcode::SubF64: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.f64 -= r.value.f64;
-				push(l);
 				break;
 			}
 			case Opcode::MulI: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.integer *= r.value.integer;
-				push(l);
 				break;
 			}
 			case Opcode::MulF32: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.f32 *= r.value.f32;
-				push(l);
 				break;
 			}
 			case Opcode::MulF64: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.f64 *= r.value.f64;
-				push(l);
 				break;
 			}
 			case Opcode::DivI: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.integer /= r.value.integer;
-				push(l);
 				break;
 			}
 			case Opcode::DivF32: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.f32 /= r.value.f32;
-				push(l);
 				break;
 			}
 			case Opcode::DivF64: {
 				auto r = pop();
-				auto l = pop();
+				auto& l = stack.back();
 				l.value.f64 /= r.value.f64;
-				push(l);
 				break;
 			}
+            case Opcode::ModI: {
+                auto r = pop();
+				auto& l = stack.back();
+                l.value.integer %= r.value.integer;
+                break;
+            }
 			case Opcode::CmpEQ: {
 				auto r = pop();
-				auto l = pop();
-				push(l == r);
-				break;
-			}
-			case Opcode::CmpEQS: {
-				auto r = pop();
-				auto l = pop();
-				push(VMValue(bool(strcmp(r.value.string, l.value.string) == 0)));
+				auto& l = stack.back();
+				l.value.boolean = (l == r);
+				l.type = VMValue::Type::boolean;
 				break;
 			}
 			case Opcode::CmpNE: {
 				auto r = pop();
-				auto l = pop();
-				push(l != r);
+				auto& l = stack.back();
+				l.value.boolean = (l != r);
+				l.type = VMValue::Type::boolean;
 				break;
 			}
 			case Opcode::CmpLTI: {
 				auto r = pop();
-				auto l = pop();
-				push(VMValue(bool(l.value.integer < r.value.integer)));
+				auto& l = stack.back();
+				l.value.boolean = l.value.integer < r.value.integer;
+				l.type = VMValue::Type::boolean;
 				break;
 			}
 			case Opcode::CmpLTF32: {
 				auto r = pop();
-				auto l = pop();
-				push(VMValue(bool(l.value.f32 < r.value.f32)));
+				auto& l = stack.back();
+				l.value.boolean = l.value.f32 < r.value.f32;
+				l.type = VMValue::Type::boolean;
 				break;
 			}
 			case Opcode::CmpLTF64: {
 				auto r = pop();
-				auto l = pop();
-				push(VMValue(bool(l.value.f64 < r.value.f64)));
+				auto& l = stack.back();
+				l.value.boolean = l.value.f64 < r.value.f64;
+				l.type = VMValue::Type::boolean;
 				break;
 			}
 			case Opcode::CmpGTI: {
 				auto r = pop();
-				auto l = pop();
-				push(VMValue(bool(l.value.integer > r.value.integer)));
+				auto& l = stack.back();
+				l.value.boolean = l.value.integer > r.value.integer;
+				l.type = VMValue::Type::boolean;
+				l.type = VMValue::Type::boolean;
 				break;
 			}
 			case Opcode::CmpGTF32: {
 				auto r = pop();
-				auto l = pop();
-				push(VMValue(bool(l.value.f32 > r.value.f32)));
+				auto& l = stack.back();
+				l.value.boolean = l.value.f32 > r.value.f32;
+				l.type = VMValue::Type::boolean;
 				break;
 			}
 			case Opcode::CmpGTF64: {
 				auto r = pop();
-				auto l = pop();
-				push(VMValue(bool(l.value.f64 > r.value.f64)));
+				auto& l = stack.back();
+				l.value.boolean = l.value.f64 > r.value.f64;
+				l.type = VMValue::Type::boolean;
 				break;
 			}
 			case Opcode::CmpLTE: {
@@ -502,24 +585,24 @@ namespace Strela {
 			}
 			case Opcode::AndL: {
 				auto r = pop();
-				auto l = pop();
-				push(VMValue(l.value.boolean && r.value.boolean));
+				auto& l = stack.back();
+				l.value.boolean = l.value.boolean && r.value.boolean;
 				break;
 			}
 			case Opcode::OrL: {
 				auto r = pop();
-				auto l = pop();
-				push(VMValue(l.value.boolean || r.value.boolean));
+				auto& l = stack.back();
+				l.value.boolean = l.value.boolean || r.value.boolean;
 				break;
 			}
 			case Opcode::Not: {
-				auto v = pop();
-
-				push(VMValue(!v.value.boolean));
+				auto& l = stack.back();
+				l.value.boolean = !l.value.boolean;
 				break;
 			}
 			case Opcode::PrintI: {
 				std::cout << pop().value.integer;
+				std::flush(std::cout);
 				break;
 			}
 			case Opcode::PrintF32: {
@@ -527,27 +610,33 @@ namespace Strela {
 				auto v = pop();
 				memcpy(&f, &v, sizeof(float));
 				std::cout << f;
+				std::flush(std::cout);
 				break;
 			}
 			case Opcode::PrintF64: {
 				std::cout << pop().value.f64;
+				std::flush(std::cout);
 				break;
 			}
 			case Opcode::PrintN: {
 				std::cout << "(null)";
+				std::flush(std::cout);
 				break;
 			}
 			case Opcode::PrintS: {
 				auto val = pop();
-				std::cout << val.value.string;
+				std::cout << (*(char**)val.value.object + 8);
+				std::flush(std::cout);
 				break;
 			}
 			case Opcode::PrintO: {
 				std::cout << "[object]";
+				std::flush(std::cout);
 				break;
 			}
 			case Opcode::PrintB: {
 				std::cout << (pop().value.boolean ? "true" : "false");
+				std::flush(std::cout);
 				break;
 			}
 			case Opcode::Jmp: {
@@ -600,20 +689,20 @@ namespace Strela {
 			case Opcode::Ptr32:
 			case Opcode::Ptr64:
 			case Opcode::ObjPtr64:
-				auto obj = pop();
-				if (!obj.value.object) {
-					std::cerr << "Null pointer access\n";
-					std::cerr << printCallStack();
-					exit(1);
-				}
+				auto v = pop();
+				auto obj = v.value.object;
 				auto offset = read<int8_t>();
 				VMValue val((int64_t)0);
+#ifdef _DEBUG
+				checkRead(v, offset);
+#endif
+
 				switch ((Opcode)op) {
-				case Opcode::Ptr8: memcpy(&val.value.integer, (char*)obj.value.object + offset, 1); break;
-				case Opcode::Ptr16: memcpy(&val.value.integer, (char*)obj.value.object + offset, 2); break;
-				case Opcode::Ptr32: memcpy(&val.value.integer, (char*)obj.value.object + offset, 4); break;
-				case Opcode::Ptr64: memcpy(&val.value.integer, (char*)obj.value.object + offset, 8); break;
-				case Opcode::ObjPtr64: memcpy(&val.value.integer, (char*)obj.value.object + offset, 8); break;
+				case Opcode::Ptr8: memcpy(&val.value.integer, (char*)obj + offset, 1); break;
+				case Opcode::Ptr16: memcpy(&val.value.integer, (char*)obj + offset, 2); break;
+				case Opcode::Ptr32: memcpy(&val.value.integer, (char*)obj + offset, 4); break;
+				case Opcode::Ptr64: memcpy(&val.value.integer, (char*)obj + offset, 8); break;
+				case Opcode::ObjPtr64: memcpy(&val.value.integer, (char*)obj + offset, 8); break;
 				default: exit(1);
 				}
 				val.type = (op == Opcode::ObjPtr64) ? VMValue::Type::object : VMValue::Type::integer;
@@ -622,16 +711,17 @@ namespace Strela {
 			}
 			case Opcode::Ptr64Var: {
 			case Opcode::ObjPtr64Var:
-				auto offset = read<int8_t>();
+				auto constOffset = read<int8_t>();
 				auto var = read<int8_t>();
-				auto obj = peek(bp + var).value.object;
-				if (!obj) {
-					std::cerr << "Null pointer access\n";
-					std::cerr << printCallStack();
-					exit(1);
-				}
+				auto v = peek(bp + var);
+				auto obj = v.value.object;
 				VMValue val((int64_t)0);
-				memcpy(&val.value.integer, (char*)obj + offset, 8);
+
+#ifdef _DEBUG
+				checkRead(v, constOffset);
+#endif
+
+				memcpy(&val.value.integer, (char*)obj + constOffset, 8);
 				val.type = (op == Opcode::ObjPtr64Var) ? VMValue::Type::object : VMValue::Type::integer;
 				push(val);
 				break;
@@ -641,21 +731,22 @@ namespace Strela {
 			case Opcode::PtrInd32:
 			case Opcode::PtrInd64:
 			case Opcode::ObjPtrInd64:
-				auto obj = pop();
-				if (!obj) {
-					std::cerr << "Null pointer access\n";
-					std::cerr << printCallStack();
-					exit(1);
-				}
-				auto off = pop();
-				auto off2 = read<int8_t>();
+				auto v = pop();
+				auto obj = v.value.object;
+				auto offset = pop().value.integer;
+				auto constOffset = read<int8_t>();
+
+#ifdef _DEBUG
+				checkRead(v, offset + constOffset);
+#endif
+
 				VMValue val((int64_t)0);
 				switch ((Opcode)op) {
-				case Opcode::PtrInd8: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 1); break;
-				case Opcode::PtrInd16: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 2); break;
-				case Opcode::PtrInd32: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 4); break;
-				case Opcode::PtrInd64: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 8); break;
-				case Opcode::ObjPtrInd64: memcpy(&val.value.integer, (char*)obj.value.object + off.value.integer + off2, 8); break;
+				case Opcode::PtrInd8: memcpy(&val.value.integer, (char*)obj + offset + constOffset, 1); break;
+				case Opcode::PtrInd16: memcpy(&val.value.integer, (char*)obj + offset + constOffset, 2); break;
+				case Opcode::PtrInd32: memcpy(&val.value.integer, (char*)obj + offset + constOffset, 4); break;
+				case Opcode::PtrInd64: memcpy(&val.value.integer, (char*)obj + offset + constOffset, 8); break;
+				case Opcode::ObjPtrInd64: memcpy(&val.value.integer, (char*)obj + offset + constOffset, 8); break;
 				default: exit(1);
 				}
 				val.type = (op == Opcode::ObjPtrInd64) ? VMValue::Type::object : VMValue::Type::integer;
@@ -666,19 +757,20 @@ namespace Strela {
 			case Opcode::StorePtr16:
 			case Opcode::StorePtr32:
 			case Opcode::StorePtr64:
-				auto obj = pop();
-				if (!obj.value.object) {
-					std::cerr << "Null pointer access\n";
-					std::cerr << printCallStack();
-					exit(1);
-				}
+				auto v = pop();
+				auto obj = v.value.object;
 				auto val = pop();
 				auto offset = read<int8_t>();
+
+#ifdef _DEBUG
+				checkWrite(v, offset);
+#endif
+
 				switch ((Opcode)op) {
-				case Opcode::StorePtr8: memcpy((char*)obj.value.object + offset, &val.value.integer, 1); break;
-				case Opcode::StorePtr16: memcpy((char*)obj.value.object + offset, &val.value.integer, 2); break;
-				case Opcode::StorePtr32: memcpy((char*)obj.value.object + offset, &val.value.integer, 4); break;
-				case Opcode::StorePtr64: memcpy((char*)obj.value.object + offset, &val.value.integer, 8); break;
+				case Opcode::StorePtr8: memcpy((char*)obj + offset, &val.value.integer, 1); break;
+				case Opcode::StorePtr16: memcpy((char*)obj + offset, &val.value.integer, 2); break;
+				case Opcode::StorePtr32: memcpy((char*)obj + offset, &val.value.integer, 4); break;
+				case Opcode::StorePtr64: memcpy((char*)obj + offset, &val.value.integer, 8); break;
 				default: exit(1);
 				}
 				break;
@@ -687,12 +779,13 @@ namespace Strela {
 				auto val = pop();
 				auto offset = read<int8_t>();
 				auto var = read<int8_t>();
-				auto obj = peek(bp + var).value.object;
-				if (!obj) {
-					std::cerr << "Null pointer access\n";
-					std::cerr << printCallStack();
-					exit(1);
-				}
+				auto v = peek(bp + var);
+				auto obj = v.value.object;
+
+#ifdef _DEBUG
+				checkWrite(v, offset);
+#endif
+
 				memcpy((char*)obj + offset, &val, 8);
 				break;
 			}
@@ -700,20 +793,21 @@ namespace Strela {
 			case Opcode::StorePtrInd16:
 			case Opcode::StorePtrInd32:
 			case Opcode::StorePtrInd64:
-				auto obj = pop();
-				if (!obj.value.object) {
-					std::cerr << "Null pointer access\n";
-					std::cerr << printCallStack();
-					exit(1);
-				}
-				auto off = pop();
+				auto v = pop();
+				auto obj = v.value.object;
+				auto offset = pop().value.integer;
 				auto val = pop();
-				auto off2 = read<int8_t>();
+				auto constOffset = read<int8_t>();
+
+#ifdef _DEBUG
+				checkWrite(v, offset + constOffset);
+#endif
+
 				switch ((Opcode)op) {
-				case Opcode::StorePtrInd8: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 1); break;
-				case Opcode::StorePtrInd16: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 2); break;
-				case Opcode::StorePtrInd32: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 4); break;
-				case Opcode::StorePtrInd64: memcpy((char*)obj.value.object + off.value.integer + off2, &val.value.integer, 8); break;
+				case Opcode::StorePtrInd8: memcpy((char*)obj + offset + constOffset, &val.value.integer, 1); break;
+				case Opcode::StorePtrInd16: memcpy((char*)obj + offset + constOffset, &val.value.integer, 2); break;
+				case Opcode::StorePtrInd32: memcpy((char*)obj + offset + constOffset, &val.value.integer, 4); break;
+				case Opcode::StorePtrInd64: memcpy((char*)obj + offset + constOffset, &val.value.integer, 8); break;
 				default: exit(1);
 				}
 				break;
@@ -733,21 +827,25 @@ namespace Strela {
 				push(b);
 				break;
 			}
-			case Opcode::ConcatSS: {
-				auto r = pop();
-				auto l = pop();
-				r.type = l.type = VMValue::Type::string;
-				push(l + r);
-				break;
-			}
-			case Opcode::ConcatSI: {
-				auto r = pop();
-				auto l = pop();
-				l.type = VMValue::Type::string;
-				r.type = VMValue::Type::integer;
-				push(l + r);
-				break;
-			}
+            case Opcode::CmpType: {
+                auto v = pop();
+#ifdef _DEBUG
+                checkRead(v, 0);
+#endif
+                auto obj = (VMObject*)v.value.object - 1;
+				auto typeIndex = read<uint64_t>();
+
+#ifdef _DEBUG
+				if (typeIndex >= chunk.types.size()) {
+					std::cerr << "Type index out of range.\n";
+					std::cerr << printCallStack();
+					exit(1);
+				}
+#endif
+				push(VMValue(chunk.types[typeIndex] == obj->type));
+
+                break;
+            }
 			default:
 				if ((unsigned char)op >= numOpcodes) {
 					std::cerr << "Opcode '" << (unsigned char)op << "' not implemented\n";
@@ -805,7 +903,7 @@ namespace Strela {
 			size_t line = 0;
 			auto sourceLine = chunk.getLine(cur.ip);
 			if (sourceLine) {
-				source = chunk.files[sourceLine->file];
+				source = chunk.files[sourceLine->file]->filename;
 				line = sourceLine->line;
 			}
 

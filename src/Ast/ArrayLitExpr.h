@@ -8,6 +8,8 @@
 #include "Token.h"
 
 namespace Strela {
+    class FuncDecl;
+    
     class ArrayLitExpr: public Expr {
     public:
         STRELA_GET_TYPE(Strela::ArrayLitExpr, Strela::Expr);
@@ -15,6 +17,7 @@ namespace Strela {
 
     public:
         std::vector<Expr*> elements;
+        FuncDecl* constructor = nullptr;
     };
 }
 

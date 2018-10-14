@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <list>
+#include <set>
 
 namespace Strela {
     /**
@@ -21,12 +22,16 @@ namespace Strela {
         void* allocArray(const VMType* type, uint64_t length);
         
         void collect(std::vector<VMValue>& stack);
+
+        void lock(void* obj);
+        void unlock(void* obj);
     
     private:
         void mark(VMObject* object);
 
     private:
         std::list<VMObject*> objects;
+        std::set<VMObject*> lockList;
     };
 }
 

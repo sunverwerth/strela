@@ -4,16 +4,15 @@
 #ifndef Strela_Ast_AstImportStmt_h
 #define Strela_Ast_AstImportStmt_h
 
-#include "Stmt.h"
+#include "Node.h"
 
 #include <string>
 #include <vector>
 
 namespace Strela {
-    class ImportStmt: public Stmt {
+    class ImportStmt: public Node {
     public:
-        STRELA_GET_TYPE(Strela::ImportStmt, Strela::Stmt);
-        STRELA_IMPL_STMT_VISITOR;
+        STRELA_GET_TYPE(Strela::ImportStmt, Strela::Node);
 
         std::string getFullName(const char* separator = ".") {
             std::string result;

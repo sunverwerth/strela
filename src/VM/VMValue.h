@@ -14,7 +14,6 @@ namespace Strela {
         VMValue();
         explicit VMValue(int64_t val);
         explicit VMValue(double val);
-        explicit VMValue(const char* val);
         explicit VMValue(bool val);
         explicit VMValue(void* val);
 
@@ -43,7 +42,6 @@ namespace Strela {
             float f32;
             double f64;
             bool boolean;
-            const char* string;
             void* object;
         } value;
 
@@ -52,7 +50,6 @@ namespace Strela {
             integer,
             floating,
             boolean,
-            string,
             object
         } type;
     };

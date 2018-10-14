@@ -13,6 +13,7 @@ namespace Strela {
     class SourceFile {
     public:
         SourceFile(const std::string& filename, const std::vector<Token>& tokens): filename(filename), tokens(tokens) {}
+        std::string getLine(int line) const;
     
     public:
         std::string filename;

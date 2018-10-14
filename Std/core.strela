@@ -1,0 +1,244 @@
+module core {
+    export class String {
+        var data: u8[];
+
+        function init() {
+            this.data = new u8[](1);
+        }
+
+        function init(length: int) {
+            this.data = new u8[](length + 1);
+        }
+
+        function init(data: u8[]) {
+            this.data = new u8[](data.length + 1);
+            var i: int = 0;
+            while (i < data.length) {
+                this.data[i] = data[i];
+                i++;
+            }
+        }
+
+        function init(data: u8[], length: int) {
+            this.data = new u8[](length + 1);
+            var i: int = 0;
+            while (i < length) {
+                this.data[i] = data[i];
+                i++;
+            }
+        }
+
+        function init(a: String, b: String) {
+            var alength = a.length();
+            var blength = b.length();
+            this.data = new u8[](alength + blength + 1);
+            var i: int = 0;
+            while (i < alength) {
+                this.data[i] = a.data[i];
+                i++;
+            }
+            var j: int = 0;
+            while (j < blength) {
+                this.data[i] = b.data[j];
+                j++;
+                i++;
+            }
+        }
+
+        function length(): int {
+            return this.data.length - 1;
+        }
+
+        function +(other: String): String {
+            return new String(this, other);
+        }
+
+		function !=(other: String): bool {
+			return !(this == other);
+		}
+        
+        function ==(other: String): bool {
+            var len = this.length();
+            if (len != other.length()) {
+                return false;
+            }
+            var i: int = 0;
+            while (i < len) {
+                if (this.data[i] != other.data[i]) {
+                    return false;
+                }
+                i++;
+            }
+            return true;
+        }
+
+        function substr(start: int, length: int): String {
+            var str = new String(length);
+            var i: int = 0;
+            while (i < length) {
+                str.data[i] = this.data[start + i];
+                i++;
+            }
+            return str;
+        }
+
+        function [](i: int): String {
+            if (i < 0 || i >= this.length()) return "";
+
+            var str = new String(1);
+            str.data[0] = this.data[i];
+            return str;
+        }
+
+        function split(separator: String): String[] {
+            return this.split(separator, 0);
+        }
+
+        function split(separator: String, max: int): String[] {
+
+            if (separator.length() == 0) return [this];
+
+            var ch = separator.data[0];
+
+            // Count substrings
+            var count = 1;
+            var i = 0;
+            while (i < this.length() && (count < max || max == 0)) {
+                if (this.data[i] == ch) {
+                    count++;
+                }
+                i++;
+            }
+
+            var parts = new String[](count);
+
+            var start = 0;
+            i = 0;
+            count = 0;
+            while (i < this.length() && (count < (max - 1) || max == 0)) {
+                if (this.data[i] == ch) {
+                    parts[count] = this.substr(start, i - start);
+                    count++;
+                    start = i + 1;
+                }
+                i++;
+            }
+            parts[count] = this.substr(start, this.length() - start);
+            
+            return parts;
+        }
+
+        function trim(): String {
+            var length = this.length();
+            var start: int = 0;
+            var end: int = length - 1;
+            while (start < length && this.data[start] < 33) {
+                start++;
+            }
+            while (end > 0 && this.data[end] < 33) {
+                end--;
+            }
+            return this.substr(start, end - start + 1);
+        }
+
+        function replace(what: String, with: String): String {
+            var length = this.length();
+            var str = new String(length);
+            var i: int = 0;
+            while (i < length) {
+                var ch = this.data[i];
+                if (ch == what.data[0]) {
+                    ch = with.data[0];
+                }
+                str.data[i] = ch;
+                i++;
+            }
+            return str;
+        }
+
+        function toInt(): int {
+            var val: int = 0;
+            var i: int = 0;
+            while (i < this.length()) {
+                val *= 10;
+                var ch = this.data[i];
+                if (ch < 48 || ch > 57) return 0;
+                val += ch - 48;
+                i++;
+            }
+            return val;
+        }
+
+        function toFloat(): float {
+            var val = 0.0;
+
+            var frac = false;
+            var mag = 1.0;
+            var sign = 1.0;
+
+            var i: int = 0;
+            if (this[0] == "-") {
+                sign = -1.0;
+                i++;
+            }
+            while (i < this.length()) {
+                var ch = this.data[i];                
+                
+                if (ch == 46 && !frac) {
+                    frac = true;
+                }
+                else if (ch < 48 || ch > 57) {
+                    return 0;
+                }
+                else {
+                    val *= 10;
+                    val += ch - 48;
+                    if (frac) {
+                        mag = mag * 0.1;
+                    }
+                }
+                i++;
+            }
+            return sign * val * mag;
+        }
+    }
+
+	export function toString(val: int): String {
+		var str = new String(20);
+		var i: int = str.length() - 1;
+		var sign = "";
+		if (val < 0) {
+			sign = "-";
+			val = -val;
+		}
+		while (val > 9) {
+			str.data[i] = 48 + val % 10;
+			i = i - 1;
+			val = val / 10;
+		}
+		str.data[i] = 48 + val % 10;
+		i = i - 1;
+
+		return sign + str.substr(i + 1, str.length() - i - 1);
+	}
+
+	export function toString(val: float, decimals: int): String {
+        var intPart = val as int;
+        val = val - intPart;
+        if (val < 0.0) {
+            val = val * -1.0;
+        }
+
+        if (val > 0.0) {
+			var f: int = 1;
+			while (decimals > 0) {
+				f = f * 10;
+				decimals--;
+			}
+            return toString(intPart) + "." + toString((val * f) as int);
+        }
+        else {
+            return toString(intPart);
+        }
+	}
+}

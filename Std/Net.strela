@@ -4,6 +4,8 @@
 module Std.Net {
     import Std.csockets;
     import Std.cstdio.*;
+	import Std.Collections.List;
+    import Std.IO.*;
 
     export class IPAddr {
         var a: u8;
@@ -18,8 +20,8 @@ module Std.Net {
             this.d = d;
         }
 
-        function getInt(): u32 {
-            var i: u32 = d + c * 256 + b * 65536 + a * 16777216;
+        function toInt(): u32 {
+            var i: u32 = this.d + this.c * 256 + this.b * 65536 + this.a * 16777216;
             return i;
         }
     }
@@ -32,39 +34,90 @@ module Std.Net {
 
     export class Socket {
         var handle: i32;
+		var errorflag: bool;
 
         function init(s: i32) {
-            handle = s;
+            this.handle = s;
+			this.errorflag = this.handle >= 0;
         }
 
         function init(ip: u32, port: u16) {
-            handle = csockets.socket(2, 1, 0);
-            bind(ip, port);
+            this.handle = csockets.socket(2, 1, 0);
+			this.errorflag = this.handle >= 0;
+			if (this.errorflag) {
+				return;
+			}
+            this.bind(ip, port);
         }
 
         function init() {
-            handle = csockets.socket(2, 1, 0);
+            this.handle = csockets.socket(2, 1, 0);
+			this.errorflag = this.handle >= 0;
         }
 
-        function connect(ip: u32, port: u16) {
+        function connect(ip: u32, port: u16): i32 {
             var addr = new csockets.sockaddr_in;
             addr.family = 2;
             addr.addr = csockets.htonl(ip);
             addr.port = csockets.htons(port);
-            csockets.connect(handle, addr, 16);
+            var result = csockets.connect(this.handle, addr, 16);
+			this.errorflag = result == -1;
+			return result;
         }
 
+		function isValid(): bool {
+			return !this.errorflag;
+		}
+
         function readLine(): String {
-            var str = "";
-            var tmp = "" + 60;
-            while (tmp != "\n" && csockets.recv(handle, tmp, 1, 0) > 0) {
-                str = str + tmp;
+            var tmp = "X";
+            var buf = new List<u8>;
+
+            while (true) {
+				var result = csockets.recv(this.handle, tmp, 1, 0);
+				if (result <= 0) {
+					this.errorflag = true;
+					return "";
+				}
+                buf.append(tmp.data[0]);
+                if (tmp == "\n") {
+                    return new String(buf.array, buf.length);
+                }
             }
-            return str;
+
+            return new String(buf.array, buf.length);
+        }
+
+        function read(num: int): String {
+            var tmp = new String(num);
+            var result = "";
+            while (result.length() < num) {
+                var numRead = csockets.recv(this.handle, tmp, num, 0);
+                if (numRead < 0) {
+					this.errorflag = true;
+                    return result;
+                }
+                if (numRead > 0) {
+                    result = result + tmp.substr(0, numRead);
+                    num = num - numRead;
+                }
+            }
+            return result;
         }
 
         function write(str: String) {
-            csockets.send(handle, str, strlen(str), 16384); //MSG_NOPIPE
+            var remaining = str.length();
+            while (remaining > 0) {
+                var written = csockets.send(this.handle, str, remaining, 0);
+                if (written < 0) {
+					this.errorflag = true;
+                    return;
+                }
+                if (written > 0) {
+                    remaining = remaining - written;
+                    str = str.substr(written, remaining);
+                }
+            }
         }
 
         function bind(ip: u32, port: u16) {
@@ -73,26 +126,26 @@ module Std.Net {
             addr.addr = csockets.htonl(ip);
             addr.port = csockets.htons(port);
 
-            csockets.bind(handle, addr, 16);
+            csockets.bind(this.handle, addr, 16);
         }
 
         function listen() {
-            csockets.listen(handle, 1);
+            csockets.listen(this.handle, 1);
         }
 
         function accept(): Socket {
             var addr = new csockets.sockaddr_in;
-            var len: u32 = 0;
-            var newsock = csockets.accept(handle, addr, len);
+            var len: u32 = 16;
+            var newsock = csockets.accept(this.handle, addr, len);
             return new Socket(newsock);
         }
 
         function shutdown() {
-            csockets.shutdown(handle, 0);
+            csockets.shutdown(this.handle, 0);
         }
 
         function close() {
-            csockets.close(handle);
+            csockets.close(this.handle);
         }
     }
 }

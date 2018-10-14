@@ -27,30 +27,34 @@ where `input-file` is either a .strela module or a module compiled to strela byt
 ## Examples
 
 ### Hello.strela
-    module Hello {
-        import Std.IO.println;
+```ts
+module Hello {
+    import Std.IO.println;
 
-        function main(): int {
-            println("Hello, world!");
-            return 0;
-        }
+    function main(): int {
+        println("Hello, world!");
+        return 0;
     }
+}
+```
 
 ### Fib.strela
-    module Fib {
-        import Std.IO.println;
+```ts
+module Fib {
+    import Std.IO.println;
 
-        function fib(n: int): int {
-            if (n < 2) {
-                return n;
-            }
-            else {
-                return fib(n - 1) + fib(n - 2);
-            }
+    function fib(n: int): int {
+        if (n < 2) {
+            return n;
         }
-
-        function main(): int {
-            println(fib(40));
-            return 0;
+        else {
+            return fib(n - 1) + fib(n - 2);
         }
     }
+
+    function main(): int {
+        println(fib(40));
+        return 0;
+    }
+}
+```

@@ -31,6 +31,7 @@ namespace Strela {
         size_t objectAlignment = 0;
         std::vector<VMField> fields;
         std::vector<std::string> enumValues;
+        std::vector<VMType*> unionTypes;
     };
 }
 

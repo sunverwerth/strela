@@ -48,6 +48,7 @@ namespace Strela {
         // copy class definition
         Parser parser(*source, firstToken);
         auto cls = parser.parseClassDecl(parent);
+        cls->genericBase = this;
         // set type arguments
         cls->genericArguments = typeArgs;
         cls->_name += "<";

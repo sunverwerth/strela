@@ -1,0 +1,22 @@
+module JSON {
+    import Std.JSON;
+    import Std.IO.println;
+
+    function main(args: String[]): int {
+        println(JSON.serialize(JSON.parse("1234")));
+        println(JSON.serialize(JSON.parse("12.34")));
+        println(JSON.serialize(JSON.parse("-1234")));
+        println(JSON.serialize(JSON.parse("-12.34")));
+        println(JSON.serialize(JSON.parse("\"A\"")));
+        println(JSON.serialize(JSON.parse("null")));
+        println(JSON.serialize(JSON.parse("true")));
+        println(JSON.serialize(JSON.parse("false")));
+        println(JSON.serialize(JSON.parse("{}")));
+        println(JSON.serialize(JSON.parse("[]")));
+
+        println(JSON.serialize(JSON.parse("[0,1,2,3,4,5]")));
+        println(JSON.serialize(JSON.parse("{\"a\":1,\"b\":2}")));
+        println(JSON.serialize(JSON.parse("{\"a\":[],\"b\":[0,[],{},null]}")));
+        return 0;
+    }
+}

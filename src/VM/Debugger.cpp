@@ -2,6 +2,7 @@
 #include "VM.h"
 #include "ByteCodeChunk.h"
 #include "../utils.h"
+#include "../SourceFile.h"
 
 #ifdef _WIN32
 
@@ -44,23 +45,23 @@ namespace Strela {
 		return true;
 	}
 
-    Debugger::Debugger(unsigned short port, VM& vm): vm(vm) {
+	Debugger::Debugger(unsigned short port, VM& vm) : vm(vm) {
 		vm.status = VM::STOPPED;
 #ifdef _WIN32
 		WSADATA wsadata;
 		WSAStartup(MAKEWORD(2, 2), &wsadata);
 #endif
-        socket = ::socket(AF_INET, SOCK_STREAM, 0);
+		socket = ::socket(AF_INET, SOCK_STREAM, 0);
 		sockaddr_in addr{ 0 };
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(port);
 		inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
 		auto res = connect(socket, (sockaddr*)&addr, sizeof(addr));
-    }
+	}
 
-    Debugger::~Debugger() {
-        shutdown(socket, SHUT_RDWR);
-        close(socket);
+	Debugger::~Debugger() {
+		shutdown(socket, SHUT_RDWR);
+		close(socket);
 #ifdef _WIN32
 		WSACleanup();
 #endif
@@ -132,7 +133,7 @@ namespace Strela {
 		else if (type.name == "String") {
 			write("class\n");
 			if (*(char**)val) {
-				write("\"" + escape(*(char**)val) + "\"\n");
+				write("\"" + escape(**((char***)val) + 8) + "\"\n");
 			}
 			else {
 				write("String (null)\n");
@@ -179,10 +180,10 @@ namespace Strela {
 		}
 	}
 
-    int Debugger::run() {
-        do {
-            int num;
-            ioctl(socket, FIONREAD, &num);
+	int Debugger::run() {
+		do {
+			int num;
+			ioctl(socket, FIONREAD, &num);
 			while (num--) {
 				char ch;
 				recv(socket, &ch, 1, 0);
@@ -196,17 +197,17 @@ namespace Strela {
 				}
 			}
 
-            // ADD\nfilename\n10\n - Add breakpoint at line 10 in filename
-            // REMOVE\nfilename\n10\n - Remove breakpoint at line 10 in filename
-            // PAUSE\n - Add breakpoint at current position
-            // STACK\n - get current stack
-            // STEP\n - step to next line
+			// ADD\nfilename\n10\n - Add breakpoint at line 10 in filename
+			// REMOVE\nfilename\n10\n - Remove breakpoint at line 10 in filename
+			// PAUSE\n - Add breakpoint at current position
+			// STACK\n - get current stack
+			// STEP\n - step to next line
 			// STEPIN\n - step into function or to next line
 			// STEPOUT\n - step out of current function
 			// CONTINUE\n - continue program
 			// DISCONNECT\n - disconnect socket and terminate
 
-            if (commands.size() > 0) {
+			if (commands.size() > 0) {
 				if (commands.front() == "ADD") {
 					if (commands.size() >= 3) {
 						commands.pop_front();
@@ -244,27 +245,27 @@ namespace Strela {
 					}
 				}
 				else if (commands.front() == "REMOVE") {
-                    if (commands.size() >= 3) {
+					if (commands.size() >= 3) {
 						commands.pop_front();
-                        auto file = commands.front();
-                        commands.pop_front();
-                        auto line = commands.front();
-                        commands.pop_front();
-                        removeBreakpoint(file, std::stoi(line));
+						auto file = commands.front();
+						commands.pop_front();
+						auto line = commands.front();
+						commands.pop_front();
+						removeBreakpoint(file, std::stoi(line));
 						write("ACK_REMOVE\n");
 					}
-                }
-                else if (commands.front() == "PAUSE") {
+				}
+				else if (commands.front() == "PAUSE") {
 					commands.pop_front();
 					vm.status = VM::STOPPED;
 					write("ACK_PAUSE\n");
 					write("HIT\n");
 				}
-                else if (commands.front() == "STACK") {
+				else if (commands.front() == "STACK") {
 					commands.pop_front();
 					write("ACK_STACK\n");
-                    write(vm.printCallStack());
-                }
+					write(vm.printCallStack());
+				}
 				else if (commands.front() == "CONTINUE") {
 					commands.pop_front();
 					step();
@@ -303,7 +304,7 @@ namespace Strela {
 
 							FunctionInfo* fi = nullptr;
 							size_t largest = 0;
-							for (auto&& it: vm.chunk.functions) {
+							for (auto&& it : vm.chunk.functions) {
 								if (it.first >= largest && it.first <= ip) {
 									fi = &it.second;
 									largest = it.first;
@@ -315,14 +316,14 @@ namespace Strela {
 							}
 							else {
 								int numVars = 0;
-								for (auto& var: fi->variables) {
+								for (auto& var : fi->variables) {
 									if (bp + var.offset >= vm.stack.size()) {
 										continue;
 									}
 									numVars++;
 								}
 								write(std::to_string(numVars) + "\n");
-								for (auto& var: fi->variables) {
+								for (auto& var : fi->variables) {
 									if (bp + var.offset >= vm.stack.size()) {
 										continue;
 									}
@@ -352,10 +353,19 @@ namespace Strela {
 								}
 							}
 							else {
-								write(std::to_string(obj->type->fields.size()) + "\n");
-								for (auto& field: obj->type->fields) {
-									write(field.name + "\n");
-									write(*field.type, (char*)memref + field.offset);
+								if (obj->type->unionTypes.size()) {
+									VMType* type = obj->type->unionTypes[*(uint64_t*)memref];
+									write("1\n");
+									write("value\n");
+									auto ref = (void*)(memref + 8);
+									write(*type, ref);
+								}
+								else {
+									write(std::to_string(obj->type->fields.size()) + "\n");
+									for (auto& field : obj->type->fields) {
+										write(field.name + "\n");
+										write(*field.type, (char*)memref + field.offset);
+									}
 								}
 							}
 						}
@@ -363,7 +373,7 @@ namespace Strela {
 				}
 				else if (commands.front() == "STEP") {
 					commands.pop_front();
-					
+
 					write("ACK_STEP\n");
 
 					auto line = vm.chunk.getLine(vm.ip);
@@ -403,7 +413,7 @@ namespace Strela {
 				}
 				else if (commands.front() == "STEPIN") {
 					commands.pop_front();
-					
+
 					write("ACK_STEPIN\n");
 
 					auto line = vm.chunk.getLine(vm.ip);
@@ -462,8 +472,8 @@ namespace Strela {
 				}
 				else {
 					commands.pop_front();
-                }
-            }
+				}
+			}
 
 			if (vm.status == VM::RUNNING) {
 				// do max 0xffffff opcodes
@@ -479,18 +489,18 @@ namespace Strela {
 			else {
 				usleep(1000);
 			}
-        } while (vm.status != VM::FINISHED);
+		} while (vm.status != VM::FINISHED);
 
 		return vm.exitCode.value.integer;
-    }
+	}
 
-    void Debugger::write(const std::string& str) {
+	void Debugger::write(const std::string& str) {
 		//std::cerr << ">>> " << str;
-        auto size = str.size();
-        while (size) {
-            size -= send(socket, str.data(), size, 0);
-        }
-    }
+		auto size = str.size();
+		while (size) {
+			size -= send(socket, str.data(), size, 0);
+		}
+	}
 
 	void Debugger::addBreakpoint(size_t address, bool once) {
 		if (vm.chunk.opcodes[address] == Opcode::Trap) {
@@ -501,33 +511,33 @@ namespace Strela {
 		vm.chunk.opcodes[address] = Opcode::Trap;
 	}
 
-    void Debugger::addBreakpoint(const std::string& file, size_t line, bool once) {
-        for (auto& codeline: vm.chunk.lines) {
-            if (pathEquals(vm.chunk.files[codeline.file], file) && codeline.line == line) {
+	void Debugger::addBreakpoint(const std::string& file, size_t line, bool once) {
+		for (auto& codeline : vm.chunk.lines) {
+			if (pathEquals(vm.chunk.files[codeline.file]->filename, file) && codeline.line == line) {
 				addBreakpoint(codeline.address, once);
-                return;
-            }
-        }
-    }
+				return;
+			}
+		}
+	}
 
-    void Debugger::removeBreakpoint(const std::string& file, size_t line) {
-        for (auto& codeline: vm.chunk.lines) {
-            if (pathEquals(vm.chunk.files[codeline.file], file) && codeline.line == line) {
-                auto it = breakpoints.find(codeline.address);
-                if (it != breakpoints.end()) {
-                    vm.chunk.opcodes[codeline.address] = it->second.originalOpcode;
-                    breakpoints.erase(it);
-                    write("Removed breakpoint\n");
-                    return;
-                }
-            }
-        }
-    }
+	void Debugger::removeBreakpoint(const std::string& file, size_t line) {
+		for (auto& codeline : vm.chunk.lines) {
+			if (pathEquals(vm.chunk.files[codeline.file]->filename, file) && codeline.line == line) {
+				auto it = breakpoints.find(codeline.address);
+				if (it != breakpoints.end()) {
+					vm.chunk.opcodes[codeline.address] = it->second.originalOpcode;
+					breakpoints.erase(it);
+					write("Removed breakpoint\n");
+					return;
+				}
+			}
+		}
+	}
 
 	void Debugger::removeBreakpoints(const std::string& file) {
 		for (auto it = breakpoints.begin(); it != breakpoints.end(); ) {
 			if (auto source = vm.chunk.getLine(it->second.address)) {
-				if (pathEquals(vm.chunk.files[source->file], file)) {
+				if (pathEquals(vm.chunk.files[source->file]->filename, file)) {
 					vm.chunk.opcodes[source->address] = it->second.originalOpcode;
 					it = breakpoints.erase(it);
 				}
@@ -541,21 +551,21 @@ namespace Strela {
 		}
 	}
 
-    void Debugger::step() {
+	void Debugger::step() {
 		if (vm.chunk.opcodes[vm.ip] != Opcode::Trap) {
 			vm.step(1);
 			return;
 		}
 
-        auto it = breakpoints.find(vm.ip);
-        if (it == breakpoints.end()) {
-            // No breakpoint found, treat 'Trap' as NOP
+		auto it = breakpoints.find(vm.ip);
+		if (it == breakpoints.end()) {
+			// No breakpoint found, treat 'Trap' as NOP
 			vm.ip++;
-            return;
-        }
+			return;
+		}
 
-        vm.chunk.opcodes[vm.ip] = it->second.originalOpcode;
-        vm.step(1);
+		vm.chunk.opcodes[vm.ip] = it->second.originalOpcode;
+		vm.step(1);
 
 		if (it->second.once) {
 			breakpoints.erase(it);
@@ -563,5 +573,5 @@ namespace Strela {
 		else {
 			vm.chunk.opcodes[it->second.address] = Opcode::Trap;
 		}
-    }
+	}
 }

@@ -11,7 +11,6 @@ namespace Strela {
     public:
         InvalidType() { _name = "$invalid"; }
         STRELA_GET_TYPE(Strela::InvalidType, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
     public:
         static InvalidType instance;

@@ -19,7 +19,6 @@ namespace Strela {
         ClassDecl() = default;
         ClassDecl(const std::string& name) { this->_name = name; }
         STRELA_GET_TYPE(Strela::ClassDecl, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
 
         Node* getMember(const std::string& name) override;
         std::vector<Node*> getMethods(const std::string& name) override;
@@ -33,8 +32,9 @@ namespace Strela {
         std::vector<TypeDecl*> genericArguments;
         std::vector<FuncDecl*> methods;
         std::vector<FieldDecl*> fields;
-        static ClassDecl String;
+        static ClassDecl* String;
         std::vector<ClassDecl*> reifiedClasses;
+        ClassDecl* genericBase = nullptr;
     };
 }
 

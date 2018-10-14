@@ -3,7 +3,7 @@
 
 module Std.IO {
     import Std.cstdio.*;
-    
+
     export function print(v: u8): void {}
     export function print(v: u16): void {}
     export function print(v: u32): void {}
@@ -39,35 +39,42 @@ module Std.IO {
             this.handle = fopen(name, mode);
         }
 
+        function good(): bool {
+            return this.handle > 0;
+        }
+
         function write(str: String) {
-            fwrite(str, strlen(str), 1, handle);
+            fwrite(str, strlen(str), 1, this.handle);
         }
 
         function write(n: u8) {
-            fwrite(n, 1, 1, handle);
+            fwrite(n, 1, 1, this.handle);
         }
 
         function write(n: u16) {
-            fwrite(n, 2, 1, handle);
+            fwrite(n, 2, 1, this.handle);
         }
 
         function close() {
-            fclose(handle);
+            fclose(this.handle);
         }
 
         function isEof(): bool {
-            return feof(handle) != 0;
+            return feof(this.handle) != 0;
         }
 
         function getc(): String {
-            return "" + fgetc(handle);
+			var ch = fgetc(this.handle);
+			if (ch < 0) return "";
+            return new String([ch as u8]);
         }
 
         function peek(): String {
-            var ch = fgetc(handle);
-            ungetc(ch, handle);
+            var ch = fgetc(this.handle);
+            ungetc(ch, this.handle);
 
-            return "" + ch;
+			if (ch < 0) return "";
+            return new String([ch as u8]);
         }
     }
 }

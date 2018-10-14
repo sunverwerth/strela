@@ -10,7 +10,6 @@ namespace Strela {
     class GenericParam: public TypeDecl {
     public:
         STRELA_GET_TYPE(Strela::GenericParam, Strela::TypeDecl);
-        STRELA_IMPL_STMT_VISITOR;
     };
 }
 

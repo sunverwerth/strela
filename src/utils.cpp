@@ -13,6 +13,7 @@ namespace Strela {
                         case 'r': unescaped += '\r'; break;
                         case 'n': unescaped += '\n'; break;
                         case 't': unescaped += '\t'; break;
+                        case 'e': unescaped += '\x1b'; break;
                         case '\\': unescaped += '\\'; break;
                         case '"': unescaped += '"'; break;
                         default:
@@ -35,6 +36,7 @@ namespace Strela {
                 case '\r': escaped += "\\r"; break;
                 case '\n': escaped += "\\n"; break;
                 case '\t': escaped += "\\t"; break;
+                case '\x1b': escaped += "\\e"; break;
                 case '\\': escaped += "\\\\"; break;
                 case '"': escaped += "\\\""; break;
                 default:

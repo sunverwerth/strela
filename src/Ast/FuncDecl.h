@@ -4,7 +4,7 @@
 #ifndef Strela_Ast_AstFuncDecl_h
 #define Strela_Ast_AstFuncDecl_h
 
-#include "Stmt.h"
+#include "Node.h"
 
 #include <string>
 #include <vector>
@@ -16,13 +16,14 @@ namespace Strela {
     class ByteCodeChunk;
     class FuncType;
     class TypeDecl;
+    class Stmt;
 
-    class FuncDecl: public Stmt {
+    class FuncDecl: public Node {
     public:
-        STRELA_GET_TYPE(Strela::FuncDecl, Strela::Stmt);
-        STRELA_IMPL_STMT_VISITOR;
+        STRELA_GET_TYPE(Strela::FuncDecl, Strela::Node);
 
     public:
+        bool returns = false;
         bool isExported = false;
         std::string name;
         std::vector<Param*> params;

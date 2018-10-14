@@ -7,6 +7,8 @@
 #include "Expr.h"
 
 namespace Strela {
+    class Implementation;
+    
     class IsExpr: public Expr {
     public:
         STRELA_GET_TYPE(Strela::IsExpr, Strela::Expr);
@@ -14,6 +16,7 @@ namespace Strela {
 
     public:
         int typeTag;
+        Implementation* implementation = nullptr;
         Expr* target = nullptr;
         Expr* typeExpr = nullptr;
     };

@@ -3,12 +3,18 @@
 
 #include "InterfaceDecl.h"
 #include "InterfaceMethodDecl.h"
+#include "InterfaceFieldDecl.h"
 
 namespace Strela {
     Node* InterfaceDecl::getMember(const std::string& name) {
         for (auto&& method: methods) {
             if (method->name == name) {
                 return method;
+            }
+        }
+        for (auto&& field: fields) {
+            if (field->name == name) {
+                return field;
             }
         }
         return nullptr;

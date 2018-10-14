@@ -65,7 +65,7 @@ namespace Strela {
         {TokenType::Tilde, 12},
 
         // cast
-        {TokenType::Colon, 13},
+        {TokenType::As, 13},
 
         // access
         {TokenType::Period, 14},
@@ -126,6 +126,7 @@ namespace Strela {
             }
             else if (match(TokenType::Type)) {
                 auto al = parseTypeAliasDecl(moddecl);
+                if (exportNext) al->isExported = true;
                 moddecl->typeAliases.push_back(al);
             }
             else if (match(TokenType::Import)) {
@@ -425,6 +426,9 @@ namespace Strela {
         else if (match(TokenType::BracketOpen)) {
             expression = parseArrayLitExpr(parent);
         }
+        else if (match(TokenType::CurlyOpen)) {
+            expression = parseMapLitExpr(parent);
+        }
         else {
             expected("primary expression or prefix operator");
             return nullptr; // TODO return null object
@@ -475,8 +479,8 @@ namespace Strela {
                 is->target->parent = is;
                 expression = addPosition(is, startToken);
             }
-            else if (match(TokenType::Colon)) {
-                auto startToken = eat(TokenType::Colon);
+            else if (match(TokenType::As)) {
+                auto startToken = eat();
                 auto cast = new CastExpr();
                 cast->parent = parent;
                 cast->sourceExpr = expression;
@@ -653,6 +657,23 @@ namespace Strela {
         return addPosition(arr, startToken);
     }
 
+    MapLitExpr* Parser::parseMapLitExpr(Node* parent) {
+        auto map = new MapLitExpr();
+        map->parent = parent;
+
+        auto startToken = eat(TokenType::CurlyOpen);
+        while (!eof() && !match(TokenType::CurlyClose)) {
+            map->keys.push_back(parseExpr(map));
+            eat(TokenType::Colon);
+            map->values.push_back(parseExpr(map));
+            if (!eatOptional(TokenType::Comma)) {
+                break;
+            }
+        }
+        eat(TokenType::CurlyClose);
+        return addPosition(map, startToken);
+    }
+
     TypeAliasDecl* Parser::parseTypeAliasDecl(Node* parent) {
         auto alias = new TypeAliasDecl();
         auto startToken = eat(TokenType::Type);
@@ -710,10 +731,20 @@ namespace Strela {
         iface->_name = eat(TokenType::Identifier).value;
         eat(TokenType::CurlyOpen);
         while (!eof() && !match(TokenType::CurlyClose)) {
-            auto im = parseInterfaceMethodDecl(iface);
-            im->index = iface->methods.size();
-            iface->methods.push_back(im);
-            eat(TokenType::Semicolon);
+            if (match(TokenType::Function)) {
+                auto im = parseInterfaceMethodDecl(iface);
+                im->index = iface->methods.size();
+                iface->methods.push_back(im);
+            }
+            else if (match(TokenType::Var)) {
+                auto ifd = parseInterfaceFieldDecl(iface);
+                ifd->index = iface->fields.size();
+                iface->fields.push_back(ifd);
+            }
+            else {
+                eat();
+                expected("Interface member declaration.");
+            }
         }
         eat(TokenType::CurlyClose);
         return addPosition(iface, startToken);
@@ -737,8 +768,21 @@ namespace Strela {
         if (eatOptional(TokenType::Colon)) {
             im->returnTypeExpr = parseTypeExpr(im);
         }
+        eat(TokenType::Semicolon);
         
         return addPosition(im, startToken);
+    }
+    
+    InterfaceFieldDecl* Parser::parseInterfaceFieldDecl(Node* parent) {
+        auto ifd = new InterfaceFieldDecl();
+        ifd->parent = parent;
+        auto startToken = eat(TokenType::Var);
+        ifd->name = eat(TokenType::Identifier).value;
+        eat(TokenType::Colon);
+        ifd->typeExpr = parseTypeExpr(ifd);
+        eat(TokenType::Semicolon);
+        
+        return addPosition(ifd, startToken);
     }
 
     EnumDecl* Parser::parseEnumDecl(Node* parent) {
@@ -771,6 +815,7 @@ namespace Strela {
     bool Parser::matchExpr() {
         return
             match(TokenType::BracketOpen) ||
+            match(TokenType::CurlyOpen) ||
             match(TokenType::This) ||
             match(TokenType::Null) ||
             match(TokenType::Integer) ||
@@ -802,7 +847,7 @@ namespace Strela {
             match(TokenType::PlusPlus) ||
             match(TokenType::Is) ||
             match(TokenType::BracketOpen) ||
-            match(TokenType::Colon) ||
+            match(TokenType::As) ||
             matchBinary();
     }
 
@@ -812,6 +857,7 @@ namespace Strela {
             match(TokenType::Minus) ||
             match(TokenType::Asterisk) ||
             match(TokenType::Slash) ||
+            match(TokenType::Percent) ||
             match(TokenType::Equals) ||
             match(TokenType::PlusEquals) ||
             match(TokenType::MinusEquals) ||

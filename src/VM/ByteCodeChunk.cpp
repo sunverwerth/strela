@@ -158,7 +158,7 @@ namespace Strela {
         return str;
     }
 
-	SourceLine* ByteCodeChunk::getLine(size_t address) {
+	const SourceLine* ByteCodeChunk::getLine(size_t address) const {
 		for (int i = 0; i < lines.size(); ++i) {
 			if (lines[i].address > address) {
 				if (i == 0) return nullptr;
@@ -168,9 +168,9 @@ namespace Strela {
 		return nullptr;
 	}
 
-    void ByteCodeChunk::setLine(const std::string& filename, size_t line) {
+    void ByteCodeChunk::setLine(const SourceFile* file, size_t line) {
         for (size_t i = 0; i < files.size(); ++i) {
-            if (files[i] == filename) {
+            if (files[i] == file) {
                 if (!lines.empty() && lines.back().file == i && lines.back().line == line) {
                     return;
                 }
@@ -178,7 +178,7 @@ namespace Strela {
                 return;
             }
         }
-        files.push_back(filename);
+        files.push_back(file);
         lines.push_back({ opcodes.size(), files.size() - 1, line });
     }
 }
