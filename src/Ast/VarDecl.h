@@ -11,6 +11,7 @@
 
 namespace Strela {
     class Expr;
+    class TypeDecl;
     
     class VarDecl: public Stmt {
     public:

@@ -8,6 +8,7 @@
 #include "IExprVisitor.h"
 #include "Pass.h"
 #include "Ast/TypeDecl.h"
+#include "Ast/InvalidType.h"
 
 #include <string>
 #include <vector>
@@ -23,6 +24,7 @@ namespace Strela {
     class FuncDecl;
     class ClassDecl;
     class ModDecl;
+    class InterfaceDecl;
 
     class TypeChecker: public Pass, public IStmtVisitor, public IExprVisitor {
     public:
@@ -68,29 +70,38 @@ namespace Strela {
             if (child) child->accept(*this);
         }
 
-        template<typename T> void unify(T&& child, TypeDecl* with) {
+        template<typename T> bool unify(T&& child, TypeDecl* with) {
             auto oldExpectedType = expectedType;
             expectedType = with;
+            bool success = true;
             if (child) {
                 child->accept(*this);
-                if (expectedType && !isAssignableFrom(expectedType, child->type)) {
-                    error(*child, child->type->getFullName() + " does not unify with " + expectedType->getFullName());
+                if (expectedType && !isAssignableFrom(expectedType, getType(child))) {
+                    if (child->type != &InvalidType::instance) {
+                        error(*child, child->type->getFullName() + " is not coercible to " + expectedType->getFullName());
+                        success = false;
+                    }
                 }
                 else if (expectedType) {
                     child = addCast(child, expectedType);
                 }
             }
             expectedType = oldExpectedType;
+            return success;
         }
 
-        template<typename T> void unifyChildren(T& children, TypeDecl* with) {
+        template<typename T> bool unifyChildren(T& children, TypeDecl* with) {
             auto oldExpectedType = expectedType;
             expectedType = with;
+            bool success = true;
             for (auto&& child: children) {
                 if (child) {
                     child->accept(*this);
-                    if (expectedType && !isAssignableFrom(expectedType, child->type)) {
-                        error(*child, child->type->getFullName() + " does not unify with " + expectedType->getFullName());
+                    if (expectedType && !isAssignableFrom(expectedType, getType(child))) {
+                        if (child->type != &InvalidType::instance) {
+                            error(*child, child->type->getFullName() + " is not coercible to " + expectedType->getFullName());
+                            success = false;
+                        }
                     }
                     else if (expectedType) {
                         child = addCast(child, expectedType);
@@ -98,6 +109,7 @@ namespace Strela {
                 }
             }
             expectedType = oldExpectedType;
+            return success;
         }
 
         void negateRefinements();
@@ -112,14 +124,14 @@ namespace Strela {
 		std::vector<FuncDecl*> findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<Expr*>& args);
 		std::vector<FuncDecl*> findOverload(const std::vector<FuncDecl*>& funcs, const std::vector<TypeDecl*>& argTypes);
 
+        void printMissingMembers(ClassDecl* cls, InterfaceDecl* iface);
+
         FuncDecl* function = nullptr;
         BlockStmt* block = nullptr;
         ClassDecl* _class = nullptr;
         TypeDecl* expectedType = nullptr;
 
         bool returns = false;
-
-        std::vector<ClassDecl*> genericStack;
 
         std::vector<std::map<Node*, std::vector<Refinement>>> refinements;
     };

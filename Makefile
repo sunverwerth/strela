@@ -6,12 +6,12 @@ SRC=$(foreach dir, $(SRCDIRS), $(wildcard $(dir)/*.cpp))
 
 ifndef DEBUG
 	CXXFLAGS=-std=c++11 -MMD -MP -O3
-	OBJDIR=release
-	EXECUTABLE=release/strela
+	OBJDIR=Release
+	EXECUTABLE=Release/strela
 else
-	CXXFLAGS=-std=c++11 -g -MMD -MP
-	OBJDIR=debug
-	EXECUTABLE=debug/strela
+	CXXFLAGS=-std=c++11 -g -MMD -MP -D _DEBUG
+	OBJDIR=Debug
+	EXECUTABLE=Debug/strela
 endif
 
 OBJDIRS=$(pathsubst $(SRCDIRS)/%,$(OBJDIRS)/%,$(SRCDIRS))
@@ -31,17 +31,17 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CC) $< $(CXXFLAGS) -c -o $@
 
 install: strela
-	install release/strela /usr/local/bin/strela
+	install Release/strela /usr/local/bin/strela
 	install -d /usr/local/lib/strela
 	cp -r Std /usr/local/lib/strela
 
 install-home: strela
-	install release/strela ~/bin/strela
+	install Release/strela ~/bin/strela
 	install -d ~/.strela/lib/
 	cp -r Std ~/.strela/lib
 
 clean:
-	rm -rf release debug
+	rm -rf Release Debug
 
 test: strela
 	bash ./test.sh

@@ -16,6 +16,11 @@ module Tests.Collections.List {
         var list2: List<String> = ["A", "B"];
         println(list2[0]);
         println(list2[1]);
+
+        list2.remove(0);
+        list2.remove(1);
+
+        println(list2.length);
         return 0;
     }
 }

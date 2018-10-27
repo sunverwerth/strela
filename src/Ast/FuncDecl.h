@@ -10,13 +10,13 @@
 #include <vector>
 
 namespace Strela {
-    class BlockStmt;
     class Param;
     class Expr;
-    class ByteCodeChunk;
     class FuncType;
-    class TypeDecl;
     class Stmt;
+	class VM;
+
+	typedef void(*BuiltinFunction)(VM&);
 
     class FuncDecl: public Node {
     public:
@@ -34,6 +34,7 @@ namespace Strela {
         int numVariables = 0;
         bool isPrototype = false;
         bool isExternal = false;
+		BuiltinFunction builtin = nullptr;
     };
 }
 

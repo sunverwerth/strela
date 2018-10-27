@@ -8,10 +8,6 @@
 #include "SourceFile.h"
 
 namespace Strela {
-    bool checkTypeExpr(Expr* e) {
-        return e->type == &TypeType::instance && e->typeValue != &InvalidType::instance;
-    }
-
     NameResolver::NameResolver(Scope* globals): scope(globals) {
     }
 
@@ -216,7 +212,13 @@ namespace Strela {
         if (n.initializer) {
             visitChild(n.initializer);
         }
-        scope->add(n.name, &n);
+
+        try {
+            scope->add(n.name, &n);
+        }
+        catch (const DuplicateSymbolException& e) {
+            error(n, e.what());
+        }
     }
 
     void NameResolver::visit(IsExpr& n) {

@@ -24,6 +24,7 @@ module Std.Lang.Compiler.Lexer {
         This,
 		Is,
 		As,
+        Type,
         Identifier,
         StringLiteral,
         IntLiteral,
@@ -73,6 +74,14 @@ module Std.Lang.Compiler.Lexer {
         function init(row: int, column: int) {
             this.row = row;
             this.column = column;
+        }
+
+        function isInside(start: Position, end: Position): bool {
+            if (this.row < start.row) return false;
+            if (this.row > end.row) return false;
+            if (this.row == start.row) return this.column >= start.column;
+            if (this.row == end.row) return this.column <= end.column;
+            return true;
         }
 
         var row: int;
@@ -181,6 +190,7 @@ module Std.Lang.Compiler.Lexer {
             this.keywords.set("this", TokenType.This);
 			this.keywords.set("is", TokenType.Is);
 			this.keywords.set("as", TokenType.As);
+            this.keywords.set("type", TokenType.Type);
         }
 
         function hasNext(): bool {
@@ -210,17 +220,11 @@ module Std.Lang.Compiler.Lexer {
             else if (this.ch == "\"") {
                 return this.string();
             }
-            else if (this.ch == "/") {
-                if (this.file.peek() == "/") {
-                    return this.lineComment();
-                }
-                else if (this.file.peek() == "*") {
-                    return this.blockComment();
-                }
-                else {
-                    this.ch = this.get();
-                    return new Token(this.file, TokenType.Slash, this.str, this.position);
-                }
+            else if (this.ch == "/" && this.file.peek() == "/") {
+                return this.lineComment();
+            }
+            else if (this.ch == "/" && this.file.peek() == "*") {
+                return this.blockComment();
             }
             else if (isAl(this.ch) || this.ch == "_") {
                 return this.idOrKeyword();

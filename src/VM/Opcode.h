@@ -49,6 +49,7 @@ namespace Strela {
         X(Call, 1, integer) \
         X(CallImm, 5, integer) \
         X(NativeCall, 0, null) \
+		X(BuiltinCall, 8, integer) \
         X(Jmp, 0, null) \
         X(JmpIf, 0, null) \
         X(JmpIfNot, 0, null) \

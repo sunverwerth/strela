@@ -13,7 +13,6 @@ namespace Strela {
     class FuncDecl;
     class ClassDecl;
     class InterfaceDecl;
-    class ModuleType;
     class EnumDecl;
     class ImportStmt;
     class TypeAliasDecl;

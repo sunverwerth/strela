@@ -14,6 +14,11 @@ module Std.Collections {
             this.length = 0;
         }
 
+        function init(capacity: int) {
+            this.array = new T[](capacity);
+            this.length = 0;
+        }
+
         function init(data: T[]) {
             this.array = data;
             this.length = data.length;
@@ -36,6 +41,16 @@ module Std.Collections {
 
         function set(index: int, value: T) {
             this.array[index] = value;
+        }
+
+        function remove(index: int) {
+            var i = index;
+            var l = this.length - 1;
+            while (i < l) {
+                this.array[i] = this.array[i + 1];
+                i++;
+            }
+            this.length = this.length - 1;
         }
 
         function [](i: int): T {
@@ -81,6 +96,14 @@ module Std.Collections {
             else {
                 this.keys.append(key);
                 this.values.append(val);
+            }
+        }
+
+        function remove(key: K) {
+            var idx = this.keyIndex(key);
+            if (idx >= 0) {
+                this.keys.remove(idx);
+                this.values.remove(idx);
             }
         }
 

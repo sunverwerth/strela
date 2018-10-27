@@ -28,7 +28,6 @@ namespace Strela {
 
         std::string printCallStack();
 
-    private:
         void push(const VMValue& val);
         VMValue pop();
         void pop(size_t num);
@@ -39,6 +38,8 @@ namespace Strela {
 
 		void checkRead(const VMValue& val, int64_t offset);
 		void checkWrite(const VMValue& val, int64_t offset);
+
+		void writeSample();
 
     public:
 		enum {

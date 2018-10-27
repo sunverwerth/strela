@@ -20,6 +20,7 @@
 #include <chrono>
 #include <cmath>
 #include <iomanip>
+#include <fstream>
 
 #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
@@ -83,7 +84,7 @@ namespace Strela {
 		}
 
 		auto obj = val.value.object;
-		if (!obj) {
+		if (!obj || (uint64_t)obj < 0xffff) {
 			std::cerr << "Null pointer access\n";
 			std::cerr << printCallStack();
 			exit(1);
@@ -116,6 +117,8 @@ namespace Strela {
 	#include <WinSock2.h>
 #endif
 
+	std::ofstream sampleFile;
+
     VM::VM(ByteCodeChunk& chunk, const std::vector<std::string>& arguments): chunk(chunk), status(RUNNING) {
 #ifdef _WIN32
 		auto mod = LoadLibrary("msvcrt.dll");
@@ -124,6 +127,7 @@ namespace Strela {
 		WSADATA wsadata{ 0 };
 		WSAStartup(MAKEWORD(2, 2), &wsadata);
 #endif
+		sampleFile.open("flamegraph.json", std::ios::binary);
 
 		for (auto& ff: chunk.foreignFunctions) {
             ffi_type* rtype;
@@ -303,7 +307,7 @@ namespace Strela {
 			case Opcode::Call: {
 				auto newip = pop().value.integer;
 				auto numargs = read<uint8_t>();
-				callStack.push_back({ bp, ip - 1 });
+				callStack.push_back({ bp, ip });
 				bp = stack.size() - numargs;
 				ip = newip;
 				break;
@@ -311,7 +315,7 @@ namespace Strela {
 			case Opcode::CallImm: {
 				auto newip = read<uint32_t>();
 				auto numargs = read<uint8_t>();
-				callStack.push_back({ bp, ip - 1 });
+				callStack.push_back({ bp, ip });
 				bp = stack.size() - numargs;
 				ip = newip;
 				break;
@@ -408,6 +412,11 @@ namespace Strela {
 				}
 				break;
 			}
+			case Opcode::BuiltinCall: {
+				auto func = (BuiltinFunction)read<uint64_t>();
+				func(*this);
+				break;
+			}
 			case Opcode::Return: {
 				auto retVal = pop();
 				if (callStack.empty()) {
@@ -420,7 +429,7 @@ namespace Strela {
 				stack.resize(bp);
 
 				auto& frame = callStack.back();
-				ip = frame.ip + 1;
+				ip = frame.ip;
 				bp = frame.bp;
 				callStack.pop_back();
 
@@ -431,7 +440,7 @@ namespace Strela {
 				stack.resize(bp);
 
 				auto& frame = callStack.back();
-				ip = frame.ip + 1;
+				ip = frame.ip;
 				bp = frame.bp;
 				callStack.pop_back();
 				break;
@@ -917,4 +926,29 @@ namespace Strela {
         }
         return sstr.str();
     }
+
+	void VM::writeSample() {
+
+		Frame cur{ bp, ip };
+		int i = callStack.size();
+		sampleFile << "[\n";
+		while (i >= 0) {
+			std::string name("???");
+
+			size_t largest = 0;
+			for (auto&& it : chunk.functions) {
+				if (it.first >= largest && it.first <= cur.ip) {
+					name = it.second.name;
+					largest = it.first;
+				}
+			}
+
+			sampleFile << "\"" << name << "\",\n";
+
+			--i;
+			if (i < 0 || callStack.empty()) break;
+			cur = callStack[i];
+		}
+		sampleFile << "],\n";
+	}
 }

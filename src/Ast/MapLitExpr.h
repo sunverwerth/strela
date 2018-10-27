@@ -9,6 +9,7 @@
 
 namespace Strela {
     class FuncDecl;
+    class TypeDecl;
     
     class MapLitExpr: public Expr {
     public:

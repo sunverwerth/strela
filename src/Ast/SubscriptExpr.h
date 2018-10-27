@@ -10,6 +10,8 @@
 #include <vector>
 
 namespace Strela {
+    class FuncDecl;
+    
     class SubscriptExpr: public Expr {
     public:
         STRELA_GET_TYPE(Strela::SubscriptExpr, Strela::Expr);

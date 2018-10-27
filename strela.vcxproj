@@ -43,6 +43,7 @@
     <ClInclude Include="src\Ast\IfStmt.h" />
     <ClInclude Include="src\Ast\ImportStmt.h" />
     <ClInclude Include="src\Ast\InterfaceDecl.h" />
+    <ClInclude Include="src\Ast\InterfaceFieldDecl.h" />
     <ClInclude Include="src\Ast\InterfaceMethodDecl.h" />
     <ClInclude Include="src\Ast\IntType.h" />
     <ClInclude Include="src\Ast\InvalidType.h" />
@@ -106,6 +107,8 @@
     <ClCompile Include="src\Ast\EnumDecl.cpp" />
     <ClCompile Include="src\Ast\FuncType.cpp" />
     <ClCompile Include="src\Ast\InterfaceDecl.cpp" />
+    <ClCompile Include="src\Ast\InterfaceFieldDecl.cpp" />
+    <ClCompile Include="src\Ast\InterfaceMethodDecl.cpp" />
     <ClCompile Include="src\Ast\ModDecl.cpp" />
     <ClCompile Include="src\Ast\Token.cpp" />
     <ClCompile Include="src\Ast\TypeAliasDecl.cpp" />

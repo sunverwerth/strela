@@ -8,6 +8,7 @@
 
 namespace Strela {
     class FieldDecl;
+    
     class ArrayType: public TypeDecl {
     public:
         STRELA_GET_TYPE(Strela::ArrayType, Strela::TypeDecl);

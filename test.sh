@@ -1,6 +1,6 @@
 #!/bin/bash
 
-STRELA=release/strela
+STRELA=Release/strela
 if [ $# -gt 0 ]; then
     if [ -d $1 ]; then
         DIR=$1

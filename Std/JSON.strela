@@ -15,6 +15,115 @@ module Std.JSON {
 		}
 	}
 
+    export class JsonQuery {
+        function init() {
+            this.undef = true;
+        }
+
+        function init(value: JsonValue) {
+            this.undef = false;
+            this.value = value;
+        }
+
+        function length(): int {
+            if (this.undef) return 0;
+
+            var val = this.value;
+            if (val is JsonArray) {
+                return val.length;
+            }
+            return 0;
+        }
+
+        function stringVal(): String {
+            if (this.undef) return "";
+
+            var val = this.value;
+            if (val is String) {
+                var v: String = val;
+                return v;
+            }
+            return "";
+        }
+
+        function floatVal(): float {
+            if (this.undef) return 0.0;
+
+            var val = this.value;
+            if (val is float) {
+                var v: float = val;
+                return v;
+            }
+            return 0.0;
+        }
+
+        function intVal(): int {
+            if (this.undef) return 0;
+
+            var val = this.value;
+            if (val is float) {
+                var f: float = val;
+                return f;
+            }
+            return 0;
+        }
+
+        function [](index: int): JsonQuery {
+            if (this.undef) return this;
+
+            var val = this.value;
+            if (val is JsonArray) {
+                if (index < 0 || index >= val.length) return new JsonQuery;
+                return new JsonQuery(val[index]);
+            }
+            
+            return new JsonQuery();
+        }
+
+        function [](key: String): JsonQuery {
+            if (this.undef) return this;
+
+            var val = this.value;
+            if (val is JsonObject) {
+                if (!val.has(key)) return new JsonQuery;
+                return new JsonQuery(val[key]);
+            }
+
+            return new JsonQuery();
+        }
+
+        function isFloat(): bool {
+            return this.value is float;
+        }
+
+        function isString(): bool {
+            return this.value is String;
+        }
+
+        function isBool(): bool {
+            return this.value is bool;
+        }
+
+        function isNull(): bool {
+            return this.value is null;
+        }
+
+        function isArray(): bool {
+            return this.value is JsonArray;
+        }
+
+        function isObject(): bool {
+            return this.value is JsonObject;
+        }
+
+        function isUndefined(): bool {
+            return this.undef;
+        }
+
+        var undef: bool;
+        var value: JsonValue;
+    }
+
     function unescape(str: String): String {
         var ret = new List<u8>;
         var i: int = 0;

@@ -1,5 +1,5 @@
 @echo off
-set STRELAPATH=%HOMEDRIVE%%HOMEPATH%\.strela\
+set STRELAPATH=%HOMEDRIVE%%HOMEPATH%\.strela
 
 if not exist "Release\strela.exe" (
 	echo !!! strela.exe does not exist. Please build the Visual Studio project in release mode and rerun this script
@@ -24,6 +24,8 @@ if not exist "%STRELAPATH%\lib" (
  
 
 echo ### Copying strela.exe 
+if exist %STRELAPATH%\strela.exe.old del %STRELAPATH%\strela.exe.old
+if exist %STRELAPATH%\strela.exe ren %STRELAPATH%\strela.exe strela.exe.old
 copy Release\strela.exe %STRELAPATH%
 echo ### Done
 

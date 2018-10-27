@@ -15,7 +15,8 @@
 namespace Strela {
 
     size_t align(size_t offset, size_t alignment) {
-        return offset + (offset % alignment);
+		if ((offset % alignment) == 0) return offset;
+        return offset + alignment - (offset % alignment);
     }
 
     VMType* ByteCodeCompiler::mapType(TypeDecl* type) {
@@ -50,14 +51,14 @@ namespace Strela {
         }
         else if (vmtype->isObject) {
             if (auto cls = type->as<ClassDecl>()) {
-                vmtype->size = 8;;
+                vmtype->size = 8;
                 vmtype->alignment = 8;;
                 size_t offset = 0;
                 size_t alignment = 1;
                 for (auto&& field: cls->fields) {
                     auto ftype = mapType(field->declType);
                     if (ftype->alignment > alignment) alignment = ftype->alignment;
-                    offset = align(offset, alignment);
+                    offset = align(offset, ftype->alignment);
                     vmtype->fields.push_back({
                         field->name,
                         ftype,
@@ -79,6 +80,12 @@ namespace Strela {
                 vmtype->objectSize = 8 + (iface->methods.size() + iface->fields.size())* 8;
                 vmtype->objectAlignment = 8;
                 vmtype->fields.push_back({"_ref", mapType(ClassDecl::String), 0});
+                for (size_t i = 0; i < iface->methods.size(); ++i) {
+                    vmtype->fields.push_back({"method_" + std::to_string(i), mapType(&IntType::u64), 8 + i * 8});
+                }
+                for (size_t i = 0; i < iface->fields.size(); ++i) {
+                    vmtype->fields.push_back({"field_" + std::to_string(i), mapType(&IntType::u64), 8 + (i + iface->methods.size()) * 8});
+                }
             }
             else if (auto un = type->as<UnionType>()) {
                 vmtype->size = 8;
@@ -358,9 +365,15 @@ namespace Strela {
             }
             else {
                 if (n.callTarget->node && n.callTarget->node->as<FuncDecl>()) {
+					auto fun = n.callTarget->node->as<FuncDecl>();
                     visitChildren(n.arguments);
-                    auto ind = chunk.addOp<uint32_t, uint8_t>(Opcode::CallImm, 0xffffffff, n.callTarget->type->as<FuncType>()->paramTypes.size() + (n.callTarget->context ? 1 : 0));
-                    addFixup(ind, n.callTarget->node->as<FuncDecl>(), true);
+					if (fun->builtin) {
+						chunk.addOp<uint64_t>(Opcode::BuiltinCall, (uint64_t)fun->builtin);
+					}
+					else {
+						auto ind = chunk.addOp<uint32_t, uint8_t>(Opcode::CallImm, 0xffffffff, n.callTarget->type->as<FuncType>()->paramTypes.size() + (n.callTarget->context ? 1 : 0));
+						addFixup(ind, n.callTarget->node->as<FuncDecl>(), true);
+					}
                 }
                 else {
                     visitChild(n.callTarget);
@@ -471,9 +484,17 @@ namespace Strela {
 
         auto toiface = totype->as<InterfaceDecl>();
         auto fromclass = fromtype->as<ClassDecl>();
+        auto fromiface = fromtype->as<InterfaceDecl>();
 
         auto tounion = totype->as<UnionType>();
         auto fromunion = fromtype->as<UnionType>();
+        auto toclass = totype->as<ClassDecl>();
+
+        auto fromint = fromtype->as<IntType>();
+        auto toint = totype->as<IntType>();
+
+        auto fromfloat = fromtype->as<FloatType>();
+        auto tofloat = totype->as<FloatType>();
 
         if (fromclass && toiface && n.implementation) {
             chunk.addOp<uint16_t>(Opcode::New, mapType(toiface)->index);
@@ -492,6 +513,9 @@ namespace Strela {
                 chunk.addOp<uint8_t>(Opcode::Peek, 1);
                 chunk.addOp<uint8_t>(Opcode::StorePtr64, (i + toiface->methods.size()) * 8 + 8);
             }
+        }
+        else if (fromiface && toclass) {
+            chunk.addOp<uint8_t>(Opcode::ObjPtr64, 0);
         }
         else if (tounion) {
             auto tag = tounion->getTypeTag(fromtype);
@@ -523,7 +547,7 @@ namespace Strela {
                 }
             }
         }
-        else if (fromtype == &FloatType::f32 && totype->as<IntType>()) {
+        else if (fromfloat == &FloatType::f32 && toint) {
             if (auto lit = n.sourceExpr->as<LitExpr>()) {
                 chunk.addOp<int64_t>(Opcode::I64, lit->token.floatVal());
             }
@@ -532,7 +556,7 @@ namespace Strela {
                 chunk.addOp(Opcode::F32tI64);
             }
         }
-        else if (fromtype == &FloatType::f64 && totype->as<IntType>()) {
+        else if (fromfloat == &FloatType::f64 && toint) {
             if (auto lit = n.sourceExpr->as<LitExpr>()) {
                 chunk.addOp<int64_t>(Opcode::I64, lit->token.floatVal());
             }
@@ -541,7 +565,7 @@ namespace Strela {
                 chunk.addOp(Opcode::F64tI64);
             }
         }
-        else if (fromtype->as<IntType>() && totype == &FloatType::f32) {
+        else if (fromint && tofloat == &FloatType::f32) {
             if (auto lit = n.sourceExpr->as<LitExpr>()) {
                 chunk.addOp<float>(Opcode::F32, lit->token.intVal());
             }
@@ -550,7 +574,7 @@ namespace Strela {
                 chunk.addOp(Opcode::I64tF32);
             }
         }
-        else if (fromtype->as<IntType>() && totype == &FloatType::f64) {
+        else if (fromint && tofloat == &FloatType::f64) {
             if (auto lit = n.sourceExpr->as<LitExpr>()) {
                 chunk.addOp<uint16_t>(Opcode::Const, chunk.addConstant(VMValue((double)lit->token.intVal())));
             }
@@ -577,8 +601,12 @@ namespace Strela {
                 chunk.addOp(Opcode::F64tF32);
             }
         }
-        else {
+        else if (fromint && toint) {
+            // nothing to do here as our vm has only one 64-bit int type.
             visitChild(n.sourceExpr);
+        }
+        else {
+            error(n, "Unhandled cast encountered during compilation: " + fromtype->getFullName() + " -> " + totype->getFullName());
         }
     }
 
@@ -593,8 +621,13 @@ namespace Strela {
         if (n.function) {
             visitChild(n.left);
             visitChild(n.right);
-            auto index = chunk.addOp<uint32_t, uint8_t>(Opcode::CallImm, 0xffffffff, 2);
-            addFixup(index, n.function, true);
+			if (n.function->builtin) {
+				chunk.addOp<uint64_t>(Opcode::BuiltinCall, (uint64_t)n.function->builtin);
+			}
+			else {
+				auto index = chunk.addOp<uint32_t, uint8_t>(Opcode::CallImm, 0xffffffff, 2);
+				addFixup(index, n.function, true);
+			}
             return;
         }
 

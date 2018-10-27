@@ -355,8 +355,15 @@ namespace Strela {
 							else {
 								if (obj->type->unionTypes.size()) {
 									VMType* type = obj->type->unionTypes[*(uint64_t*)memref];
-									write("1\n");
-									write("value\n");
+									write("2\n");
+									
+									write("_tag\n");
+									write("u64\n");
+									write("data\n");
+									write(std::to_string(*(uint64_t*)memref) + "\n");
+									write("0\n");
+									
+									write("_ref\n");
 									auto ref = (void*)(memref + 8);
 									write(*type, ref);
 								}

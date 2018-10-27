@@ -16,6 +16,7 @@ namespace Strela {
     class InterfaceFieldDecl: public Node {
     public:
         STRELA_GET_TYPE(Strela::InterfaceFieldDecl, Strela::Node);
+        std::string getDescription();
 
     public:
         std::string name;

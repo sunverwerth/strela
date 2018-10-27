@@ -4,27 +4,27 @@ module Strings {
     function main(args: String[]): int {
         var empty = new String;
         println(empty.length());
-        
+
         var four = new String(4);
         println(four.length());
-        
+
         var fromarray = new String([65 as u8, 66 as u8, 67 as u8]);
         println(fromarray);
-        
+
         var fromarrayslice = new String([65 as u8, 66 as u8, 67 as u8], 1);
         println(fromarrayslice);
-        
+
         var frompair = new String("Hello", ", world!");
         println(frompair);
 
         println(fromarray.length());
 
         println("Hello" + " darkness");
-        
+
         println("A" != "B");
         println("A" != "A");
         println("A" != "");
-        
+
         println("A" == "B");
         println("A" == "A");
         println("A" == "");
@@ -36,7 +36,7 @@ module Strings {
         println("XYZ"[2]);
 
         var cities = "London,New York,Berlin";
-        
+
         var parts = cities.split(",");
         println(parts.length);
         println(parts[1]);
@@ -45,12 +45,13 @@ module Strings {
         println(cities.split("").length);
 
         println("  \t\r\n   Go   \n\r\n\t\r".trim());
+		println("     ".trim());
 
         println("123456".toInt());
         println("123.456".toFloat());
 
         println("Hello, world".replace("e", "a"));
-        
+
         return 0;
     }
 }

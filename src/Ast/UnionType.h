@@ -7,6 +7,7 @@
 #include "TypeDecl.h"
 
 #include <set>
+#include <vector>
 
 namespace Strela {
     class UnionType: public TypeDecl {
@@ -21,7 +22,7 @@ namespace Strela {
     public:
         std::set<TypeDecl*> containedTypes;
 
-        static std::map<std::string, UnionType*> unionTypes;
+        static std::vector<UnionType*> unionTypes;
     };
 }
 

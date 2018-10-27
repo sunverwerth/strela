@@ -10,7 +10,6 @@
 #include <vector>
 
 namespace Strela {
-    class Expr;
 
     class NewExpr: public Expr {
     public:

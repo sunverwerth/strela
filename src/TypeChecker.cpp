@@ -6,32 +6,18 @@
 #include "exceptions.h"
 #include "Scope.h"
 #include "SourceFile.h"
+#include "utils.h"
 
 #include <sstream>
 
 namespace Strela {
 
-    std::string getTypeName(TypeDecl* t) {
-        // if (auto ta = t->as<TypeAliasDecl>()) {
-        //     return getTypeName(ta->typeExpr->typeValue) + " a.k.a " + t->getFullName();
-        // }
-        return t->getFullName();
-    }
 
-    template<typename T> std::vector<T*> extract(const std::vector<Node*>& nodes) {
-        std::vector<T*> result;
-        for (auto&& node: nodes) {
-            if (auto t = node->as<T>()) {
-                result.push_back(t);
-            }
-        }
-        return result;
-    }
 
     std::string operator+(const std::string& left, const std::vector<TypeDecl*>& types) {
         std::string result(left);
         for (auto&& type: types) {
-            result += getTypeName(type);
+            result += type->getFullName();
             if (&type != &types.back()) {
                 result += ", ";
             }
@@ -39,13 +25,15 @@ namespace Strela {
         return result;
     }
 
-    template<typename T> std::vector<T> unique(const std::vector<T>& values) {
-        std::set<T> set;
-        set.insert(values.begin(), values.end());
-        std::vector<T> result;
-        result.assign(set.begin(), set.end());
+    template<typename T> std::vector<T*> extract(const std::vector<Node*>& elements) {
+        std::vector<T*> result;
+        for (auto&& el: elements) {
+            if (auto t = el->as<T>()) {
+                result.push_back(t);
+            }
+        }
         return result;
-    }
+    }    
 
     TypeDecl* TypeChecker::getType(Expr* expr) {
         if (expr->node) {
@@ -131,6 +119,36 @@ namespace Strela {
         return implementation;
     }
 
+    void TypeChecker::printMissingMembers(ClassDecl* cls, InterfaceDecl* iface) {
+        std::stringstream sstr;
+        for (auto&& imethod: iface->methods) {
+            bool found = false;
+            for (auto&& method: cls->methods) {
+                if (method->name == imethod->name && isCallable(method->declType, imethod->type->paramTypes)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                info(*imethod, imethod->getDescription());
+            }
+        }
+
+        std::vector<FieldDecl*> classFields;
+        for (auto&& ifield: iface->fields) {
+            bool found = false;
+            for (auto&& field: cls->fields) {
+                if (field->name == ifield->name && isAssignableFrom(ifield->declType, field->declType)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                info(*ifield, ifield->getDescription());
+            }
+        }
+    }
+
     bool isAssignableFrom(TypeDecl* to, TypeDecl* from) {
         if (auto toalias = to->as<TypeAliasDecl>()) {
             to = toalias->typeExpr->typeValue;
@@ -191,13 +209,6 @@ namespace Strela {
         return true;
     }
 
-    bool isScalar(TypeDecl* type) {
-        return
-            type->as<FloatType>() ||
-            type->as<IntType>()
-            ;
-    }
-
     Expr* addCast(Expr* expr, TypeDecl* targetType) {
         auto fromType = expr->type;
         if (auto fromalias = fromType->as<TypeAliasDecl>()) {
@@ -212,7 +223,7 @@ namespace Strela {
         }
 
         auto toIface = targetType->as<InterfaceDecl>();
-        auto targetunion = targetType->as<UnionType>();
+        auto toUnion = targetType->as<UnionType>();
         auto fromClass = fromType->as<ClassDecl>();
         
         if (fromClass && toIface) {
@@ -224,8 +235,11 @@ namespace Strela {
             return cast;
         }
 
-        if (targetunion) {
-            for (auto& type: targetunion->containedTypes) {
+        if (toUnion) {
+            if (fromType->_name == "ClassDecl") {
+                int i=0;
+            }
+            for (auto& type: toUnion->containedTypes) {
                 if (isAssignableFrom(type, fromType)) {
                     auto cast = new CastExpr();
                     cast->sourceExpr = addCast(expr, type);
@@ -303,7 +317,7 @@ namespace Strela {
     }
 
     void TypeChecker::visit(IsExpr& n) {
-        visitChild(n.target);        
+        visitChild(n.target);
         
         auto t = getType(n.target);
         auto alias = t->as<TypeAliasDecl>();
@@ -316,13 +330,13 @@ namespace Strela {
 			auto checkedType = n.typeExpr->typeValue;
 
 			if (!un->containsType(checkedType)) {
-				error(n, "'" + getTypeName(checkedType) + "' is not part of union type '" + getTypeName(t) + "'.");
+				error(n, "'" + checkedType->getFullName() + "' is not part of union type '" + t->getFullName() + "'.");
 				return;
 			}
 
 			n.typeTag = un->getTypeTag(checkedType);
 
-			if (n.target->node) {
+			if (n.target->node && n.parent->as<IfStmt>()) {
 				refinements.back()[n.target->node].push_back(Refinement{ n.target->node, checkedType });
 			}
 		}
@@ -334,13 +348,20 @@ namespace Strela {
 			}
 			auto impl = getImplementation(cls, iface);
 			if (!impl) {
-				error(n, getTypeName(cls) + " does not implement " + getTypeName(iface));
+				error(n, "This condition always evaluates to false because " + cls->getFullName() + " does not implement " + iface->getFullName());
+                info("The following members are missing:");
+                printMissingMembers(cls, iface);
+
 				return;
 			}
 			n.implementation = impl;
+
+			if (n.target->node && n.parent->as<IfStmt>()) {
+				refinements.back()[n.target->node].push_back(Refinement{ n.target->node, cls });
+			}
 		}
 		else {
-            error(n, getTypeName(t) + " is neither a union type nor an interface.");
+            error(n, t->getFullName() + " is neither a union type nor an interface.");
             return;
         }
 
@@ -349,13 +370,13 @@ namespace Strela {
 
     void TypeChecker::check(ClassDecl& n) {
         if (!n.genericParams.empty() && n.genericArguments.empty()) {
+            // this is a generic class that possibly has instantiations
             for (auto& cls: n.reifiedClasses) {
                 check(*cls);
             }            
         }
         else {
-            if (n.genericArguments.size()) genericStack.push_back(&n);
-
+            // this is a non-generic class or an instantiation of a generic class
             auto oldclass = _class;
             _class = &n;
 
@@ -364,8 +385,6 @@ namespace Strela {
             }
 
             _class = oldclass;
-
-            if (n.genericArguments.size()) genericStack.pop_back();
         }
     }
 
@@ -462,6 +481,7 @@ namespace Strela {
                         if (ctor->params.size() == 1) {
                             auto p1 = ctor->params[0]->declType->as<ArrayType>();
                             if (p1) {
+                                exptype = typeToCheck;
                                 expectedElementType = p1->baseType;
                                 n.type = typeToCheck;
                                 n.constructor = ctor;
@@ -477,7 +497,7 @@ namespace Strela {
             }
 
             if (!expectedElementType) {
-                error(n, "No constructor for array literal");
+                error(n, exptype->getFullName() + " has no constructor that takes an array.");
                 return;
             }
 
@@ -493,11 +513,12 @@ namespace Strela {
 
             auto types = unique(getTypes(n.elements));
             if (types.size() > 1) {
-                error(n, "Array literal with untyped left hand side can not contain different typed elements.");
+                error(n, "Array literal with untyped left hand side can not contain differently typed elements.");
                 return;
             }
 
             if (types.front() == &InvalidType::instance) {
+                error(n, "Invalid array element.");
                 return;
             }
 
@@ -529,12 +550,12 @@ namespace Strela {
             auto candidates = extract<FuncDecl>(targetType->getMethods("[]"));
             auto funs = findOverload(candidates, n.arguments);
             if (funs.empty()) {
-                error(n, "Type '" + getTypeName(targetType) + "' has no subscript operator with arguments (" + getTypes(n.arguments) + ").");
+                error(n, "Type '" + targetType->getFullName() + "' has no subscript operator with arguments (" + getTypes(n.arguments) + ").");
                 return;
             }
             
             if (funs.size() > 1) {
-                error(n, "Type '" + getTypeName(targetType) + "' has multiple matching subscript operators for arguments (" + getTypes(n.arguments) + ").");
+                error(n, "Type '" + targetType->getFullName() + "' has multiple matching subscript operators for arguments (" + getTypes(n.arguments) + ").");
                 return;
             }
 
@@ -559,7 +580,7 @@ namespace Strela {
             }
             
             if (!isAssignableFrom(n.declType, n.initializer->type)) {
-                error(n, n.name + ": Can not assign '" + getTypeName(n.initializer->type) + "' to '" + getTypeName(n.declType) + "'.");
+                error(n, n.name + ": Can not assign '" + n.initializer->type->getFullName() + "' to '" + n.declType->getFullName() + "'.");
                 return;
             }
         }
@@ -575,7 +596,7 @@ namespace Strela {
         if (auto ftype = n.callTarget->type->as<FuncType>()) {
             // non-overloaded function call
             if (!isCallable(ftype, argTypes)) {
-                error(*n.callTarget, "'" + getTypeName(n.callTarget->type) + "' is not callable with arguments (" + argTypes + ")");
+                error(*n.callTarget, "'" + n.callTarget->type->getFullName() + "' is not callable with arguments (" + argTypes + ")");
                 return;
             }
 
@@ -609,7 +630,7 @@ namespace Strela {
             prepareArguments(n.arguments, fun->declType);
         }
         else {
-            error(n, "Can not call value of type '" + getTypeName(n.callTarget->type) + "'");
+            error(n, "Can not call value of type '" + n.callTarget->type->getFullName() + "'");
             return;
         }
     }
@@ -629,7 +650,7 @@ namespace Strela {
         visitChild(n.expression);
 
         if (!isAssignableFrom(function->declType->returnType, n.expression->type)) {
-            error(n, function->name + ": Incompatible return type. Returning '" + getTypeName(n.expression->type) + "' from '" + getTypeName(function->declType->returnType) + "' function.");
+            error(n, function->name + ": Incompatible return type. Returning '" + n.expression->type->getFullName() + "' from '" + function->declType->returnType->getFullName() + "' function.");
             return;
         }
 
@@ -737,7 +758,7 @@ namespace Strela {
                     (op == TokenType::Plus && ltype == ClassDecl::String && rtype->as<IntType>())
                 )
             ) {
-                error(n, "Binary operator '" + getTokenName(op) + "' is only applicable to scalar values. Types are '" + getTypeName(ltype) + "' and '" + getTypeName(rtype) + "'.");
+                error(n, "Binary operator '" + getTokenName(op) + "' is only applicable to scalar values. Types are '" + ltype->getFullName() + "' and '" + rtype->getFullName() + "'.");
             }
 
             if (op == TokenType::LessThan || op == TokenType::GreaterThan || op == TokenType::LessThanEquals || op == TokenType::GreaterThanEquals) {
@@ -768,20 +789,20 @@ namespace Strela {
         }
         else if (op == TokenType::Percent) {
             if (!(lint && rint)) {
-                error(n, "Binary operator '" + getTokenName(op) + "' is only applicable to integer values. Types are '" + getTypeName(ltype) + "' and '" + getTypeName(rtype) + "'.");
+                error(n, "Binary operator '" + getTokenName(op) + "' is only applicable to integer values. Types are '" + ltype->getFullName() + "' and '" + rtype->getFullName() + "'.");
             }
             n.type = lint;
             n.right = addCast(n.right, lint);
         }
         else if (op == TokenType::EqualsEquals || op == TokenType::ExclamationMarkEquals) {
             if (!((leftScalar && rightScalar) || (ltype == rtype))) {
-                error(n, "Binary operator '" + getTokenName(op) + "' is not applicable to types '" + getTypeName(ltype) + "' and '" + getTypeName(rtype) + "'.");
+                error(n, "Binary operator '" + getTokenName(op) + "' is not applicable to types '" + ltype->getFullName() + "' and '" + rtype->getFullName() + "'.");
             }
             n.type = &BoolType::instance;
         }
         else if (op == TokenType::PipePipe || op == TokenType::AmpAmp) {
             if (!(ltype == &BoolType::instance && rtype == &BoolType::instance)) {
-                error(n, "Binary operator '" + getTokenName(op) + "': Both operands must have boolean type. Actual types are '" + getTypeName(ltype) + "' and '" + getTypeName(rtype) + "'.");
+                error(n, "Binary operator '" + getTokenName(op) + "': Both operands must have boolean type. Actual types are '" + ltype->getFullName() + "' and '" + rtype->getFullName() + "'.");
             }
             n.type = &BoolType::instance;
         }
@@ -810,13 +831,14 @@ namespace Strela {
             
             n.right = binop;
         }
-        visitChild(n.right);
+
+        unify(n.right, getType(n.left));
 
         auto ltype = getType(n.left);
         auto rtype = getType(n.right);
 
         if (!isAssignableFrom(ltype, rtype)) {
-            error(n, "Can not assign " + getTypeName(rtype) + " to " + getTypeName(ltype));
+            error(n, "Can not assign " + rtype->getFullName() + " to " + ltype->getFullName());
         }
 
         if (n.left->node) {
@@ -851,7 +873,10 @@ namespace Strela {
     void TypeChecker::visit(IdExpr& n) {
         if (n.node) {
             if (auto var = n.node->as<VarDecl>()) {
-                n.type = var->declType;
+                n.type = var->declType; // getType(var);
+            }
+            else if (auto param = n.node->as<Param>()) {
+                n.type = param->declType; // getType(param);
             }
             else if (auto fun = n.node->as<FuncDecl>()) {
                 n.type = fun->declType;
@@ -862,6 +887,10 @@ namespace Strela {
     void TypeChecker::visit(ScopeExpr& n) {
         visitChild(n.scopeTarget);
         auto type = getType(n.scopeTarget);
+
+        if (n.name == "has") {
+            int i=0;
+        }
 
         if (auto typetype = type->as<TypeType>()) {
             if (auto member = n.scopeTarget->typeValue->getMember(n.name)) {
@@ -921,12 +950,12 @@ namespace Strela {
                     }
                 }
                 else {
-                    error(n, "Type '" + getTypeName(type) + "' has no member named '" + n.name + "'");
+                    error(n, "Type '" + type->getFullName() + "' has no member named '" + n.name + "'");
                 }
             }
         }        
         else {
-            error(n, "Scope operator not applicable to type '" + getTypeName(n.scopeTarget->type) + "'.");
+            error(n, "Scope operator not applicable to type '" + n.scopeTarget->type->getFullName() + "'.");
         }
     }
 
@@ -934,7 +963,7 @@ namespace Strela {
         refinements.push_back({});
         visitChild(n.condition);
         if (getType(n.condition) != &BoolType::instance) {
-            error(*n.condition, "Condition must yield boolean value. Is " + getTypeName(n.condition->type));
+            error(*n.condition, "Condition must yield boolean value. Is " + n.condition->type->getFullName());
         }
         n.condition = addCast(n.condition, &BoolType::instance);
         visitChild(n.trueBranch);
@@ -1000,7 +1029,7 @@ namespace Strela {
             auto inits = extract<FuncDecl>(cls->getMethods("init"));
             if (inits.empty()) {
                 if (!n.arguments.empty()) {
-                    error(n, "'" + getTypeName(type) + "' has no matching constructor for arguments (" + getTypes(n.arguments) + ").");
+                    error(n, "'" + type->getFullName() + "' has no matching constructor for arguments (" + getTypes(n.arguments) + ").");
                 }
             }
             else {
@@ -1031,14 +1060,14 @@ namespace Strela {
             }
         }
         else {
-            error(n, "Only class and array types are instantiable, type is '" + getTypeName(type) + "'");
+            error(n, "Only class and array types are instantiable, type is '" + type->getFullName() + "'");
         }
     }
 
     void TypeChecker::visit(WhileStmt& n) {
         visitChild(n.condition);
         if (getType(n.condition) != &BoolType::instance) {
-            error(*n.condition, "Condition must yield boolean value. Is " + getTypeName(n.condition->type));
+            error(*n.condition, "Condition must yield boolean value. Is " + n.condition->type->getFullName());
         }
 
         visitChild(n.body);
@@ -1050,7 +1079,7 @@ namespace Strela {
         n.type = n.targetType;
 
         if (!isAssignableFrom(n.targetType, n.sourceExpr->type)) {
-            error(n, "Can not assign '" + getTypeName(n.sourceExpr->type) + "' to '" + getTypeName(n.targetType) + "'.");
+            error(n, "Can not assign '" + n.sourceExpr->type->getFullName() + "' to '" + n.targetType->getFullName() + "'.");
         }
     }
 
@@ -1060,8 +1089,8 @@ namespace Strela {
             error(n, "Target for operator '" + getTokenName(n.op) + "' must be a reference to a mutable value.");
             return;
         }
-        if (!isScalar(n.target->type)) {
-            error(n, "Operator '" + getTokenName(n.op) + "' is only applicable to scalar values. Target type is '" + getTypeName(n.target->type) + "'.");
+        if (!(n.target->type->as<FloatType>() || n.target->type->as<IntType>())) {
+            error(n, "Operator '" + getTokenName(n.op) + "' is only applicable to scalar values. Target type is '" + n.target->type->getFullName() + "'.");
             return;
         }
         n.type = n.target->type;

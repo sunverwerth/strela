@@ -6,6 +6,8 @@
 #include "TypeAliasDecl.h"
 #include "Expr.h"
 
+#include <sstream>
+
 namespace Strela {
     std::set<TypeDecl*> mergeTypes(TypeDecl* left, TypeDecl* right) {
         std::set<TypeDecl*> set;
@@ -24,15 +26,21 @@ namespace Strela {
         return set;
     }
 
-    std::string getUnionName(const std::set<TypeDecl*>& types) {
-        std::string name;
-        for (auto&& type: types) {
-            if (&type != &*types.begin()) {
-                name += "|";
+    std::string getUnionName(const UnionType* unionType) {
+        std::stringstream sstr;
+        for (auto&& type: unionType->containedTypes) {
+            if (&type != &*unionType->containedTypes.begin()) {
+                sstr << "|";
             }
-            name += type->getFullName();
+            if (auto ut = type->as<UnionType>()) {
+                if (ut == unionType) {
+                    sstr << "*self*";
+                    continue;
+                }
+            }
+            sstr << type->getFullName();
         }
-        return name;
+        return sstr.str();
     }
     
     int UnionType::getTypeTag(TypeDecl* t) {
@@ -77,18 +85,18 @@ namespace Strela {
 
     UnionType* UnionType::get(TypeDecl* left, TypeDecl* right) {
         auto set = mergeTypes(left, right);
-        auto name = getUnionName(set);
-        auto it = unionTypes.find(name);
-        if (it != unionTypes.end()) {
-            return it->second;
+        for (auto& un: unionTypes) {
+            if (un->containedTypes == set) {
+                return un;
+            }
         }
 
         auto ut = new UnionType();
         ut->containedTypes = set;
-        ut->_name = getUnionName(set);
-        unionTypes.insert(std::make_pair(ut->_name, ut));
+        ut->_name = getUnionName(ut);
+        unionTypes.push_back(ut);
         return ut;
     }
 
-    std::map<std::string, UnionType*> UnionType::unionTypes;
+    std::vector<UnionType*> UnionType::unionTypes;
 }

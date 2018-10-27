@@ -79,7 +79,7 @@ namespace Strela {
             uint64_t tag = *(uint64_t*)object->data;
             void* ref = *(void**)&object->data[8];
             VMType* refType = type->unionTypes[tag];
-            if (ref && refType->isObject) {
+            if (ref && (refType->isObject || refType->isArray)) {
                 mark((VMObject*)ref - 1);
             }
         }

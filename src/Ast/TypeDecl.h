@@ -10,7 +10,6 @@
 #include <vector>
 
 namespace Strela {
-    class FuncDecl;
     class TypeDecl: public Node {
     public:
         STRELA_GET_TYPE(Strela::TypeDecl, Strela::Node);

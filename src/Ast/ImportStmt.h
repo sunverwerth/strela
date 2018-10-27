@@ -10,6 +10,8 @@
 #include <vector>
 
 namespace Strela {
+    class ModDecl;
+    
     class ImportStmt: public Node {
     public:
         STRELA_GET_TYPE(Strela::ImportStmt, Strela::Node);

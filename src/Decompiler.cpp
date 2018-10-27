@@ -109,8 +109,17 @@ namespace Strela {
 					std::cout << chunk.types[arg]->name << " ";
 				}
 			}
-
-            if (args.size()) {
+            else if (op == Opcode::ObjPtr64Var) {
+                int offset = arg & 0xff;
+                int var = (arg & 0xff00) >> 8;
+                std::cout << std::dec << "(object)var_" << var << "[" << offset << "] ";
+            }
+            else if (op == Opcode::Ptr64Var) {
+                int offset = arg & 0xff;
+                int var = (arg & 0xff00) >> 8;
+                std::cout << std::dec << "var_" << var << "[" << offset << "] ";
+            }
+            else if (args.size()) {
                 std::cout << std::dec;
                 if (op == Opcode::Const) {
                     auto c = chunk.constants[arg];

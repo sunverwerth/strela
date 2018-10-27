@@ -19,7 +19,7 @@ namespace Strela {
     }
 
     void Pass::info(const std::string& msg) {
-        std::cerr << "\033[1;34mInfo: " << msg << "\033[0m\n";
+        std::cerr << "\033[1;34m" << msg << "\033[0m\n";
     }
 
     void Pass::info(const Node& n, const std::string& msg) {
@@ -27,11 +27,11 @@ namespace Strela {
         if (n.source) {
             std::cerr << n.source->filename << ":" << n.line << ":" << n.column << " ";
         }
-        std::cerr << "Info: " << msg << "\033[0m\n";
+        std::cerr << msg << "\033[0m\n";
     }
 
     void Pass::info(const SourceFile& file, const Token& n, const std::string& msg) {
-        std::cerr << "\033[1;34m" << file.filename << ":"  << n.line << ":" << n.column << " Info: " << msg << "\033[0m\n";
+        std::cerr << "\033[1;34m" << file.filename << ":"  << n.line << ":" << n.column << " " << msg << "\033[0m\n";
     }
 
     void Pass::warning(const std::string& msg) {

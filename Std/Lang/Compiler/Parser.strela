@@ -61,6 +61,7 @@ module Std.Lang.Compiler.Parser {
 			var interfaces = new List<InterfaceDecl>;
 			var enums = new List<EnumDecl>;
 			var functions = new List<FunctionDecl>;
+            var types = new List<TypeAliasDecl>;
 
             while(this.lexer.hasNext() && !this.match(TokenType.CurlyClose)) {
                 var exportNext = this.eatOptional(TokenType.Export);
@@ -82,7 +83,10 @@ module Std.Lang.Compiler.Parser {
                     enums.append(this.parseEnum());
                 }
                 else if (this.match(TokenType.Function)) {
-                    functions.append(this.parseFunction());
+                    functions.append(this.parseFunction(exportNext, externalNext));
+                }
+                else if (this.match(TokenType.Type)) {
+                    types.append(this.parseTypeAliasDecl(exportNext));
                 }
                 else {
                     this.expected("Module level declaration");
@@ -103,9 +107,22 @@ module Std.Lang.Compiler.Parser {
 				classes,
 				interfaces,
 				enums,
-				functions
+				functions,
+                types
 			);
         }
+
+        function parseTypeAliasDecl(isExported: bool): TypeAliasDecl {
+            var trivia = this.trivia;
+			var start = this.getPosition();
+			this.eat(TokenType.Type);
+            var name = this.parseIdentifier();
+            this.eat(TokenType.Equals);
+            var _type = this.parseTypeExpression();
+			var end = this.getPosition();
+            this.eat(TokenType.Semicolon);
+			return new TypeAliasDecl(trivia, start, end, name, _type);
+		}       
 
 		function parseArrayLiteral(): ArrayLiteralExpression {
 			var start = this.getPosition();
@@ -338,11 +355,21 @@ module Std.Lang.Compiler.Parser {
 			return new EnumElement(start, end, name);
 		}
 
-        function parseFunction(): FunctionDecl {
+        function parseFunction(isExported: bool, isExternal: bool): FunctionDecl {
             var start = this.getPosition();
 			var trivia = this.trivia;
             this.eat(TokenType.Function);
-            var name = this.parseIdentifier();
+            var name: Identifier | Token;
+            if (this.match(TokenType.BracketOpen)) {
+                name = this.eat(TokenType.BracketOpen);
+                this.eat(TokenType.BracketClose);
+            }
+            else if (this.matchBinop() || this.matchPrefix() || this.matchPostfix() || this.matchAssignment()) {
+                name = this.eat();
+            }
+            else {
+                name = this.parseIdentifier();
+            }
             this.eat(TokenType.ParenOpen);
             var params = this.parseParameterList(TokenType.Comma);
             this.eat(TokenType.ParenClose);
@@ -350,9 +377,15 @@ module Std.Lang.Compiler.Parser {
             if (this.eatOptional(TokenType.Colon)) {
                 returnType = this.parseTypeExpression();
             }
-            var block = this.parseBlock();
-            var end = this.getPosition();
-            return new FunctionDecl(trivia, start, end, name, params, returnType, block);
+            if (isExternal) {
+                var end = this.getPosition();
+                this.eat(TokenType.Semicolon);
+                return new FunctionDecl(trivia, start, end, isExported, isExternal, name, params, returnType, null);
+            }
+            else {
+                var block = this.parseBlock();
+                return new FunctionDecl(trivia, start, block.end, isExported, isExternal, name, params, returnType, block);
+            }
         }
 
         function parseBlock(): Block {
@@ -549,6 +582,9 @@ module Std.Lang.Compiler.Parser {
 				else if (this.match(TokenType.QuestionMark)) {
 					expr = this.parseNullableTypeExpression(expr);
 				}
+				else if (this.match(TokenType.Pipe)) {
+					expr = this.parseUnionTypeExpression(expr);
+				}
                 else {
                     this.expected("Secondary type expression");
                     this.skip();
@@ -561,7 +597,13 @@ module Std.Lang.Compiler.Parser {
 		function parseNullableTypeExpression(base: TypeExpression): NullableTypeExpression {
 			var end = this.getPosition();
 			this.eat(TokenType.QuestionMark);
-			return new NullableTypeExpression(base.start, end);
+			return new NullableTypeExpression(base.start, end, base);
+		}
+
+		function parseUnionTypeExpression(base: TypeExpression): UnionTypeExpression {
+			this.eat(TokenType.Pipe);
+            var second = this.parseTypeExpression();
+			return new UnionTypeExpression(base.start, second.end, base, second);
 		}
 
 		function parseGenericTypeExpression(base: TypeExpression): GenericTypeExpression {
@@ -569,7 +611,7 @@ module Std.Lang.Compiler.Parser {
 			var args = this.parseTypeExpressionList(TokenType.Comma);
 			var end = this.getPosition();
 			this.eat(TokenType.GreaterThan);
-			return new GenericTypeExpression(base.start, end);
+			return new GenericTypeExpression(base.start, end, base, args);
 		}
 
         function parseArrayTypeExpression(base: TypeExpression): ArrayTypeExpression {
@@ -629,7 +671,7 @@ module Std.Lang.Compiler.Parser {
 
         function parseClassMethod(): ClassMethodDecl {
 			var start = this.getPosition();
-			var fun = this.parseFunction();
+			var fun = this.parseFunction(false, false);
             return new ClassMethodDecl(start, fun.end, fun);
         }
 
@@ -640,6 +682,7 @@ module Std.Lang.Compiler.Parser {
         }
 
         function parseVarDecl(): VarDecl {
+			var trivia = this.trivia;
 			var start = this.getPosition();
             this.eat(TokenType.Var);
             var name = this.parseIdentifier();
@@ -657,7 +700,7 @@ module Std.Lang.Compiler.Parser {
 			var end = this.getPosition();
 			this.eat(TokenType.Semicolon);
 
-            return new VarDecl(start, end, name, _type, initializer);
+            return new VarDecl(trivia, start, end, name, _type, initializer);
         }
 
         function parseIfStatement(): IfStatement {
@@ -786,7 +829,8 @@ module Std.Lang.Compiler.Parser {
             return this.match([
                 TokenType.BracketOpen,
 				TokenType.LessThan,
-				TokenType.QuestionMark
+				TokenType.QuestionMark,
+                TokenType.Pipe
             ]);
         }
 

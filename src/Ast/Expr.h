@@ -14,13 +14,6 @@
 namespace Strela {
     class TypeDecl;
     class FuncDecl;
-    class Param;
-    class FieldDecl;
-    class VarDecl;
-    class ClassDecl;
-    class EnumDecl;
-    class EnumElement;
-    class ModDecl;
 
     class Refinement {
     public:
@@ -40,7 +33,6 @@ namespace Strela {
         Expr* arrayIndex = nullptr;
         Expr* context = nullptr;
         std::vector<FuncDecl*> candidates;
-        std::vector<Refinement*> refinements;
     };
 }
 

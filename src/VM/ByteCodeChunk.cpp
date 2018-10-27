@@ -11,7 +11,14 @@
 namespace Strela {
     int ByteCodeChunk::addConstant(VMValue c) {
         for (int i = 0; i < constants.size(); ++i) {
-            if (constants[i].equals(c)) {
+            if (
+                c.type == VMValue::Type::object
+                && constants[i].type == VMValue::Type::object
+                && !strcmp((const char*)c.value.object, (const char*)constants[i].value.object)
+            ) {
+                return i;
+            }
+            else if (constants[i].equals(c)) {
                 return i;
             }
         }

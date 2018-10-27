@@ -56,7 +56,7 @@ module core {
 		function !=(other: String): bool {
 			return !(this == other);
 		}
-        
+
         function ==(other: String): bool {
             var len = this.length();
             if (len != other.length()) {
@@ -124,18 +124,20 @@ module core {
                 i++;
             }
             parts[count] = this.substr(start, this.length() - start);
-            
+
             return parts;
         }
 
         function trim(): String {
             var length = this.length();
+			if (length == 0) return this;
+
             var start: int = 0;
             var end: int = length - 1;
             while (start < length && this.data[start] < 33) {
                 start++;
             }
-            while (end > 0 && this.data[end] < 33) {
+            while (end > start && this.data[end] < 33) {
                 end--;
             }
             return this.substr(start, end - start + 1);
@@ -182,8 +184,8 @@ module core {
                 i++;
             }
             while (i < this.length()) {
-                var ch = this.data[i];                
-                
+                var ch = this.data[i];
+
                 if (ch == 46 && !frac) {
                     frac = true;
                 }
@@ -206,9 +208,8 @@ module core {
 	export function toString(val: int): String {
 		var str = new String(20);
 		var i: int = str.length() - 1;
-		var sign = "";
-		if (val < 0) {
-			sign = "-";
+		var sign = val < 0;
+		if (sign) {
 			val = -val;
 		}
 		while (val > 9) {
@@ -219,7 +220,8 @@ module core {
 		str.data[i] = 48 + val % 10;
 		i = i - 1;
 
-		return sign + str.substr(i + 1, str.length() - i - 1);
+        if (sign) return "-" + str.substr(i + 1, str.length() - i - 1);
+        else return str.substr(i + 1, str.length() - i - 1);
 	}
 
 	export function toString(val: float, decimals: int): String {

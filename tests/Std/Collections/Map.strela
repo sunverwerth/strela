@@ -28,6 +28,9 @@ module Tests.Collections.Map {
         println(map2["US"]);
         println(map2["GB"]);
         println(map2["DE"]);
+
+        map2.remove("US");
+        println(map2.keyIndex("US"));
         
         return 0;
     }

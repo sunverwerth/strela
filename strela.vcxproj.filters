@@ -255,6 +255,9 @@
     <ClInclude Include="src\Ast\MapLitExpr.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\Ast\InterfaceFieldDecl.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Ast\ArrayType.cpp">
@@ -348,6 +351,12 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="src\Ast\TypeDecl.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Ast\InterfaceFieldDecl.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Ast\InterfaceMethodDecl.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

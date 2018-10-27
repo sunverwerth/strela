@@ -57,6 +57,65 @@ void help() {
     std::cout << "    --write-bytecode <file>    writes compiled bytecode to <file> and exits.\n";
 }
 
+template<typename T> T& objectField(void* obj, size_t offset) {
+	return *(T*)((char*)obj + offset);
+}
+
+void String_eq_String(Strela::VM& vm) {
+	auto other = vm.pop();
+	auto self = vm.pop();
+
+	auto str1 = objectField<const char*>(self.value.object, 0) + 8;
+	auto len1 = *objectField<uint64_t*>(self.value.object, 0);
+
+	auto str2 = objectField<const char*>(other.value.object, 0) + 8;
+	auto len2 = *objectField<uint64_t*>(other.value.object, 0);
+
+	vm.push(VMValue(len1 == len2 && !strcmp(str1, str2)));
+}
+
+VMType* stringType = nullptr;
+VMType* u8Type = nullptr;
+
+void String_plus_String(Strela::VM& vm) {
+	auto other = vm.pop();
+	auto self = vm.pop();
+
+	auto str1 = objectField<const char*>(self.value.object, 0) + 8;
+	auto len1 = *objectField<uint64_t*>(self.value.object, 0) - 1;
+
+	auto str2 = objectField<const char*>(other.value.object, 0) + 8;
+	auto len2 = *objectField<uint64_t*>(other.value.object, 0) - 1;
+
+	if (!stringType) {
+		for (auto& type : vm.chunk.types) {
+			if (type->name == "String") {
+				stringType = type;
+				break;
+			}
+		}
+	}
+
+	if (!u8Type) {
+		for (auto& type : vm.chunk.types) {
+			if (type->name == "u8[]") {
+				u8Type = type;
+				break;
+			}
+		}
+	}
+
+	auto newStr = vm.gc.allocObject(stringType);
+	auto newArr = vm.gc.allocArray(u8Type, len1 + len2 + 1);
+
+	objectField<void*>(newStr, 0) = newArr;
+	auto str = &objectField<char>(newArr, 8);
+	memcpy(str, str1, len1);
+	memcpy(str + len1, str2, len2);
+
+	vm.push(VMValue(newStr));
+}
+
 Scope* makeGlobalScope() {
     auto globals = new Scope(nullptr);
 
@@ -124,7 +183,13 @@ Scope* makeGlobalScope() {
         }
     }
 
-    return globals;
+	auto eq = ClassDecl::String->getMethods("==")[0]->as<FuncDecl>();
+	eq->builtin = String_eq_String;
+
+	auto plus = ClassDecl::String->getMethods("+")[0]->as<FuncDecl>();
+	plus->builtin = String_plus_String;
+
+	return globals;
 }
 
 std::string normalizePath(const std::string& path) {
@@ -259,6 +324,9 @@ int main(int argc, char** argv) {
             Parser parser(*source);
             auto module = parser.parseModDecl();
             if (parser.hadErrors()) bail();
+
+            file.close();
+            
             module->filename = fileName;
 
             if (pretty) {

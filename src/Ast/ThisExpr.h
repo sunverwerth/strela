@@ -7,6 +7,8 @@
 #include "Expr.h"
 
 namespace Strela {
+    class ClassDecl;
+    
     class ThisExpr: public Expr {
     public:
         STRELA_GET_TYPE(Strela::ThisExpr, Strela::Expr);

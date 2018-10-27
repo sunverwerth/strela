@@ -20,6 +20,7 @@ namespace Strela {
     class InterfaceMethodDecl: public Node {
     public:
         STRELA_GET_TYPE(Strela::InterfaceMethodDecl, Strela::Node);
+        std::string getDescription();
 
     public:
         bool isExported = false;
