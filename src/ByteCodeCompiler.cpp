@@ -8,6 +8,7 @@
 #include "VM/Opcode.h"
 #include "Scope.h"
 #include "SourceFile.h"
+#include "Ast/PointerType.h"
 
 #include <sstream>
 #include <cstring>
@@ -603,6 +604,9 @@ namespace Strela {
         }
         else if (fromint && toint) {
             // nothing to do here as our vm has only one 64-bit int type.
+            visitChild(n.sourceExpr);
+        }
+        else if (totype == &PointerType::instance) {
             visitChild(n.sourceExpr);
         }
         else {

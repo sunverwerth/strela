@@ -127,7 +127,7 @@ namespace Strela {
 		WSADATA wsadata{ 0 };
 		WSAStartup(MAKEWORD(2, 2), &wsadata);
 #endif
-		sampleFile.open("flamegraph.json", std::ios::binary);
+		//sampleFile.open("flamegraph.json", std::ios::binary);
 
 		for (auto& ff: chunk.foreignFunctions) {
             ffi_type* rtype;
