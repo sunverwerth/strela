@@ -11,11 +11,11 @@ module Examples.Client {
         var client = new Client;
         client.connect(new IPAddr(216, 58, 208, 35), 80); // google
         var request = new Request;
-        request.host = "www.google.de";
         request.path = "/search?q=test";
+        request.headers.set("Host", "www.google.de");
         request.headers.set("User-Agent", "strela language test client");
         request.headers.set("Accept", "text/html,*/*");
-        request.headers.set("Accept-Charset", "utf-8;q=0.9,iso-8859-1;q=0.5");
+        request.headers.set("Accept-Charset", "utf-8");
         request.headers.set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7");
         request.headers.set("Connection", "close");
 
