@@ -43,7 +43,7 @@ module Std.Net {
 
         function init(ip: u32, port: u16) {
             this.handle = csockets.socket(2, 1, 0);
-			this.errorflag = this.handle >= 0;
+			this.errorflag = this.handle < 0;
 			if (this.errorflag) {
 				return;
 			}
