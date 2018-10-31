@@ -26,20 +26,22 @@ module Examples.Server {
                 println(request.method + " request for http://" + request.headers["Host"] + request.path);
             }
             else {
-                println(request.method + " request for http://<default-server>" + request.headers["Host"] + request.path);
+                println(request.method + " request for http://<default-server>" + request.path);
             }
 
             var response = new HTTP.Response;
             response.statusCode = 200;
             response.statusMessage = "OK";
-            
             response.headers.set("Content-type", "text/html");
             
             response.body = "<!doctype html><html><head><style>body {font-family: Sans-serif; background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABnklEQVRYR8WXzUsCQRjG5/kbO3Xp1KVTBy8FEQR1KIgOQocCg/BgQeXBgiQkJPoiEsqDSERBEglSVAjtzDixH+puu2rqzOteXmYv78xvn+d9djAWSyguGswSggm7csGcdbMKd81974VsMF0Pxme2VcfmdlMZbN7cnK5NYGIu6RLwnZiSBCYXUqpnc4MkMLW0GyRATALTK/ttAr2aGyCB2GpadRIahTswG88oziXjQkZaMFKQGklgfv2orYEOljNJAoubWWXZBKRkoyCB5a2TsAsISWAteeoScDRATwLxVF71KzSdmsDG3nmQADEJJNKX3dOwi+V0kEDy8EZZQjLRPPnfatgd2Dm+/V8aGiKBg9xdWwMjIIFMvthfGmomgexFKewCQhLIXZcHS0NNJHBWeFT2FGxNQr8LCEjg6v5puDQckgQKpZeWBkZBAsWHV+cTBO4Dg6ThgCRQfq6GXEBJAo+VmgqOYd/NiIAEKtWP6DT0nGHaHXirfbkaCFmOhgTeP+sOASG9P6KIVDSpCXzXfzwXeMOImAQsLgIaoCbxC0o53EuscA17AAAAAElFTkSuQmCC); background-size: cover}</style></head><body><h1>Hello, world!";
-            response.body = response.body + new String([i]);
+            response.body = response.body + [i];
             response.body = response.body + "</h1></body></html>";
-            request.respond(response);
             
+            println("Returning " + request.path);
+
+            request.respond(response);
+
             i++;
         }
         server.close();
