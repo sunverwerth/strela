@@ -76,5 +76,14 @@ module Std.IO {
 			if (ch < 0) return "";
             return new String([ch as u8]);
         }
+
+        function readAll(): String {
+            fseek(this.handle, 0, 2);
+            var len = ftell(this.handle);
+            fseek(this.handle, 0, 0);
+            var str = new String(len);
+            fread(str, len, 1, this.handle);
+            return str;
+        }
     }
 }

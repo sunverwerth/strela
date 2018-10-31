@@ -10,6 +10,8 @@ module Std.cstdio {
     export external function fwrite(buffer: Ptr, size: u32, count: u32, file: u32): u32;
     export external function fgetc(file: u32): i32;
     export external function ungetc(ch: i32, file: u32): i32;
+    export external function fseek(file: u32, offset: i32, whence: i32): i32;
+    export external function ftell(file: u32): i32;
 
     // Strings
     export external function strlen(str: String): i32;
