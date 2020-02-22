@@ -3,7 +3,7 @@ Strela is a static and strongly typed object oriented programming language with 
 
 ***Development status is pre-pre-pre-alpha! Here be dragons!***
 
-[![Build Status](https://travis-ci.org/sunverwerth/strela.svg?branch=master)](https://travis-ci.org/sunverwerth/strela)
+![C/C++ CI](https://github.com/sunverwerth/strela/workflows/C/C++%20CI/badge.svg?branch=master)
 
 ## Setup  
     git clone git@github.com:sunverwerth/strela.git  
