@@ -170,10 +170,11 @@ namespace Strela {
         auto mainSymbol = n.getMember("main");
         if (!mainSymbol) {
             error(n, "No entry point");
+            return;
         }
         auto mainFunc = mainSymbol->as<FuncDecl>();
         if (!mainFunc) {
-            error(*mainFunc, "Entry point main must be a function.");
+            error(*mainSymbol, "Entry point main must be a function.");
         }
         
         if (mainFunc->params.size() != 1 || mainFunc->params[0]->declType != ArrayType::get(ClassDecl::String)) {
