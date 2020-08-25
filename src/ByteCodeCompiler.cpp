@@ -173,7 +173,11 @@ namespace Strela {
         }
         auto mainFunc = mainSymbol->as<FuncDecl>();
         if (!mainFunc) {
-            error(n, "Entry point main must be a function.");
+            error(*mainFunc, "Entry point main must be a function.");
+        }
+        
+        if (mainFunc->params.size() != 1 || mainFunc->params[0]->declType != ArrayType::get(ClassDecl::String)) {
+            error(*mainFunc, "Entry point main must take an array of arguments: function main(args: String[]): int.");
         }
 
         chunk.main = mainFunc->opcodeStart;
